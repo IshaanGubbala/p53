@@ -218,6 +218,35 @@ def run(args, configs: dict[str, Any]) -> int:
     export_label_sets(benign_df, path_df, processed_dir / "labels")
     logger.info("Exported benign/pathogenic label sets")
 
+    # Generate train/test split
+    from src.eval.train_test_split import create_split_indices, save_split
+
+    validation_cfg = cfg.get("validation", {})
+    if validation_cfg.get("enabled", False):
+        logger.info("Generating train/test split...")
+
+        split_ratio = validation_cfg.get("split_ratio", 0.8)
+        split_seed = validation_cfg.get("split_seed", 42)
+        stratify_by = validation_cfg.get("stratify_by", None)
+
+        benign_path = processed_dir / "labels" / "benign.parquet"
+        pathogenic_path = processed_dir / "labels" / "pathogenic.parquet"
+
+        split_info = create_split_indices(
+            benign_path,
+            pathogenic_path,
+            split_ratio=split_ratio,
+            split_seed=split_seed,
+            stratify_by=stratify_by,
+        )
+
+        split_path = processed_dir / "splits" / f"clinvar_split_seed{split_seed}.json"
+        save_split(split_info, split_path)
+
+        logger.info(f"Train/test split saved to {split_path}")
+    else:
+        logger.info("Validation splits disabled in config")
+
     signature_path.write_text(
         json.dumps({"signature_sha256": signature_hash, "inputs": signature}, indent=2, sort_keys=True),
         encoding="utf-8",

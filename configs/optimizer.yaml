@@ -3,6 +3,11 @@ beam_search:
   depth: 3
   max_pairs: 200
   max_triples: 200
+  # Checkpointing for long-running searches
+  checkpointing:
+    enabled: true
+    verify_config_hash: true
+    save_interval: 1  # Save after each step
 pareto:
   objectives:
     - ddg_gain
@@ -15,8 +20,10 @@ design:
   max_triples: 200
   min_distance_protected: 8.0
   max_conservation: 0.8
+  max_msa_conservation: 0.85  # NEW: Hard filter for MSA-based conservation
   allow_exposed: false
   risk_weights:
-    functional: 0.5
-    conservation: 0.3
-    burial: 0.2
+    functional: 0.4         # Reduced from 0.5
+    conservation: 0.2       # Reduced from 0.3
+    burial: 0.15            # Reduced from 0.2
+    msa_conservation: 0.25  # NEW: MSA-based conservation risk

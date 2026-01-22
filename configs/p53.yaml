@@ -30,3 +30,19 @@ clinvar:
   num_workers: null
 labels:
   min_review_stars: 1
+
+# MSA-based conservation analysis
+msa:
+  enabled: true
+  precomputed_path: Data/processed/msa/P04637_conservation.json
+  min_sequence_identity: 0.5  # Filter homologs below this identity
+  max_gap_fraction: 0.3       # Ignore positions with >30% gaps
+  database: uniref90          # MAFFT database for homolog search
+
+# Train/test validation
+validation:
+  enabled: true
+  split_ratio: 0.8            # 80% train, 20% test
+  split_seed: 42              # Reproducible splits
+  stratify_by: clinical_significance  # Maintain benign/pathogenic ratios
+  min_variants_per_position: 5  # For per-target metrics

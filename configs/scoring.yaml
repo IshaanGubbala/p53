@@ -2,11 +2,26 @@ engine: evoef2
 cache:
   enabled: true
   dir: processed/cache
+  evoef2_repair_dir: processed/cache/evoef2_repair  # Persistent repaired PDB cache
+  cache_individual_energies: true  # Store base_energy and mutant_energy separately
 parallel:
   n_jobs: 2
 recompute: false
 evoef2:
   binary: /Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2
   repaired_pdb: Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb
-  # num_of_runs: 3  # Not a valid EvoEF2 parameter - removed
   chain_id: A
+
+  # Multi-structure scoring configuration
+  structures:
+    - id: alphafold
+      pdb: Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb
+      chain_id: A
+      weight: 1.0
+    - id: 2ocj_core
+      pdb: Data/raw/experimental_pdbs/2OCJ_chainA.pdb
+      chain_id: A
+      weight: 1.0
+
+  consensus_method: median  # Options: median, mean, weighted
+  require_all: false        # Allow partial failures

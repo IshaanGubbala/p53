@@ -9,6 +9,12 @@ import pandas as pd
 from src.core.logging import get_logger
 from src.eval.variant_separation import bootstrap_ci, compute_auc, load_labelled_scores
 from src.viz.plots_pareto import plot_pareto_front
+from src.viz.plots_rescues import (
+    plot_ddg_gain_by_target,
+    plot_position_frequency,
+    plot_rescue_bubble,
+    plot_risk_breakdown,
+)
 from src.viz.plots_variants import plot_ddg_by_label
 
 
@@ -70,6 +76,7 @@ def run(args, configs: dict[str, Any]) -> int:
 
     rescues_root = paths["processed"] / "rescues"
     if rescues_root.exists():
+        target_candidates: dict[str, pd.DataFrame] = {}
         for target_dir in sorted(rescues_root.iterdir()):
             if not target_dir.is_dir():
                 continue
@@ -80,10 +87,42 @@ def run(args, configs: dict[str, Any]) -> int:
 
             candidates = pd.read_parquet(candidates_path)
             target = target_dir.name
-            plot_pareto_front(
-                candidates,
-                figures_dir / f"pareto_{target}.{fig_format}",
-            )
+            target_candidates[target] = candidates.copy()
+            try:
+                plot_pareto_front(
+                    candidates,
+                    figures_dir / f"pareto_{target}.{fig_format}",
+                )
+            except ValueError as exc:
+                logger.warning("Skipping pareto plot for %s: %s", target, exc)
+
+            try:
+                plot_rescue_bubble(
+                    candidates,
+                    figures_dir / f"rescue_bubble_{target}.{fig_format}",
+                    title=f"{target} rescue landscape",
+                    annotate_n=int(report_cfg.get("rescue_bubble_annotate", 6)),
+                )
+            except ValueError as exc:
+                logger.warning("Skipping rescue bubble plot for %s: %s", target, exc)
+
+            try:
+                plot_risk_breakdown(
+                    candidates,
+                    figures_dir / f"rescue_risk_{target}.{fig_format}",
+                    top_n=int(report_cfg.get("rescue_risk_top_n", top_rescues)),
+                )
+            except ValueError as exc:
+                logger.warning("Skipping rescue risk plot for %s: %s", target, exc)
+
+            try:
+                plot_position_frequency(
+                    candidates,
+                    figures_dir / f"rescue_positions_{target}.{fig_format}",
+                    top_n=report_cfg.get("rescue_position_top_n"),
+                )
+            except ValueError as exc:
+                logger.warning("Skipping rescue position plot for %s: %s", target, exc)
 
             # Export Pareto front first, then fill with best non-Pareto
             # Sort by: Pareto status (desc), then n_rescue (asc), then ddg_gain (asc), then risk (asc)
@@ -92,6 +131,15 @@ def run(args, configs: dict[str, Any]) -> int:
                 ascending=[False, True, True, True]
             )
             ranked.head(top_rescues).to_csv(tables_dir / f"rescues_{target}.csv", index=False)
+
+        if target_candidates:
+            try:
+                plot_ddg_gain_by_target(
+                    target_candidates,
+                    figures_dir / f"rescue_ddg_by_target.{fig_format}",
+                )
+            except ValueError as exc:
+                logger.warning("Skipping rescue ddg summary plot: %s", exc)
 
         logger.info("Rescue report outputs written")
     else:

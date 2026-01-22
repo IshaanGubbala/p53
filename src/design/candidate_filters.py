@@ -65,6 +65,35 @@ def filter_by_surface_patch(
     return True
 
 
+def filter_by_msa_conservation(
+    mset: Iterable[str],
+    msa_cons_map: dict[int, float],
+    max_msa_cons: float,
+) -> bool:
+    """Filter by MSA-based conservation scores.
+
+    Args:
+        mset: Mutation set
+        msa_cons_map: Position → MSA conservation score (0-1, higher = more conserved)
+        max_msa_cons: Maximum allowed conservation score
+
+    Returns:
+        True if all positions pass threshold, False otherwise
+    """
+    if not msa_cons_map:
+        return True
+
+    for mut in mset:
+        pos = _mutation_pos(mut)
+        score = msa_cons_map.get(pos)
+        if score is None:
+            continue
+        if score > max_msa_cons:
+            return False
+
+    return True
+
+
 def apply_all_filters(
     candidates: Iterable[tuple[str, ...]],
     dist_map: dict[tuple[int, int], float],
@@ -73,14 +102,19 @@ def apply_all_filters(
     min_angstrom: float,
     cons_map: dict[int, float] | None = None,
     max_cons: float = 0.8,
+    msa_cons_map: dict[int, float] | None = None,
+    max_msa_cons: float = 0.85,
     allow_exposed: bool = False,
 ) -> list[tuple[str, ...]]:
     cons_map = cons_map or {}
+    msa_cons_map = msa_cons_map or {}
     filtered: list[tuple[str, ...]] = []
     for mset in candidates:
         if not filter_by_protected_distance(mset, dist_map, protected, min_angstrom):
             continue
         if not filter_by_conservation(mset, cons_map, max_cons):
+            continue
+        if not filter_by_msa_conservation(mset, msa_cons_map, max_msa_cons):
             continue
         if not filter_by_surface_patch(mset, burial_map, allow_exposed=allow_exposed):
             continue

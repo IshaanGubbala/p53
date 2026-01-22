@@ -280,6 +280,158 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "json",
         "kind": 6,
         "isExtraImport": true,
@@ -513,6 +665,166 @@
         "documentation": {}
     },
     {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
         "label": "Any",
         "importPath": "typing",
         "description": "typing",
@@ -538,6 +850,38 @@
     },
     {
         "label": "Iterable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -689,7 +1033,39 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Iterable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -729,7 +1105,31 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Callable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Iterable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -801,7 +1201,55 @@
         "documentation": {}
     },
     {
+        "label": "Iterable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Callable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -978,7 +1426,39 @@
         "documentation": {}
     },
     {
+        "label": "get_logger",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
         "label": "setup_logging",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "get_logger",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "get_logger",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "get_logger",
         "importPath": "src.core.logging",
         "description": "src.core.logging",
         "isExtraImport": true,
@@ -1095,6 +1575,73 @@
         "description": "src.variants.parse_clinvar_xml",
         "isExtraImport": true,
         "detail": "src.variants.parse_clinvar_xml",
+        "documentation": {}
+    },
+    {
+        "label": "argparse",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "argparse",
+        "description": "argparse",
+        "detail": "argparse",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "importPath": "src.utils.config_loader",
+        "description": "src.utils.config_loader",
+        "isExtraImport": true,
+        "detail": "src.utils.config_loader",
+        "documentation": {}
+    },
+    {
+        "label": "setup_logging",
+        "importPath": "src.utils.logging_config",
+        "description": "src.utils.logging_config",
+        "isExtraImport": true,
+        "detail": "src.utils.logging_config",
+        "documentation": {}
+    },
+    {
+        "label": "get_or_create_conservation",
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "isExtraImport": true,
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "load_conservation",
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "isExtraImport": true,
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "identify_conserved_regions",
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "isExtraImport": true,
+        "detail": "src.msa.conservation_scores",
         "documentation": {}
     },
     {
@@ -1420,6 +1967,62 @@
         "documentation": {}
     },
     {
+        "label": "load_labelled_scores",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "bootstrap_ci",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "compute_auc",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "load_labelled_scores",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "bootstrap_ci",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "compute_auc",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "load_labelled_scores",
+        "importPath": "src.eval.variant_separation",
+        "description": "src.eval.variant_separation",
+        "isExtraImport": true,
+        "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
         "label": "download_clinvar_vcf",
         "importPath": "src.data_fetch.fetch_clinvar",
         "description": "src.data_fetch.fetch_clinvar",
@@ -1540,35 +2143,43 @@
         "documentation": {}
     },
     {
-        "label": "bootstrap_ci",
-        "importPath": "src.eval.variant_separation",
-        "description": "src.eval.variant_separation",
-        "isExtraImport": true,
-        "detail": "src.eval.variant_separation",
-        "documentation": {}
-    },
-    {
-        "label": "compute_auc",
-        "importPath": "src.eval.variant_separation",
-        "description": "src.eval.variant_separation",
-        "isExtraImport": true,
-        "detail": "src.eval.variant_separation",
-        "documentation": {}
-    },
-    {
-        "label": "load_labelled_scores",
-        "importPath": "src.eval.variant_separation",
-        "description": "src.eval.variant_separation",
-        "isExtraImport": true,
-        "detail": "src.eval.variant_separation",
-        "documentation": {}
-    },
-    {
         "label": "plot_pareto_front",
         "importPath": "src.viz.plots_pareto",
         "description": "src.viz.plots_pareto",
         "isExtraImport": true,
         "detail": "src.viz.plots_pareto",
+        "documentation": {}
+    },
+    {
+        "label": "plot_ddg_gain_by_target",
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "isExtraImport": true,
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_position_frequency",
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "isExtraImport": true,
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_rescue_bubble",
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "isExtraImport": true,
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_risk_breakdown",
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "isExtraImport": true,
+        "detail": "src.viz.plots_rescues",
         "documentation": {}
     },
     {
@@ -1580,21 +2191,151 @@
         "documentation": {}
     },
     {
+        "label": "plot_ddg_by_label",
+        "importPath": "src.viz.plots_variants",
+        "description": "src.viz.plots_variants",
+        "isExtraImport": true,
+        "detail": "src.viz.plots_variants",
+        "documentation": {}
+    },
+    {
+        "label": "create_mutation_network",
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "isExtraImport": true,
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_radar_chart_comparison",
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "isExtraImport": true,
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_pipeline_flow_diagram",
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "isExtraImport": true,
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_domain_architecture_diagram",
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "isExtraImport": true,
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_progressive_optimization_plot",
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "isExtraImport": true,
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib.pyplot",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib.pyplot",
+        "description": "matplotlib.pyplot",
+        "detail": "matplotlib.pyplot",
+        "documentation": {}
+    },
+    {
+        "label": "Axes3D",
+        "importPath": "mpl_toolkits.mplot3d",
+        "description": "mpl_toolkits.mplot3d",
+        "isExtraImport": true,
+        "detail": "mpl_toolkits.mplot3d",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib.patches",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "Rectangle",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "FancyBboxPatch",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "Circle",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "FancyBboxPatch",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "Circle",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "Rectangle",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "FancyArrow",
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "isExtraImport": true,
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
         "label": "hashlib",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "hashlib",
         "description": "hashlib",
         "detail": "hashlib",
-        "documentation": {}
-    },
-    {
-        "label": "logging",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "logging",
-        "description": "logging",
-        "detail": "logging",
         "documentation": {}
     },
     {
@@ -1789,21 +2530,43 @@
         "documentation": {}
     },
     {
-        "label": "numpy",
-        "kind": 6,
+        "label": "SeqIO",
+        "importPath": "Bio",
+        "description": "Bio",
         "isExtraImport": true,
-        "importPath": "numpy",
-        "description": "numpy",
-        "detail": "numpy",
+        "detail": "Bio",
         "documentation": {}
     },
     {
-        "label": "os",
-        "kind": 6,
+        "label": "SeqIO",
+        "importPath": "Bio",
+        "description": "Bio",
         "isExtraImport": true,
-        "importPath": "os",
-        "description": "os",
-        "detail": "os",
+        "detail": "Bio",
+        "documentation": {}
+    },
+    {
+        "label": "Entrez",
+        "importPath": "Bio",
+        "description": "Bio",
+        "isExtraImport": true,
+        "detail": "Bio",
+        "documentation": {}
+    },
+    {
+        "label": "PDB",
+        "importPath": "Bio",
+        "description": "Bio",
+        "isExtraImport": true,
+        "detail": "Bio",
+        "documentation": {}
+    },
+    {
+        "label": "MultipleSeqAlignment",
+        "importPath": "Bio.Align",
+        "description": "Bio.Align",
+        "isExtraImport": true,
+        "detail": "Bio.Align",
         "documentation": {}
     },
     {
@@ -1822,6 +2585,31 @@
         "importPath": "tempfile",
         "description": "tempfile",
         "detail": "tempfile",
+        "documentation": {}
+    },
+    {
+        "label": "NCBIWWW",
+        "importPath": "Bio.Blast",
+        "description": "Bio.Blast",
+        "isExtraImport": true,
+        "detail": "Bio.Blast",
+        "documentation": {}
+    },
+    {
+        "label": "NCBIXML",
+        "importPath": "Bio.Blast",
+        "description": "Bio.Blast",
+        "isExtraImport": true,
+        "detail": "Bio.Blast",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
         "documentation": {}
     },
     {
@@ -1918,21 +2706,19 @@
         "documentation": {}
     },
     {
-        "label": "matplotlib.pyplot",
-        "kind": 6,
+        "label": "LinearSegmentedColormap",
+        "importPath": "matplotlib.colors",
+        "description": "matplotlib.colors",
         "isExtraImport": true,
-        "importPath": "matplotlib.pyplot",
-        "description": "matplotlib.pyplot",
-        "detail": "matplotlib.pyplot",
+        "detail": "matplotlib.colors",
         "documentation": {}
     },
     {
-        "label": "argparse",
-        "kind": 6,
+        "label": "to_rgb",
+        "importPath": "matplotlib.colors",
+        "description": "matplotlib.colors",
         "isExtraImport": true,
-        "importPath": "argparse",
-        "description": "argparse",
-        "detail": "argparse",
+        "detail": "matplotlib.colors",
         "documentation": {}
     },
     {
@@ -1942,15 +2728,6 @@
         "importPath": "importlib",
         "description": "importlib",
         "detail": "importlib",
-        "documentation": {}
-    },
-    {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
         "documentation": {}
     },
     {
@@ -1967,6 +2744,39 @@
         "description": "src.core.config",
         "isExtraImport": true,
         "detail": "src.core.config",
+        "documentation": {}
+    },
+    {
+        "label": "seaborn",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "seaborn",
+        "description": "seaborn",
+        "detail": "seaborn",
+        "documentation": {}
+    },
+    {
+        "label": "GridSpec",
+        "importPath": "matplotlib.gridspec",
+        "description": "matplotlib.gridspec",
+        "isExtraImport": true,
+        "detail": "matplotlib.gridspec",
+        "documentation": {}
+    },
+    {
+        "label": "GridSpec",
+        "importPath": "matplotlib.gridspec",
+        "description": "matplotlib.gridspec",
+        "isExtraImport": true,
+        "detail": "matplotlib.gridspec",
+        "documentation": {}
+    },
+    {
+        "label": "LineCollection",
+        "importPath": "matplotlib.collections",
+        "description": "matplotlib.collections",
+        "isExtraImport": true,
+        "detail": "matplotlib.collections",
         "documentation": {}
     },
     {
@@ -2035,6 +2845,24 @@
         "documentation": {}
     },
     {
+        "label": "main",
+        "kind": 2,
+        "importPath": "experiments.run_build_msa",
+        "description": "experiments.run_build_msa",
+        "peekOfCode": "def main(recompute: bool = False):\n    \"\"\"Build MSA and conservation scores.\"\"\"\n    # Setup logging\n    setup_logging()\n    logger = logging.getLogger(__name__)\n    logger.info(\"=\" * 70)\n    logger.info(\"MSA Builder: TP53 Conservation Analysis\")\n    logger.info(\"=\" * 70)\n    # Load config\n    configs = load_config()",
+        "detail": "experiments.run_build_msa",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "experiments.run_build_msa",
+        "description": "experiments.run_build_msa",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\nfrom src.utils.config_loader import load_config\nfrom src.utils.logging_config import setup_logging\nfrom src.msa.alignment_cache import get_or_create_conservation, load_conservation\nfrom src.msa.conservation_scores import identify_conserved_regions\ndef _paths_from_config(paths_cfg: dict) -> dict[str, Path]:\n    \"\"\"Parse paths from config.\"\"\"\n    root = Path(paths_cfg.get(\"project_root\", \".\"))\n    data_root = root / paths_cfg.get(\"data_root\", \"Data\")",
+        "detail": "experiments.run_build_msa",
+        "documentation": {}
+    },
+    {
         "label": "run",
         "kind": 2,
         "importPath": "experiments.run_build_structure",
@@ -2073,6 +2901,15 @@
     {
         "label": "run",
         "kind": 2,
+        "importPath": "experiments.run_export_benchmark_repro",
+        "description": "experiments.run_export_benchmark_repro",
+        "peekOfCode": "def run(args, configs: dict[str, Any]) -> int:\n    logger = get_logger(__name__)\n    paths = _paths_from_config(configs.get(\"paths\", {}))\n    report_cfg = configs.get(\"report\", {})\n    output_dir = Path(report_cfg.get(\"output_dir\", paths[\"reports\"]))\n    tables_dir = Path(report_cfg.get(\"tables_dir\", output_dir / \"tables\"))\n    logs_dir = output_dir / \"logs\"\n    tables_dir.mkdir(parents=True, exist_ok=True)\n    logs_dir.mkdir(parents=True, exist_ok=True)\n    scores_path = paths[\"processed\"] / \"variant_scores.parquet\"",
+        "detail": "experiments.run_export_benchmark_repro",
+        "documentation": {}
+    },
+    {
+        "label": "run",
+        "kind": 2,
         "importPath": "experiments.run_fetch",
         "description": "experiments.run_fetch",
         "peekOfCode": "def run(args, configs: dict[str, Any]) -> int:\n    logger = get_logger(__name__)\n    requested = {\n        \"uniprot\": args.all or args.uniprot,\n        \"alphafold\": args.all or args.alphafold,\n        \"clinvar\": args.all or args.clinvar,\n        \"nci\": args.all or args.nci,\n    }\n    if not any(requested.values()):\n        raise RuntimeError(\"No sources selected. Use --all or specify sources.\")",
@@ -2095,6 +2932,330 @@
         "description": "experiments.run_score_variants",
         "peekOfCode": "def run(args, configs: dict[str, Any]) -> int:\n    logger = get_logger(__name__)\n    paths = _paths_from_config(configs.get(\"paths\", {}))\n    scoring_cfg = configs.get(\"scoring\", {})\n    engine = (getattr(args, \"engine\", None) or scoring_cfg.get(\"engine\") or \"evoef2\").lower()\n    if engine != \"evoef2\":\n        raise RuntimeError(f\"Unsupported scoring engine: {engine}\")\n    evoef2_cfg = dict(scoring_cfg.get(\"evoef2\", {}))\n    if not evoef2_cfg:\n        raise RuntimeError(\"Missing evoef2 configuration in configs/scoring.yaml\")",
         "detail": "experiments.run_score_variants",
+        "documentation": {}
+    },
+    {
+        "label": "load_structure_data",
+        "kind": 2,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "def load_structure_data(interim_dir: Path) -> tuple[dict, dict]:\n    \"\"\"Load burial and conservation data for mechanistic rationale.\"\"\"\n    structure_dir = interim_dir / \"structure\"\n    burial_path = structure_dir / \"P04637_core_94_312_burial.json\"\n    burial_map = {}\n    if burial_path.exists():\n        burial_raw = json.loads(burial_path.read_text(encoding=\"utf-8\"))\n        # Convert categorical burial to numeric scores\n        burial_scores = {\"buried\": 1.0, \"partial\": 0.5, \"exposed\": 0.0}\n        burial_map = {int(k): burial_scores.get(v, 0.0) for k, v in burial_raw.items()}",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "parse_mutation",
+        "kind": 2,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "def parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef get_mutation_rationale(mutation: str, burial_map: dict, cons_map: dict) -> str:\n    \"\"\"Generate mechanistic rationale for a mutation.\"\"\"",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "get_mutation_rationale",
+        "kind": 2,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "def get_mutation_rationale(mutation: str, burial_map: dict, cons_map: dict) -> str:\n    \"\"\"Generate mechanistic rationale for a mutation.\"\"\"\n    ref, pos, alt = parse_mutation(mutation)\n    rationale_parts = []\n    # Check burial\n    burial = burial_map.get(pos, 0.0)\n    if burial > 0.7:\n        rationale_parts.append(f\"buried core packing (burial={burial:.2f})\")\n    elif burial > 0.4:\n        rationale_parts.append(f\"semi-buried stabilization (burial={burial:.2f})\")",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "select_best_by_complexity",
+        "kind": 2,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "def select_best_by_complexity(df: pd.DataFrame, burial_map: dict, cons_map: dict) -> dict:\n    \"\"\"Select best single, double, and triple from Pareto front.\"\"\"\n    # First try Pareto front\n    pareto = df[df[\"is_pareto\"]].copy()\n    # If not enough Pareto, fall back to all candidates\n    if len(pareto) < 3:\n        pareto = df.copy()\n    results = {}\n    for n in [1, 2, 3]:\n        subset = pareto[pareto[\"n_rescue\"] == n]",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "def main() -> None:\n    data_dir = repo_root / \"Data\"\n    interim_dir = data_dir / \"interim\"\n    processed_dir = data_dir / \"processed\"\n    reports_dir = repo_root / \"reports\"\n    tables_dir = reports_dir / \"tables\"\n    # Load structure data for rationale\n    burial_map, cons_map = load_structure_data(interim_dir)\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    print(\"=== Creating Tiered Rescue Recommendations ===\\n\")",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.create_tiered_rescues",
+        "description": "scripts.create_tiered_rescues",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef load_structure_data(interim_dir: Path) -> tuple[dict, dict]:\n    \"\"\"Load burial and conservation data for mechanistic rationale.\"\"\"\n    structure_dir = interim_dir / \"structure\"\n    burial_path = structure_dir / \"P04637_core_94_312_burial.json\"\n    burial_map = {}\n    if burial_path.exists():\n        burial_raw = json.loads(burial_path.read_text(encoding=\"utf-8\"))\n        # Convert categorical burial to numeric scores",
+        "detail": "scripts.create_tiered_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.generate_advanced_visualizations",
+        "description": "scripts.generate_advanced_visualizations",
+        "peekOfCode": "def main():\n    processed_dir = repo_root / \"Data\" / \"processed\"\n    figures_dir = repo_root / \"reports\" / \"figures\"\n    figures_dir.mkdir(parents=True, exist_ok=True)\n    print(\"Creating advanced visualizations...\")\n    # 1. Mutation network\n    print(\"  1/5 Creating mutation network...\")\n    create_mutation_network(processed_dir, figures_dir / \"mutation_network_advanced.png\")\n    # 2. Radar charts\n    print(\"  2/5 Creating radar chart comparison...\")",
+        "detail": "scripts.generate_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.generate_advanced_visualizations",
+        "description": "scripts.generate_advanced_visualizations",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\nfrom visualization.create_advanced_visualizations import (\n    create_mutation_network,\n    create_radar_chart_comparison,\n    create_pipeline_flow_diagram,\n    create_domain_architecture_diagram,\n    create_progressive_optimization_plot,\n)\ndef main():",
+        "detail": "scripts.generate_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "parse_mutation",
+        "kind": 2,
+        "importPath": "scripts.generate_structure_highlights",
+        "description": "scripts.generate_structure_highlights",
+        "peekOfCode": "def parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef generate_pymol_script(target: str, rescue_muts: list[str], tier: str, pdb_path: Path, output_dir: Path) -> Path:\n    \"\"\"Generate a PyMOL script to visualize the rescue mutations.\"\"\"\n    _, target_pos, _ = parse_mutation(target)",
+        "detail": "scripts.generate_structure_highlights",
+        "documentation": {}
+    },
+    {
+        "label": "generate_pymol_script",
+        "kind": 2,
+        "importPath": "scripts.generate_structure_highlights",
+        "description": "scripts.generate_structure_highlights",
+        "peekOfCode": "def generate_pymol_script(target: str, rescue_muts: list[str], tier: str, pdb_path: Path, output_dir: Path) -> Path:\n    \"\"\"Generate a PyMOL script to visualize the rescue mutations.\"\"\"\n    _, target_pos, _ = parse_mutation(target)\n    rescue_positions = [parse_mutation(m)[1] for m in rescue_muts]\n    script_name = f\"visualize_{target}_{tier}.pml\"\n    script_path = output_dir / script_name\n    # Generate PyMOL commands\n    commands = [\n        \"# PyMOL script to visualize rescue mutations\",\n        f\"# Target: {target}, Tier: {tier}\",",
+        "detail": "scripts.generate_structure_highlights",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.generate_structure_highlights",
+        "description": "scripts.generate_structure_highlights",
+        "peekOfCode": "def main() -> None:\n    reports_dir = repo_root / \"reports\"\n    tables_dir = reports_dir / \"tables\"\n    figures_dir = reports_dir / \"figures\"\n    scripts_dir = reports_dir / \"pymol_scripts\"\n    scripts_dir.mkdir(parents=True, exist_ok=True)\n    # Load tiered recommendations\n    recommendations_path = tables_dir / \"tiered_recommendations.json\"\n    if not recommendations_path.exists():\n        print(\"Error: tiered_recommendations.json not found\")",
+        "detail": "scripts.generate_structure_highlights",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.generate_structure_highlights",
+        "description": "scripts.generate_structure_highlights",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef generate_pymol_script(target: str, rescue_muts: list[str], tier: str, pdb_path: Path, output_dir: Path) -> Path:",
+        "detail": "scripts.generate_structure_highlights",
+        "documentation": {}
+    },
+    {
+        "label": "parse_pdb",
+        "kind": 2,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "def parse_pdb(pdb_path: Path) -> dict[str, Any]:\n    \"\"\"Parse PDB file and extract CA atom coordinates.\"\"\"\n    atoms = []\n    with pdb_path.open('r') as f:\n        for line in f:\n            if line.startswith('ATOM') and ' CA ' in line:\n                # Parse PDB line\n                atom_name = line[12:16].strip()\n                res_name = line[17:20].strip()\n                chain = line[21].strip()",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "parse_mutation",
+        "kind": 2,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "def parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef render_protein_3d(pdb_data: dict, target: str, rescue_muts: list[str],\n                     tier: str, output_path: Path) -> None:",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "render_protein_3d",
+        "kind": 2,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "def render_protein_3d(pdb_data: dict, target: str, rescue_muts: list[str],\n                     tier: str, output_path: Path) -> None:\n    \"\"\"Render 3D protein structure with mutations highlighted.\"\"\"\n    atoms = pdb_data['atoms']\n    # Extract coordinates\n    coords = np.array([[a['x'], a['y'], a['z']] for a in atoms])\n    res_nums = np.array([a['res_num'] for a in atoms])\n    # Parse mutations\n    _, target_pos, _ = parse_mutation(target)\n    rescue_positions = [parse_mutation(m)[1] for m in rescue_muts]",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "render_multiple_views",
+        "kind": 2,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "def render_multiple_views(pdb_data: dict, target: str, rescue_muts: list[str],\n                         tier: str, ddg_gain: float, risk: float, output_path: Path) -> None:\n    \"\"\"Render protein from multiple viewing angles.\"\"\"\n    atoms = pdb_data['atoms']\n    coords = np.array([[a['x'], a['y'], a['z']] for a in atoms])\n    res_nums = np.array([a['res_num'] for a in atoms])\n    # Parse mutations\n    _, target_pos, _ = parse_mutation(target)\n    rescue_positions = [parse_mutation(m)[1] for m in rescue_muts]\n    # Create figure with 4 subplots",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "def main():\n    \"\"\"Generate 3D protein structure renders for all rescue designs.\"\"\"\n    data_dir = repo_root / \"Data\"\n    reports_dir = repo_root / \"reports\"\n    figures_dir = reports_dir / \"figures\"\n    structures_dir = figures_dir / \"structures_3d\"\n    structures_dir.mkdir(parents=True, exist_ok=True)\n    # Find PDB file\n    pdb_path = data_dir / \"raw\" / \"alphafold\"\n    pdb_files = list(pdb_path.glob(\"*.pdb\"))",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.render_protein_structures",
+        "description": "scripts.render_protein_structures",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef parse_pdb(pdb_path: Path) -> dict[str, Any]:\n    \"\"\"Parse PDB file and extract CA atom coordinates.\"\"\"\n    atoms = []\n    with pdb_path.open('r') as f:\n        for line in f:\n            if line.startswith('ATOM') and ' CA ' in line:\n                # Parse PDB line\n                atom_name = line[12:16].strip()",
+        "detail": "scripts.render_protein_structures",
+        "documentation": {}
+    },
+    {
+        "label": "parse_mutation",
+        "kind": 2,
+        "importPath": "scripts.render_with_pymol",
+        "description": "scripts.render_with_pymol",
+        "peekOfCode": "def parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef generate_pymol_script(\n    pdb_path: Path,",
+        "detail": "scripts.render_with_pymol",
+        "documentation": {}
+    },
+    {
+        "label": "generate_pymol_script",
+        "kind": 2,
+        "importPath": "scripts.render_with_pymol",
+        "description": "scripts.render_with_pymol",
+        "peekOfCode": "def generate_pymol_script(\n    pdb_path: Path,\n    target: str,\n    rescue_muts: list[str],\n    tier: str,\n    output_path: Path,\n    script_path: Path,\n    ddg_gain: float,\n    risk: float\n) -> None:",
+        "detail": "scripts.render_with_pymol",
+        "documentation": {}
+    },
+    {
+        "label": "generate_multiview_script",
+        "kind": 2,
+        "importPath": "scripts.render_with_pymol",
+        "description": "scripts.render_with_pymol",
+        "peekOfCode": "def generate_multiview_script(\n    pdb_path: Path,\n    target: str,\n    rescue_muts: list[str],\n    tier: str,\n    output_dir: Path,\n    script_path: Path,\n    ddg_gain: float,\n    risk: float\n) -> list[Path]:",
+        "detail": "scripts.render_with_pymol",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.render_with_pymol",
+        "description": "scripts.render_with_pymol",
+        "peekOfCode": "def main():\n    \"\"\"Generate PyMOL renders for all rescue designs.\"\"\"\n    data_dir = repo_root / \"Data\"\n    reports_dir = repo_root / \"reports\"\n    figures_dir = reports_dir / \"figures\"\n    pymol_dir = figures_dir / \"pymol_renders\"\n    scripts_dir = reports_dir / \"pymol_scripts\"\n    pymol_dir.mkdir(parents=True, exist_ok=True)\n    scripts_dir.mkdir(parents=True, exist_ok=True)\n    # Find PDB file",
+        "detail": "scripts.render_with_pymol",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.render_with_pymol",
+        "description": "scripts.render_with_pymol",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt",
+        "detail": "scripts.render_with_pymol",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.reproduce_benchmark",
+        "description": "scripts.reproduce_benchmark",
+        "peekOfCode": "def main() -> None:\n    # Paths to reproducibility artifacts\n    reports_dir = repo_root / \"reports\"\n    tables_dir = reports_dir / \"tables\"\n    figures_dir = reports_dir / \"figures\"\n    logs_dir = reports_dir / \"logs\"\n    # Load metadata\n    metadata_path = logs_dir / \"run_metadata.json\"\n    if not metadata_path.exists():\n        print(f\"Error: metadata not found at {metadata_path}\")",
+        "detail": "scripts.reproduce_benchmark",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.reproduce_benchmark",
+        "description": "scripts.reproduce_benchmark",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\nfrom src.eval.variant_separation import bootstrap_ci, compute_auc\nfrom src.viz.plots_variants import plot_ddg_by_label\ndef main() -> None:\n    # Paths to reproducibility artifacts\n    reports_dir = repo_root / \"reports\"\n    tables_dir = reports_dir / \"tables\"\n    figures_dir = reports_dir / \"figures\"\n    logs_dir = reports_dir / \"logs\"",
+        "detail": "scripts.reproduce_benchmark",
+        "documentation": {}
+    },
+    {
+        "label": "verify_ddg_gain_calculation",
+        "kind": 2,
+        "importPath": "scripts.sanity_check_scoring",
+        "description": "scripts.sanity_check_scoring",
+        "peekOfCode": "def verify_ddg_gain_calculation(rescue_df: pd.DataFrame, target: str) -> dict[str, any]:\n    \"\"\"Verify ddg_gain = ddg_total - ddg_seed for all candidates.\"\"\"\n    rescue_df = rescue_df.copy()\n    rescue_df[\"ddg_gain_computed\"] = rescue_df[\"ddg_total\"] - rescue_df[\"ddg_seed\"]\n    rescue_df[\"ddg_gain_diff\"] = abs(rescue_df[\"ddg_gain\"] - rescue_df[\"ddg_gain_computed\"])\n    max_diff = rescue_df[\"ddg_gain_diff\"].max()\n    mean_diff = rescue_df[\"ddg_gain_diff\"].mean()\n    # Pick 10 random samples for manual inspection\n    sample_size = min(10, len(rescue_df))\n    samples = rescue_df.sample(n=sample_size, random_state=42)",
+        "detail": "scripts.sanity_check_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "check_score_consistency_across_targets",
+        "kind": 2,
+        "importPath": "scripts.sanity_check_scoring",
+        "description": "scripts.sanity_check_scoring",
+        "peekOfCode": "def check_score_consistency_across_targets(\n    processed_dir: Path, targets: list[str]\n) -> dict[str, any]:\n    \"\"\"Verify that common rescue mutations have consistent scores across targets.\"\"\"\n    # Find rescue mutations that appear in multiple targets\n    all_rescues: dict[str, list[tuple[str, float]]] = {}  # mutation -> [(target, ddg_total), ...]\n    for target in targets:\n        target_dir = processed_dir / \"rescues\" / target\n        candidates_path = target_dir / \"candidates.parquet\"\n        if not candidates_path.exists():",
+        "detail": "scripts.sanity_check_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "run_repeat_experiments",
+        "kind": 2,
+        "importPath": "scripts.sanity_check_scoring",
+        "description": "scripts.sanity_check_scoring",
+        "peekOfCode": "def run_repeat_experiments(\n    processed_dir: Path, target: str, n_repeats: int = 3\n) -> dict[str, any]:\n    \"\"\"Simulate repeat experiments by checking if rank ordering is stable.\n    Since EvoEF2 is deterministic, we check that the ranking is consistent\n    by comparing against a resorted version.\n    \"\"\"\n    target_dir = processed_dir / \"rescues\" / target\n    candidates_path = target_dir / \"candidates.parquet\"\n    if not candidates_path.exists():",
+        "detail": "scripts.sanity_check_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.sanity_check_scoring",
+        "description": "scripts.sanity_check_scoring",
+        "peekOfCode": "def main() -> None:\n    processed_dir = repo_root / \"Data\" / \"processed\"\n    reports_dir = repo_root / \"reports\"\n    tables_dir = reports_dir / \"tables\"\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    print(\"=== EvoEF2 Scoring Sanity Check ===\\n\")\n    results = {\n        \"ddg_gain_verification\": [],\n        \"consistency_across_targets\": None,\n        \"repeat_experiments\": [],",
+        "detail": "scripts.sanity_check_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.sanity_check_scoring",
+        "description": "scripts.sanity_check_scoring",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef verify_ddg_gain_calculation(rescue_df: pd.DataFrame, target: str) -> dict[str, any]:\n    \"\"\"Verify ddg_gain = ddg_total - ddg_seed for all candidates.\"\"\"\n    rescue_df = rescue_df.copy()\n    rescue_df[\"ddg_gain_computed\"] = rescue_df[\"ddg_total\"] - rescue_df[\"ddg_seed\"]\n    rescue_df[\"ddg_gain_diff\"] = abs(rescue_df[\"ddg_gain\"] - rescue_df[\"ddg_gain_computed\"])\n    max_diff = rescue_df[\"ddg_gain_diff\"].max()\n    mean_diff = rescue_df[\"ddg_gain_diff\"].mean()\n    # Pick 10 random samples for manual inspection",
+        "detail": "scripts.sanity_check_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "parse_mutation",
+        "kind": 2,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "def parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt\ndef generate_pymol_session(target: str, rescue_muts: list[str], tier: str,\n                          pdb_path: Path, output_dir: Path) -> Path:",
+        "detail": "scripts.view_rescue_proteins",
+        "documentation": {}
+    },
+    {
+        "label": "generate_pymol_session",
+        "kind": 2,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "def generate_pymol_session(target: str, rescue_muts: list[str], tier: str,\n                          pdb_path: Path, output_dir: Path) -> Path:\n    \"\"\"Generate an interactive PyMOL session file.\"\"\"\n    _, target_pos, _ = parse_mutation(target)\n    rescue_positions = [parse_mutation(m)[1] for m in rescue_muts]\n    session_name = f\"session_{target}_{tier}.pml\"\n    session_path = output_dir / session_name\n    # Generate PyMOL commands for interactive session\n    commands = [\n        \"# PyMOL Interactive Session for Rescue Visualization\",",
+        "detail": "scripts.view_rescue_proteins",
+        "documentation": {}
+    },
+    {
+        "label": "create_protein_schematic",
+        "kind": 2,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "def create_protein_schematic(target: str, rescue_muts: list[str], tier: str,\n                             ddg_gain: float, risk: float, output_path: Path) -> None:\n    \"\"\"Create a 2D schematic representation of the protein with mutations.\"\"\"\n    fig, ax = plt.subplots(figsize=(16, 10))\n    # Define p53 sequence length\n    seq_length = 393\n    # Draw protein backbone\n    backbone_y = 0.5\n    backbone_height = 0.05\n    # Draw domains as colored rectangles",
+        "detail": "scripts.view_rescue_proteins",
+        "documentation": {}
+    },
+    {
+        "label": "create_comparison_view",
+        "kind": 2,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "def create_comparison_view(processed_dir: Path, output_dir: Path) -> None:\n    \"\"\"Create side-by-side comparison of all tiered rescues.\"\"\"\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    fig, axes = plt.subplots(3, 3, figsize=(24, 18))\n    fig.suptitle('Complete Rescue Design Portfolio: All Targets × All Tiers',\n                fontsize=20, fontweight='bold', y=0.995)\n    tiers = ['best_1mut', 'best_2mut', 'best_3mut']\n    tier_names = ['Single', 'Double', 'Triple']\n    # Load tiered recommendations\n    recommendations_path = processed_dir.parent / \"reports\" / \"tables\" / \"tiered_recommendations.json\"",
+        "detail": "scripts.view_rescue_proteins",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "def main():\n    \"\"\"Main function to generate all protein views.\"\"\"\n    data_dir = repo_root / \"Data\"\n    processed_dir = data_dir / \"processed\"\n    reports_dir = repo_root / \"reports\"\n    figures_dir = reports_dir / \"figures\"\n    pymol_dir = reports_dir / \"pymol_scripts\"\n    figures_dir.mkdir(parents=True, exist_ok=True)\n    pymol_dir.mkdir(parents=True, exist_ok=True)\n    # Find PDB file",
+        "detail": "scripts.view_rescue_proteins",
+        "documentation": {}
+    },
+    {
+        "label": "repo_root",
+        "kind": 5,
+        "importPath": "scripts.view_rescue_proteins",
+        "description": "scripts.view_rescue_proteins",
+        "peekOfCode": "repo_root = Path(__file__).resolve().parents[1]\nsys.path.insert(0, str(repo_root))\ndef parse_mutation(mut_str: str) -> tuple[str, int, str]:\n    \"\"\"Parse mutation string like 'S95A' into (ref, pos, alt).\"\"\"\n    import re\n    match = re.match(r'([A-Z*])(\\d+)([A-Z*])', mut_str)\n    if not match:\n        raise ValueError(f\"Invalid mutation: {mut_str}\")\n    ref, pos, alt = match.groups()\n    return ref, int(pos), alt",
+        "detail": "scripts.view_rescue_proteins",
         "documentation": {}
     },
     {
@@ -2521,11 +3682,20 @@
         "documentation": {}
     },
     {
+        "label": "filter_by_msa_conservation",
+        "kind": 2,
+        "importPath": "src.design.candidate_filters",
+        "description": "src.design.candidate_filters",
+        "peekOfCode": "def filter_by_msa_conservation(\n    mset: Iterable[str],\n    msa_cons_map: dict[int, float],\n    max_msa_cons: float,\n) -> bool:\n    \"\"\"Filter by MSA-based conservation scores.\n    Args:\n        mset: Mutation set\n        msa_cons_map: Position → MSA conservation score (0-1, higher = more conserved)\n        max_msa_cons: Maximum allowed conservation score",
+        "detail": "src.design.candidate_filters",
+        "documentation": {}
+    },
+    {
         "label": "apply_all_filters",
         "kind": 2,
         "importPath": "src.design.candidate_filters",
         "description": "src.design.candidate_filters",
-        "peekOfCode": "def apply_all_filters(\n    candidates: Iterable[tuple[str, ...]],\n    dist_map: dict[tuple[int, int], float],\n    protected: set[int],\n    burial_map: dict[int, str],\n    min_angstrom: float,\n    cons_map: dict[int, float] | None = None,\n    max_cons: float = 0.8,\n    allow_exposed: bool = False,\n) -> list[tuple[str, ...]]:",
+        "peekOfCode": "def apply_all_filters(\n    candidates: Iterable[tuple[str, ...]],\n    dist_map: dict[tuple[int, int], float],\n    protected: set[int],\n    burial_map: dict[int, str],\n    min_angstrom: float,\n    cons_map: dict[int, float] | None = None,\n    max_cons: float = 0.8,\n    msa_cons_map: dict[int, float] | None = None,\n    max_msa_cons: float = 0.85,",
         "detail": "src.design.candidate_filters",
         "documentation": {}
     },
@@ -2629,6 +3799,60 @@
         "documentation": {}
     },
     {
+        "label": "stratified_train_test_split",
+        "kind": 2,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "def stratified_train_test_split(\n    df: pd.DataFrame,\n    stratify_column: str,\n    test_ratio: float = 0.2,\n    random_seed: int = 42,\n) -> tuple[pd.DataFrame, pd.DataFrame]:\n    \"\"\"Perform stratified train/test split.\n    Args:\n        df: DataFrame with variants\n        stratify_column: Column to stratify by (e.g., 'clinical_significance')",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
+        "label": "create_split_indices",
+        "kind": 2,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "def create_split_indices(\n    benign_path: Path,\n    pathogenic_path: Path,\n    split_ratio: float = 0.8,\n    split_seed: int = 42,\n    stratify_by: Optional[str] = None,\n) -> dict[str, any]:\n    \"\"\"Create train/test split indices for ClinVar labels.\n    Args:\n        benign_path: Path to benign.parquet",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
+        "label": "save_split",
+        "kind": 2,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "def save_split(split_info: dict[str, any], output_path: Path) -> None:\n    \"\"\"Save split indices to JSON.\n    Args:\n        split_info: Split information dictionary\n        output_path: Output JSON path\n    \"\"\"\n    output_path.parent.mkdir(parents=True, exist_ok=True)\n    output_path.write_text(json.dumps(split_info, indent=2), encoding=\"utf-8\")\n    logger.info(f\"Saved split to {output_path}\")\ndef load_split(split_path: Path) -> dict[str, any]:",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
+        "label": "load_split",
+        "kind": 2,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "def load_split(split_path: Path) -> dict[str, any]:\n    \"\"\"Load split indices from JSON.\n    Args:\n        split_path: Path to split JSON file\n    Returns:\n        Split information dictionary\n    \"\"\"\n    if not split_path.exists():\n        raise FileNotFoundError(f\"Split file not found: {split_path}\")\n    split_info = json.loads(split_path.read_text(encoding=\"utf-8\"))",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
+        "label": "apply_split",
+        "kind": 2,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "def apply_split(\n    df: pd.DataFrame,\n    split_info: dict[str, any],\n    subset: str = \"train\",\n) -> pd.DataFrame:\n    \"\"\"Apply split to dataframe.\n    Args:\n        df: DataFrame to split\n        split_info: Split information from load_split()\n        subset: \"train\" or \"test\"",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.eval.train_test_split",
+        "description": "src.eval.train_test_split",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef stratified_train_test_split(\n    df: pd.DataFrame,\n    stratify_column: str,\n    test_ratio: float = 0.2,\n    random_seed: int = 42,\n) -> tuple[pd.DataFrame, pd.DataFrame]:\n    \"\"\"Perform stratified train/test split.\n    Args:\n        df: DataFrame with variants",
+        "detail": "src.eval.train_test_split",
+        "documentation": {}
+    },
+    {
         "label": "load_labelled_scores",
         "kind": 2,
         "importPath": "src.eval.variant_separation",
@@ -2653,6 +3877,150 @@
         "description": "src.eval.variant_separation",
         "peekOfCode": "def bootstrap_ci(\n    labels: Iterable[int],\n    scores: Iterable[float],\n    n: int = 2000,\n    seed: int = 1337,\n) -> tuple[float, float]:\n    labels_arr = np.asarray(list(labels))\n    scores_arr = np.asarray(list(scores))\n    rng = np.random.default_rng(seed)\n    n_samples = len(labels_arr)",
         "detail": "src.eval.variant_separation",
+        "documentation": {}
+    },
+    {
+        "label": "save_alignment",
+        "kind": 2,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "def save_alignment(alignment_fasta: Path, output_dir: Path, uniprot_id: str) -> Path:\n    \"\"\"Save alignment FASTA to standard location.\n    Args:\n        alignment_fasta: Source alignment FASTA file\n        output_dir: Output directory (e.g., Data/processed/msa/)\n        uniprot_id: UniProt accession (e.g., P04637)\n    Returns:\n        Path to saved alignment file\n    \"\"\"\n    output_dir.mkdir(parents=True, exist_ok=True)",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "load_alignment",
+        "kind": 2,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "def load_alignment(msa_dir: Path, uniprot_id: str) -> Optional[Path]:\n    \"\"\"Load cached alignment FASTA.\n    Args:\n        msa_dir: MSA directory (e.g., Data/processed/msa/)\n        uniprot_id: UniProt accession\n    Returns:\n        Path to alignment file, or None if not found\n    \"\"\"\n    alignment_path = msa_dir / f\"{uniprot_id}_alignment.fasta\"\n    if not alignment_path.exists():",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "save_conservation",
+        "kind": 2,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "def save_conservation(\n    conservation_scores: dict[int, float],\n    output_dir: Path,\n    uniprot_id: str,\n) -> Path:\n    \"\"\"Save conservation scores to JSON.\n    Args:\n        conservation_scores: Position (1-indexed) → conservation score (0-1)\n        output_dir: Output directory\n        uniprot_id: UniProt accession",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "load_conservation",
+        "kind": 2,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "def load_conservation(msa_dir: Path, uniprot_id: str) -> Optional[dict[int, float]]:\n    \"\"\"Load cached conservation scores.\n    Args:\n        msa_dir: MSA directory (e.g., Data/processed/msa/)\n        uniprot_id: UniProt accession\n    Returns:\n        Position → conservation score, or None if not found\n    \"\"\"\n    conservation_path = msa_dir / f\"{uniprot_id}_conservation.json\"\n    if not conservation_path.exists():",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "get_or_create_conservation",
+        "kind": 2,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "def get_or_create_conservation(\n    msa_dir: Path,\n    uniprot_id: str,\n    query_seq: str,\n    recompute: bool = False,\n    **mafft_kwargs,\n) -> dict[int, float]:\n    \"\"\"Get cached conservation scores or compute if missing.\n    Args:\n        msa_dir: MSA directory",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.msa.alignment_cache",
+        "description": "src.msa.alignment_cache",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef save_alignment(alignment_fasta: Path, output_dir: Path, uniprot_id: str) -> Path:\n    \"\"\"Save alignment FASTA to standard location.\n    Args:\n        alignment_fasta: Source alignment FASTA file\n        output_dir: Output directory (e.g., Data/processed/msa/)\n        uniprot_id: UniProt accession (e.g., P04637)\n    Returns:\n        Path to saved alignment file\n    \"\"\"",
+        "detail": "src.msa.alignment_cache",
+        "documentation": {}
+    },
+    {
+        "label": "shannon_entropy",
+        "kind": 2,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "def shannon_entropy(column: list[str], pseudocount: float = 0.5) -> float:\n    \"\"\"Calculate Shannon entropy for an alignment column.\n    Args:\n        column: List of amino acids at a position (may include gaps '-')\n        pseudocount: Pseudocount to add to frequencies (avoids log(0))\n    Returns:\n        Shannon entropy (0 = fully conserved, higher = more variable)\n    \"\"\"\n    # Count amino acid frequencies (excluding gaps)\n    aa_counts = {}",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "normalize_entropy",
+        "kind": 2,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "def normalize_entropy(entropy: float, max_entropy: float = 4.32) -> float:\n    \"\"\"Normalize entropy to 0-1 scale (0 = conserved, 1 = variable).\n    Args:\n        entropy: Raw Shannon entropy\n        max_entropy: Maximum possible entropy (log2(20) = 4.32 for 20 amino acids)\n    Returns:\n        Normalized entropy (0-1 scale)\n    \"\"\"\n    return entropy / max_entropy\ndef compute_conservation_scores(",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "compute_conservation_scores",
+        "kind": 2,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "def compute_conservation_scores(\n    alignment_fasta: Path,\n    query_id: str,\n    max_gap_fraction: float = 0.3,\n) -> dict[int, float]:\n    \"\"\"Compute per-position conservation scores from MSA.\n    Args:\n        alignment_fasta: Path to aligned FASTA file\n        query_id: ID of query sequence (used for residue numbering)\n        max_gap_fraction: Positions with >this gap fraction get score=0",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "identify_conserved_regions",
+        "kind": 2,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "def identify_conserved_regions(\n    conservation_scores: dict[int, float],\n    threshold: float = 0.8,\n    min_length: int = 3,\n) -> list[tuple[int, int]]:\n    \"\"\"Identify contiguous conserved regions.\n    Args:\n        conservation_scores: Position → conservation score (0-1)\n        threshold: Minimum conservation score to consider\n        min_length: Minimum region length",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "logger = logging.getLogger(__name__)\n# Standard 20 amino acids\nAMINO_ACIDS = \"ACDEFGHIKLMNPQRSTVWY\"\ndef shannon_entropy(column: list[str], pseudocount: float = 0.5) -> float:\n    \"\"\"Calculate Shannon entropy for an alignment column.\n    Args:\n        column: List of amino acids at a position (may include gaps '-')\n        pseudocount: Pseudocount to add to frequencies (avoids log(0))\n    Returns:\n        Shannon entropy (0 = fully conserved, higher = more variable)",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "AMINO_ACIDS",
+        "kind": 5,
+        "importPath": "src.msa.conservation_scores",
+        "description": "src.msa.conservation_scores",
+        "peekOfCode": "AMINO_ACIDS = \"ACDEFGHIKLMNPQRSTVWY\"\ndef shannon_entropy(column: list[str], pseudocount: float = 0.5) -> float:\n    \"\"\"Calculate Shannon entropy for an alignment column.\n    Args:\n        column: List of amino acids at a position (may include gaps '-')\n        pseudocount: Pseudocount to add to frequencies (avoids log(0))\n    Returns:\n        Shannon entropy (0 = fully conserved, higher = more variable)\n    \"\"\"\n    # Count amino acid frequencies (excluding gaps)",
+        "detail": "src.msa.conservation_scores",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_homologs",
+        "kind": 2,
+        "importPath": "src.msa.mafft_runner",
+        "description": "src.msa.mafft_runner",
+        "peekOfCode": "def fetch_homologs(\n    query_seq: str,\n    uniprot_id: str,\n    output_fasta: Path,\n    min_identity: float = 0.5,\n    max_seqs: int = 100,\n    database: str = \"uniref90\",\n) -> int:\n    \"\"\"Fetch homologous sequences from UniRef using BLAST.\n    Args:",
+        "detail": "src.msa.mafft_runner",
+        "documentation": {}
+    },
+    {
+        "label": "run_mafft",
+        "kind": 2,
+        "importPath": "src.msa.mafft_runner",
+        "description": "src.msa.mafft_runner",
+        "peekOfCode": "def run_mafft(\n    input_fasta: Path,\n    output_fasta: Path,\n    algorithm: str = \"auto\",\n    threads: int = 4,\n    timeout: int = 600,\n) -> bool:\n    \"\"\"Run MAFFT multiple sequence alignment.\n    Args:\n        input_fasta: Path to input FASTA file (unaligned sequences)",
+        "detail": "src.msa.mafft_runner",
+        "documentation": {}
+    },
+    {
+        "label": "validate_alignment",
+        "kind": 2,
+        "importPath": "src.msa.mafft_runner",
+        "description": "src.msa.mafft_runner",
+        "peekOfCode": "def validate_alignment(alignment_fasta: Path, max_gap_fraction: float = 0.3) -> dict[str, any]:\n    \"\"\"Validate alignment quality.\n    Args:\n        alignment_fasta: Path to aligned FASTA file\n        max_gap_fraction: Maximum allowed gap fraction per position\n    Returns:\n        Dictionary with validation metrics\n    \"\"\"\n    sequences = list(SeqIO.parse(alignment_fasta, \"fasta\"))\n    if not sequences:",
+        "detail": "src.msa.mafft_runner",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.msa.mafft_runner",
+        "description": "src.msa.mafft_runner",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef fetch_homologs(\n    query_seq: str,\n    uniprot_id: str,\n    output_fasta: Path,\n    min_identity: float = 0.5,\n    max_seqs: int = 100,\n    database: str = \"uniref90\",\n) -> int:\n    \"\"\"Fetch homologous sequences from UniRef using BLAST.",
+        "detail": "src.msa.mafft_runner",
         "documentation": {}
     },
     {
@@ -2773,6 +4141,60 @@
         "documentation": {}
     },
     {
+        "label": "median_consensus",
+        "kind": 2,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "def median_consensus(scores: list[float]) -> float:\n    \"\"\"Compute median of scores (robust to outliers).\n    Args:\n        scores: List of ΔΔG scores from different structures\n    Returns:\n        Median ΔΔG\n    \"\"\"\n    return float(np.median(scores))\ndef mean_consensus(scores: list[float]) -> float:\n    \"\"\"Compute mean of scores.",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
+        "label": "mean_consensus",
+        "kind": 2,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "def mean_consensus(scores: list[float]) -> float:\n    \"\"\"Compute mean of scores.\n    Args:\n        scores: List of ΔΔG scores from different structures\n    Returns:\n        Mean ΔΔG\n    \"\"\"\n    return float(np.mean(scores))\ndef weighted_consensus(scores: list[float], weights: list[float]) -> float:\n    \"\"\"Compute weighted average of scores.",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
+        "label": "weighted_consensus",
+        "kind": 2,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "def weighted_consensus(scores: list[float], weights: list[float]) -> float:\n    \"\"\"Compute weighted average of scores.\n    Args:\n        scores: List of ΔΔG scores\n        weights: List of weights (e.g., based on resolution/quality)\n    Returns:\n        Weighted mean ΔΔG\n    \"\"\"\n    if len(scores) != len(weights):\n        raise ValueError(\"scores and weights must have same length\")",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
+        "label": "score_mutation_set_multi",
+        "kind": 2,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "def score_mutation_set_multi(\n    mutations: list[str],\n    structures: list[dict],\n    evoef2_cfg: dict,\n    cache_dir: Path,\n    work_root: Path,\n    consensus_method: str = \"median\",\n    require_all: bool = False,\n) -> dict[str, any]:\n    \"\"\"Score mutations on multiple structures and compute consensus.",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
+        "label": "validate_structures",
+        "kind": 2,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "def validate_structures(\n    structures: list[dict],\n    check_compatibility: bool = True,\n) -> dict[str, any]:\n    \"\"\"Validate structure configurations before scoring.\n    Args:\n        structures: List of structure configs\n        check_compatibility: If True, check structures are compatible\n    Returns:\n        Dictionary with validation results",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.scoring.multi_structure",
+        "description": "src.scoring.multi_structure",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef median_consensus(scores: list[float]) -> float:\n    \"\"\"Compute median of scores (robust to outliers).\n    Args:\n        scores: List of ΔΔG scores from different structures\n    Returns:\n        Median ΔΔG\n    \"\"\"\n    return float(np.median(scores))\ndef mean_consensus(scores: list[float]) -> float:",
+        "detail": "src.scoring.multi_structure",
+        "documentation": {}
+    },
+    {
         "label": "functional_risk",
         "kind": 2,
         "importPath": "src.scoring.risk_scores",
@@ -2796,6 +4218,15 @@
         "importPath": "src.scoring.risk_scores",
         "description": "src.scoring.risk_scores",
         "peekOfCode": "def burial_risk(mset: MutationSet, burial_map: dict[int, str]) -> float:\n    if not mset:\n        return 0.0\n    weights = {\n        \"buried\": 0.0,\n        \"partial\": 0.5,\n        \"exposed\": 1.0,\n    }\n    scores: list[float] = []\n    for mut in mset:",
+        "detail": "src.scoring.risk_scores",
+        "documentation": {}
+    },
+    {
+        "label": "msa_conservation_risk",
+        "kind": 2,
+        "importPath": "src.scoring.risk_scores",
+        "description": "src.scoring.risk_scores",
+        "peekOfCode": "def msa_conservation_risk(mset: MutationSet, msa_cons_map: dict[int, float]) -> float:\n    \"\"\"Calculate risk based on MSA-derived conservation scores.\n    Args:\n        mset: Mutation set\n        msa_cons_map: Position → conservation score (0-1, higher = more conserved)\n    Returns:\n        Average MSA conservation score (0-1, higher = higher risk)\n    \"\"\"\n    if not mset:\n        return 0.0",
         "detail": "src.scoring.risk_scores",
         "documentation": {}
     },
@@ -2842,6 +4273,51 @@
         "description": "src.scoring.stability_consensus",
         "peekOfCode": "def rank_stability(ddg: float) -> float:\n    \"\"\"Lower ddG indicates higher stability; return a score for ranking.\"\"\"\n    return -ddg",
         "detail": "src.scoring.stability_consensus",
+        "documentation": {}
+    },
+    {
+        "label": "extract_core_domain",
+        "kind": 2,
+        "importPath": "src.scoring.structure_validator",
+        "description": "src.scoring.structure_validator",
+        "peekOfCode": "def extract_core_domain(\n    input_pdb: Path,\n    output_pdb: Path,\n    chain_id: str,\n    start_res: int,\n    end_res: int,\n) -> bool:\n    \"\"\"Extract core domain from PDB structure.\n    Args:\n        input_pdb: Input PDB file",
+        "detail": "src.scoring.structure_validator",
+        "documentation": {}
+    },
+    {
+        "label": "validate_residue_numbering",
+        "kind": 2,
+        "importPath": "src.scoring.structure_validator",
+        "description": "src.scoring.structure_validator",
+        "peekOfCode": "def validate_residue_numbering(\n    pdb_path: Path,\n    chain_id: str,\n    expected_start: int,\n    expected_end: int,\n) -> dict[str, any]:\n    \"\"\"Validate residue numbering in PDB structure.\n    Args:\n        pdb_path: Path to PDB file\n        chain_id: Chain identifier",
+        "detail": "src.scoring.structure_validator",
+        "documentation": {}
+    },
+    {
+        "label": "compare_structures",
+        "kind": 2,
+        "importPath": "src.scoring.structure_validator",
+        "description": "src.scoring.structure_validator",
+        "peekOfCode": "def compare_structures(\n    pdb1: Path,\n    pdb2: Path,\n    chain1: str,\n    chain2: str,\n) -> dict[str, any]:\n    \"\"\"Compare two structures for compatibility.\n    Args:\n        pdb1: First PDB file\n        pdb2: Second PDB file",
+        "detail": "src.scoring.structure_validator",
+        "documentation": {}
+    },
+    {
+        "label": "get_structure_info",
+        "kind": 2,
+        "importPath": "src.scoring.structure_validator",
+        "description": "src.scoring.structure_validator",
+        "peekOfCode": "def get_structure_info(pdb_path: Path, chain_id: str) -> dict[str, any]:\n    \"\"\"Get basic structure information.\n    Args:\n        pdb_path: Path to PDB file\n        chain_id: Chain identifier\n    Returns:\n        Dictionary with structure info\n    \"\"\"\n    try:\n        parser = PDB.PDBParser(QUIET=True)",
+        "detail": "src.scoring.structure_validator",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "src.scoring.structure_validator",
+        "description": "src.scoring.structure_validator",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef extract_core_domain(\n    input_pdb: Path,\n    output_pdb: Path,\n    chain_id: str,\n    start_res: int,\n    end_res: int,\n) -> bool:\n    \"\"\"Extract core domain from PDB structure.\n    Args:",
+        "detail": "src.scoring.structure_validator",
         "documentation": {}
     },
     {
@@ -3268,11 +4744,56 @@
         "documentation": {}
     },
     {
+        "label": "plot_rescue_bubble",
+        "kind": 2,
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "peekOfCode": "def plot_rescue_bubble(\n    df: pd.DataFrame,\n    out_path: Path,\n    title: str | None = None,\n    annotate_n: int = 6,\n) -> None:\n    if not {\"ddg_gain\", \"risk\", \"rescue_mutations\"}.issubset(df.columns):\n        raise ValueError(\"Rescue dataframe missing required columns for bubble plot\")\n    data = _to_numeric(df, [\"ddg_gain\", \"risk\"]).dropna(subset=[\"ddg_gain\", \"risk\"]).copy()\n    if data.empty:",
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_risk_breakdown",
+        "kind": 2,
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "peekOfCode": "def plot_risk_breakdown(\n    df: pd.DataFrame,\n    out_path: Path,\n    top_n: int = 12,\n) -> None:\n    if \"risk_components\" not in df.columns:\n        raise ValueError(\"Rescue dataframe missing risk_components column\")\n    data = _to_numeric(df, [\"ddg_gain\", \"risk\"]).copy()\n    data = data.dropna(subset=[\"ddg_gain\"])\n    if data.empty:",
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_position_frequency",
+        "kind": 2,
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "peekOfCode": "def plot_position_frequency(\n    df: pd.DataFrame,\n    out_path: Path,\n    top_n: int | None = None,\n) -> None:\n    if \"rescue_mutations\" not in df.columns:\n        raise ValueError(\"Rescue dataframe missing rescue_mutations column\")\n    data = _to_numeric(df, [\"ddg_gain\"]).copy()\n    if top_n:\n        data = data.nsmallest(top_n, \"ddg_gain\")",
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "plot_ddg_gain_by_target",
+        "kind": 2,
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "peekOfCode": "def plot_ddg_gain_by_target(\n    target_map: dict[str, pd.DataFrame],\n    out_path: Path,\n) -> None:\n    if not target_map:\n        raise ValueError(\"No target data provided for comparison plot\")\n    labels = []\n    series = []\n    for target, df in target_map.items():\n        if \"ddg_gain\" not in df.columns:",
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
+        "label": "_MUT_POS_RE",
+        "kind": 5,
+        "importPath": "src.viz.plots_rescues",
+        "description": "src.viz.plots_rescues",
+        "peekOfCode": "_MUT_POS_RE = re.compile(r\"[A-Za-z\\\\*](\\\\d+)[A-Za-z\\\\*]\")\ndef _gradient(ax, top: str, bottom: str, alpha: float = 1.0) -> None:\n    top_rgb = to_rgb(top)\n    bottom_rgb = to_rgb(bottom)\n    cmap = LinearSegmentedColormap.from_list(\"bg\", [bottom_rgb, top_rgb])\n    gradient = np.linspace(0, 1, 256).reshape(256, 1)\n    ax.imshow(\n        gradient,\n        aspect=\"auto\",\n        cmap=cmap,",
+        "detail": "src.viz.plots_rescues",
+        "documentation": {}
+    },
+    {
         "label": "plot_ddg_by_label",
         "kind": 2,
         "importPath": "src.viz.plots_variants",
         "description": "src.viz.plots_variants",
-        "peekOfCode": "def plot_ddg_by_label(df: pd.DataFrame, out_path: Path, bins: int = 50) -> None:\n    if not {\"ddg\", \"label\"}.issubset(df.columns):\n        raise ValueError(\"Dataframe must include ddg and label columns\")\n    benign = df.loc[df[\"label\"] == 0, \"ddg\"].astype(float)\n    pathogenic = df.loc[df[\"label\"] == 1, \"ddg\"].astype(float)\n    out_path.parent.mkdir(parents=True, exist_ok=True)\n    plt.figure(figsize=(8, 5))\n    plt.hist(benign, bins=bins, alpha=0.6, label=f\"Benign (n={len(benign)})\", color=\"#2a9d8f\")\n    plt.hist(pathogenic, bins=bins, alpha=0.6, label=f\"Pathogenic (n={len(pathogenic)})\", color=\"#e76f51\")\n    plt.xlabel(\"Delta delta G (EvoEF2)\")",
+        "peekOfCode": "def plot_ddg_by_label(df: pd.DataFrame, out_path: Path, bins: int = 50) -> None:\n    if not {\"ddg\", \"label\"}.issubset(df.columns):\n        raise ValueError(\"Dataframe must include ddg and label columns\")\n    benign = df.loc[df[\"label\"] == 0, \"ddg\"].astype(float)\n    pathogenic = df.loc[df[\"label\"] == 1, \"ddg\"].astype(float)\n    out_path.parent.mkdir(parents=True, exist_ok=True)\n    fig, ax = plt.subplots(figsize=(8, 5))\n    ax.hist(benign, bins=bins, alpha=0.6, label=f\"Benign (n={len(benign)})\", color=\"#2a9d8f\")\n    ax.hist(pathogenic, bins=bins, alpha=0.6, label=f\"Pathogenic (n={len(pathogenic)})\", color=\"#e76f51\")\n    ax.set_xlabel(\"Delta delta G (EvoEF2)\")",
         "detail": "src.viz.plots_variants",
         "documentation": {}
     },
@@ -3308,7 +4829,7 @@
         "kind": 5,
         "importPath": "src.cli",
         "description": "src.cli",
-        "peekOfCode": "CONFIG_NAMES = [\"p53\", \"paths\", \"scoring\", \"optimizer\", \"report\"]\nRUNNERS = {\n    \"fetch\": (\"experiments.run_fetch\", \"run\"),\n    \"build-dataset\": (\"experiments.run_build_dataset\", \"run\"),\n    \"build-structure\": (\"experiments.run_build_structure\", \"run\"),\n    \"score-variants\": (\"experiments.run_score_variants\", \"run\"),\n    \"design\": (\"experiments.run_design_rescues\", \"run\"),\n    \"report\": (\"experiments.run_make_report\", \"run\"),\n}\ndef repo_root() -> Path:",
+        "peekOfCode": "CONFIG_NAMES = [\"p53\", \"paths\", \"scoring\", \"optimizer\", \"report\"]\nRUNNERS = {\n    \"fetch\": (\"experiments.run_fetch\", \"run\"),\n    \"build-dataset\": (\"experiments.run_build_dataset\", \"run\"),\n    \"build-structure\": (\"experiments.run_build_structure\", \"run\"),\n    \"score-variants\": (\"experiments.run_score_variants\", \"run\"),\n    \"design\": (\"experiments.run_design_rescues\", \"run\"),\n    \"report\": (\"visualization.create_visualizations\", \"run\"),\n    \"export-benchmark\": (\"experiments.run_export_benchmark_repro\", \"run\"),\n}",
         "detail": "src.cli",
         "documentation": {}
     },
@@ -3317,8 +4838,152 @@
         "kind": 5,
         "importPath": "src.cli",
         "description": "src.cli",
-        "peekOfCode": "RUNNERS = {\n    \"fetch\": (\"experiments.run_fetch\", \"run\"),\n    \"build-dataset\": (\"experiments.run_build_dataset\", \"run\"),\n    \"build-structure\": (\"experiments.run_build_structure\", \"run\"),\n    \"score-variants\": (\"experiments.run_score_variants\", \"run\"),\n    \"design\": (\"experiments.run_design_rescues\", \"run\"),\n    \"report\": (\"experiments.run_make_report\", \"run\"),\n}\ndef repo_root() -> Path:\n    return Path(__file__).resolve().parents[1]",
+        "peekOfCode": "RUNNERS = {\n    \"fetch\": (\"experiments.run_fetch\", \"run\"),\n    \"build-dataset\": (\"experiments.run_build_dataset\", \"run\"),\n    \"build-structure\": (\"experiments.run_build_structure\", \"run\"),\n    \"score-variants\": (\"experiments.run_score_variants\", \"run\"),\n    \"design\": (\"experiments.run_design_rescues\", \"run\"),\n    \"report\": (\"visualization.create_visualizations\", \"run\"),\n    \"export-benchmark\": (\"experiments.run_export_benchmark_repro\", \"run\"),\n}\ndef repo_root() -> Path:",
         "detail": "src.cli",
+        "documentation": {}
+    },
+    {
+        "label": "load_variant_scores",
+        "kind": 2,
+        "importPath": "src.visualization",
+        "description": "src.visualization",
+        "peekOfCode": "def load_variant_scores(scores_file: Path) -> Dict[str, Any]:\n    \"\"\"Load variant scores from JSON file\"\"\"\n    with scores_file.open('r') as f:\n        return json.load(f)\ndef create_mutation_landscape_plot(scores: Dict[str, Any], output_dir: Path) -> Path:\n    \"\"\"Create a publication-ready mutation landscape plot\"\"\"\n    logger = get_logger(__name__)\n    # Prepare data for plotting\n    mutations = []\n    energies = []",
+        "detail": "src.visualization",
+        "documentation": {}
+    },
+    {
+        "label": "create_mutation_landscape_plot",
+        "kind": 2,
+        "importPath": "src.visualization",
+        "description": "src.visualization",
+        "peekOfCode": "def create_mutation_landscape_plot(scores: Dict[str, Any], output_dir: Path) -> Path:\n    \"\"\"Create a publication-ready mutation landscape plot\"\"\"\n    logger = get_logger(__name__)\n    # Prepare data for plotting\n    mutations = []\n    energies = []\n    risks = []\n    for mut_id, data in scores.items():\n        if isinstance(data, dict):\n            mutation = data.get('mutation', 'Unknown')",
+        "detail": "src.visualization",
+        "documentation": {}
+    },
+    {
+        "label": "create_mutation_summary_table",
+        "kind": 2,
+        "importPath": "src.visualization",
+        "description": "src.visualization",
+        "peekOfCode": "def create_mutation_summary_table(scores: Dict[str, Any], output_dir: Path) -> Path:\n    \"\"\"Create a publication-ready summary table\"\"\"\n    logger = get_logger(__name__)\n    # Sort mutations by risk score\n    sorted_mutations = sorted(scores.items(), key=lambda x: x[1].get('risk_score', 0))\n    # Create summary data\n    summary_data = []\n    for i, (mutation, data) in enumerate(sorted_mutations):\n        energy = data.get('energy', 0.0)\n        risk = data.get('risk_score', 0.0)",
+        "detail": "src.visualization",
+        "documentation": {}
+    },
+    {
+        "label": "generate_heatmap",
+        "kind": 2,
+        "importPath": "src.visualization",
+        "description": "src.visualization",
+        "peekOfCode": "def generate_heatmap(scores: Dict[str, Any], output_dir: Path) -> Path:\n    \"\"\"Create a heatmap of mutation positions vs energy\"\"\"\n    logger = get_logger(__name__)\n    # Extract positions and energies\n    position_energy = {}\n    for mutation, data in scores.items():\n        if isinstance(data, dict):\n            # Extract position from mutation string\n            pos_str = ''.join(filter(str.isdigit, mutation))\n            if pos_str:",
+        "detail": "src.visualization",
+        "documentation": {}
+    },
+    {
+        "label": "create_visualizations",
+        "kind": 2,
+        "importPath": "src.visualization",
+        "description": "src.visualization",
+        "peekOfCode": "def create_visualizations(scores_file: Path, output_dir: Path) -> List[Path]:\n    \"\"\"Create all visualizations\"\"\"\n    logger = get_logger(__name__)\n    # Load scores\n    scores = load_variant_scores(scores_file)\n    if not scores:\n        logger.warning(\"No scores found for visualization\")\n        return []\n    output_dir.mkdir(parents=True, exist_ok=True)\n    # Create all visualizations",
+        "detail": "src.visualization",
+        "documentation": {}
+    },
+    {
+        "label": "create_mutation_network",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def create_mutation_network(processed_dir: Path, output_path: Path) -> None:\n    \"\"\"Create a network visualization showing rescue mutation relationships.\"\"\"\n    logger = get_logger(__name__)\n    # Load rescue data for all targets\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    all_mutations = {}\n    for target in targets:\n        target_dir = processed_dir / \"rescues\" / target\n        candidates_path = target_dir / \"candidates.parquet\"\n        if not candidates_path.exists():",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_radar_chart_comparison",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def create_radar_chart_comparison(processed_dir: Path, output_path: Path) -> None:\n    \"\"\"Create radar charts comparing top rescue candidates.\"\"\"\n    logger = get_logger(__name__)\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    fig, axes = plt.subplots(1, 3, figsize=(20, 7), subplot_kw=dict(projection='polar'))\n    fig.suptitle('Multi-Dimensional Rescue Candidate Comparison',\n                fontsize=18, fontweight='bold', y=1.02)\n    for idx, (target, ax) in enumerate(zip(targets, axes)):\n        target_dir = processed_dir / \"rescues\" / target\n        candidates_path = target_dir / \"candidates.parquet\"",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_pipeline_flow_diagram",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def create_pipeline_flow_diagram(output_path: Path) -> None:\n    \"\"\"Create a Sankey-style flow diagram showing the pipeline.\"\"\"\n    logger = get_logger(__name__)\n    fig, ax = plt.subplots(figsize=(18, 10))\n    ax.set_xlim(0, 10)\n    ax.set_ylim(0, 10)\n    ax.axis('off')\n    # Title\n    ax.text(5, 9.5, 'ProteinForge-p53 Computational Pipeline',\n           ha='center', fontsize=20, fontweight='bold')",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_domain_architecture_diagram",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def create_domain_architecture_diagram(processed_dir: Path, output_path: Path) -> None:\n    \"\"\"Create p53 domain architecture with rescue mutation positions.\"\"\"\n    logger = get_logger(__name__)\n    fig, ax = plt.subplots(figsize=(20, 6))\n    # Define p53 domain structure\n    domains = [\n        {'name': 'N-terminal\\nTransactivation', 'start': 1, 'end': 61, 'color': '#3498db'},\n        {'name': 'Proline-rich', 'start': 61, 'end': 94, 'color': '#9b59b6'},\n        {'name': 'DNA-Binding Core', 'start': 94, 'end': 312, 'color': '#e74c3c'},\n        {'name': 'Tetramerization', 'start': 312, 'end': 355, 'color': '#f39c12'},",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_progressive_optimization_plot",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def create_progressive_optimization_plot(processed_dir: Path, output_path: Path) -> None:\n    \"\"\"Create a plot showing optimization progression through beam search.\"\"\"\n    logger = get_logger(__name__)\n    fig, axes = plt.subplots(1, 3, figsize=(18, 6))\n    fig.suptitle('Beam Search Optimization: Progression from Singles to Triples',\n                fontsize=18, fontweight='bold', y=1.02)\n    targets = [\"R175H\", \"R248Q\", \"R273H\"]\n    for idx, (target, ax) in enumerate(zip(targets, axes)):\n        target_dir = processed_dir / \"rescues\" / target\n        candidates_path = target_dir / \"candidates.parquet\"",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "run",
+        "kind": 2,
+        "importPath": "visualization.create_advanced_visualizations",
+        "description": "visualization.create_advanced_visualizations",
+        "peekOfCode": "def run(args, configs: dict[str, Any]) -> int:\n    \"\"\"Generate advanced visualizations.\"\"\"\n    logger = get_logger(__name__)\n    paths = _paths_from_config(configs.get(\"paths\", {}))\n    report_cfg = configs.get(\"report\", {})\n    output_dir = Path(report_cfg.get(\"output_dir\", paths[\"reports\"]))\n    figures_dir = Path(report_cfg.get(\"figures_dir\", output_dir / \"figures\"))\n    figures_dir.mkdir(parents=True, exist_ok=True)\n    logger.info(\"Creating advanced visualizations...\")\n    # 1. Mutation network graph",
+        "detail": "visualization.create_advanced_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_composite_benchmark_figure",
+        "kind": 2,
+        "importPath": "visualization.create_visualizations",
+        "description": "visualization.create_visualizations",
+        "peekOfCode": "def create_composite_benchmark_figure(\n    labelled: pd.DataFrame, auc: float, ci_low: float, ci_high: float, output_path: Path\n) -> None:\n    \"\"\"Create a fancy composite figure for the benchmark validation.\"\"\"\n    logger = get_logger(__name__)\n    # Set publication style\n    plt.style.use('seaborn-v0_8-darkgrid')\n    sns.set_palette(\"husl\")\n    fig = plt.figure(figsize=(16, 10))\n    gs = GridSpec(2, 3, figure=fig, hspace=0.3, wspace=0.3)",
+        "detail": "visualization.create_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_3d_pareto_surface",
+        "kind": 2,
+        "importPath": "visualization.create_visualizations",
+        "description": "visualization.create_visualizations",
+        "peekOfCode": "def create_3d_pareto_surface(candidates: pd.DataFrame, target: str, output_path: Path) -> None:\n    \"\"\"Create an elegant 2D Pareto front visualization with gradient background.\"\"\"\n    logger = get_logger(__name__)\n    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))\n    fig.patch.set_facecolor('white')\n    # Separate Pareto and non-Pareto\n    pareto = candidates[candidates['is_pareto']]\n    non_pareto = candidates[~candidates['is_pareto']]\n    # LEFT PLOT: Stability vs Risk with gradient background\n    # Create gradient background",
+        "detail": "visualization.create_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_rescue_comparison_matrix",
+        "kind": 2,
+        "importPath": "visualization.create_visualizations",
+        "description": "visualization.create_visualizations",
+        "peekOfCode": "def create_rescue_comparison_matrix(\n    targets: list[str], processed_dir: Path, output_path: Path\n) -> None:\n    \"\"\"Create an elegant comparison of rescue mutations across targets.\"\"\"\n    logger = get_logger(__name__)\n    fig = plt.figure(figsize=(18, 12))\n    gs = GridSpec(3, 2, figure=fig, hspace=0.4, wspace=0.3,\n                  height_ratios=[1.5, 1.5, 1])\n    fig.patch.set_facecolor('white')\n    fig.suptitle('Rescue Portfolio: Multi-Target Comparison',",
+        "detail": "visualization.create_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "create_stability_heatmap",
+        "kind": 2,
+        "importPath": "visualization.create_visualizations",
+        "description": "visualization.create_visualizations",
+        "peekOfCode": "def create_stability_heatmap(processed_dir: Path, output_path: Path) -> None:\n    \"\"\"Create an enhanced stability landscape visualization.\"\"\"\n    logger = get_logger(__name__)\n    # Load variant scores\n    scores_path = processed_dir / \"variant_scores.parquet\"\n    if not scores_path.exists():\n        logger.warning(\"Variant scores not found, skipping heatmap\")\n        return\n    scores = pd.read_parquet(scores_path)\n    # Create 2-panel figure",
+        "detail": "visualization.create_visualizations",
+        "documentation": {}
+    },
+    {
+        "label": "run",
+        "kind": 2,
+        "importPath": "visualization.create_visualizations",
+        "description": "visualization.create_visualizations",
+        "peekOfCode": "def run(args, configs: dict[str, Any]) -> int:\n    \"\"\"Generate all fancy visualizations.\"\"\"\n    logger = get_logger(__name__)\n    paths = _paths_from_config(configs.get(\"paths\", {}))\n    report_cfg = configs.get(\"report\", {})\n    output_dir = Path(report_cfg.get(\"output_dir\", paths[\"reports\"]))\n    figures_dir = Path(report_cfg.get(\"figures_dir\", output_dir / \"figures\"))\n    figures_dir.mkdir(parents=True, exist_ok=True)\n    logger.info(\"Creating fancy visualizations for science fair presentation...\")\n    # 1. Enhanced benchmark figure",
+        "detail": "visualization.create_visualizations",
         "documentation": {}
     },
     {

@@ -17,7 +17,8 @@ RUNNERS = {
     "build-structure": ("experiments.run_build_structure", "run"),
     "score-variants": ("experiments.run_score_variants", "run"),
     "design": ("experiments.run_design_rescues", "run"),
-    "report": ("experiments.run_make_report", "run"),
+    "report": ("visualization.create_visualizations", "run"),
+    "export-benchmark": ("experiments.run_export_benchmark_repro", "run"),
 }
 
 
@@ -63,6 +64,8 @@ def build_parser() -> argparse.ArgumentParser:
     design.add_argument("--parallel", type=int, help="Number of parallel workers")
 
     subparsers.add_parser("report", help="Generate figures and summary tables")
+
+    subparsers.add_parser("export-benchmark", help="Export benchmark reproducibility artifacts")
 
     return parser
 

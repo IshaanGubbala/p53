@@ -18,22 +18,23 @@ def plot_pareto_front(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    plt.figure(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(7, 5))
     if pareto_flag in results.columns:
         front = results[results[pareto_flag] == True]
         rest = results[results[pareto_flag] == False]
         if not rest.empty:
-            plt.scatter(rest[x], rest[y], s=18, alpha=0.4, label="Candidates", color="#457b9d")
+            ax.scatter(rest[x], rest[y], s=18, alpha=0.4, label="Candidates", color="#457b9d")
         if not front.empty:
-            plt.scatter(front[x], front[y], s=28, alpha=0.9, label="Pareto front", color="#e63946")
+            ax.scatter(front[x], front[y], s=28, alpha=0.9, label="Pareto front", color="#e63946")
     else:
-        plt.scatter(results[x], results[y], s=20, alpha=0.6, color="#457b9d")
+        ax.scatter(results[x], results[y], s=20, alpha=0.6, color="#457b9d")
 
-    plt.xlabel("Risk score (lower is safer)")
-    plt.ylabel("DDG gain vs seed (negative is better)")
-    plt.title("Rescue candidates: stability vs risk")
-    plt.axhline(0.0, color="#888888", linewidth=0.8, linestyle="--")
-    plt.legend(frameon=False)
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=200)
-    plt.close()
+    ax.set_xlabel("Risk score (lower is safer)")
+    ax.set_ylabel("DDG gain vs seed (negative is better)")
+    ax.set_title("Rescue candidates: stability vs risk")
+    ax.axhline(0.0, color="#888888", linewidth=0.8, linestyle="--")
+    ax.margins(x=0.07, y=0.1)
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200)
+    plt.close(fig)

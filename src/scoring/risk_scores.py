@@ -89,6 +89,30 @@ def burial_risk(mset: MutationSet, burial_map: dict[int, str]) -> float:
     return sum(scores) / len(scores) if scores else 0.0
 
 
+def msa_conservation_risk(mset: MutationSet, msa_cons_map: dict[int, float]) -> float:
+    """Calculate risk based on MSA-derived conservation scores.
+
+    Args:
+        mset: Mutation set
+        msa_cons_map: Position → conservation score (0-1, higher = more conserved)
+
+    Returns:
+        Average MSA conservation score (0-1, higher = higher risk)
+    """
+    if not mset:
+        return 0.0
+
+    scores: list[float] = []
+    for mut in mset:
+        pos, _, _ = _parse_mutation(mut)
+        score = msa_cons_map.get(pos)
+        if score is None:
+            continue
+        scores.append(score)
+
+    return sum(scores) / len(scores) if scores else 0.0
+
+
 def aggregate_risk(weights: dict[str, float], components: dict[str, float]) -> float:
     if not components:
         return 0.0

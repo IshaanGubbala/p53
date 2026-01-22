@@ -1,0 +1,29 @@
+{
+  "dataset_info": {
+    "total_variants_scored": 871,
+    "unique_mutations_scored": 871,
+    "benign_labels_raw": 64,
+    "pathogenic_labels_raw": 293,
+    "conflicting_variants_removed": 0,
+    "final_benchmark_size": 357,
+    "final_benign": 64,
+    "final_pathogenic": 293
+  },
+  "filters": {
+    "gene": "TP53",
+    "consequence": "missense_variant",
+    "label_conflict_resolution": "remove_conflicting",
+    "duplicate_resolution": "average_ddg"
+  },
+  "random_seeds": {
+    "bootstrap_ci": 1337,
+    "n_bootstrap_samples": 2000
+  },
+  "files": {
+    "input": "tables/variant_benchmark_input.csv",
+    "scored": "tables/variant_benchmark_scored.csv",
+    "scores_parquet": "/Users/ishaangubbala/Documents/p53/Data/processed/variant_scores.parquet",
+    "labels_benign": "/Users/ishaangubbala/Documents/p53/Data/processed/labels/benign.parquet",
+    "labels_pathogenic": "/Users/ishaangubbala/Documents/p53/Data/processed/labels/pathogenic.parquet"
+  }
+}
