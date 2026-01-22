@@ -1,2 +1,5 @@
+Data/raw/clinvar/*.gz filter=lfs diff=lfs merge=lfs -text
+Data/raw/nci_tp53/*.csv filter=lfs diff=lfs merge=lfs -text
+reports/figures/**/*.png filter=lfs diff=lfs merge=lfs -text
 *.trr filter=lfs diff=lfs merge=lfs -text
 *.gz filter=lfs diff=lfs merge=lfs -text
