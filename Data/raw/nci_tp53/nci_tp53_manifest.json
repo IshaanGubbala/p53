@@ -1,0 +1,16 @@
+{
+  "archive": {
+    "path": "tumor_variants.csv",
+    "sha256": "4b97c248f54ffcd6cd1aa05117cbcc6295f5640cf71ec484d220921593963a22",
+    "size": 25082375
+  },
+  "generated_at": "2026-01-21T05:17:13Z",
+  "source_url": "https://tp53.cancer.gov/view_data?bq_view_name=TumorVariantDownload",
+  "tables": [
+    {
+      "path": "tumor_variants.csv",
+      "sha256": "4b97c248f54ffcd6cd1aa05117cbcc6295f5640cf71ec484d220921593963a22",
+      "size": 25082375
+    }
+  ]
+}

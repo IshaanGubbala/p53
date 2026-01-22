@@ -1,0 +1,22 @@
+beam_search:
+  beam_width: 50
+  depth: 3
+  max_pairs: 200
+  max_triples: 200
+pareto:
+  objectives:
+    - ddg_gain
+    - risk
+    - n_rescue  # Penalize mutation count - simpler is better
+design:
+  top_positions: 80
+  max_singles: 200
+  max_pairs: 300
+  max_triples: 200
+  min_distance_protected: 8.0
+  max_conservation: 0.8
+  allow_exposed: false
+  risk_weights:
+    functional: 0.5
+    conservation: 0.3
+    burial: 0.2

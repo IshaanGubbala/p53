@@ -1,0 +1,32 @@
+uniprot_id: P04637
+gene_symbol: TP53
+canonical_transcript: NM_000546.5
+core_domain:
+  start: 94
+  end: 312
+zinc_binding_residues:
+  - 176
+  - 179
+  - 238
+  - 242
+design:
+  max_mutations: 3
+  protected_residues: []
+structure:
+  recompute: false
+clinvar:
+  enabled: true
+  download_xml: true
+  download_vcf: true
+  vcf_assembly: GRCh38
+  decompress_xml: false
+  allow_parts: true
+  part_size_mb: 1024
+  target_gene: TP53
+  reparse: false
+  parser: auto
+  chunk_size: 100000
+  element_batch_size: 200
+  num_workers: null
+labels:
+  min_review_stars: 1

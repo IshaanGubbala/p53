@@ -1,0 +1,12 @@
+engine: evoef2
+cache:
+  enabled: true
+  dir: processed/cache
+parallel:
+  n_jobs: 2
+recompute: false
+evoef2:
+  binary: /Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2
+  repaired_pdb: Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb
+  # num_of_runs: 3  # Not a valid EvoEF2 parameter - removed
+  chain_id: A

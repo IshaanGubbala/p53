@@ -1,0 +1,8 @@
+pyyaml>=6.0
+pandas>=2.0
+pyarrow>=12.0
+biopython>=1.81
+tqdm>=4.66
+beautifulsoup4>=4.12
+numpy>=1.26.0
+matplotlib>=3.7

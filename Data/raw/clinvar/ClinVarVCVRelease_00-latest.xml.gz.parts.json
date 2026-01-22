@@ -1,0 +1,10 @@
+{
+  "parts": [
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part000"},
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part001"},
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part002"},
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part003"},
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part004"},
+    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part005"}
+  ]
+}
