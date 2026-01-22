@@ -3164,7 +3164,7 @@
         "kind": 2,
         "importPath": "src.variants.parse_clinvar_xml",
         "description": "src.variants.parse_clinvar_xml",
-        "peekOfCode": "def extract_significance(element: ET.Element) -> dict[str, str | None]:\n    descriptions: list[str] = []\n    review_status: list[str] = []\n    last_evaluated: str | None = None\n    for node in element.iter():\n        if _strip_namespace(node.tag) != \"ClinicalSignificance\":\n            continue\n        if node.get(\"DateLastEvaluated\"):\n            last_evaluated = node.get(\"DateLastEvaluated\")\n        for child in node:",
+        "peekOfCode": "def extract_significance(element: ET.Element) -> dict[str, str | None]:\n    descriptions: list[str] = []\n    review_status: list[str] = []\n    last_evaluated: str | None = None\n    # Support both old ClinVarSet format and new VCV format\n    for node in element.iter():\n        tag = _strip_namespace(node.tag)\n        # Old format: ClinicalSignificance\n        if tag == \"ClinicalSignificance\":\n            if node.get(\"DateLastEvaluated\"):",
         "detail": "src.variants.parse_clinvar_xml",
         "documentation": {}
     },

@@ -172,17 +172,31 @@ def extract_significance(element: ET.Element) -> dict[str, str | None]:
     review_status: list[str] = []
     last_evaluated: str | None = None
 
+    # Support both old ClinVarSet format and new VCV format
     for node in element.iter():
-        if _strip_namespace(node.tag) != "ClinicalSignificance":
-            continue
-        if node.get("DateLastEvaluated"):
-            last_evaluated = node.get("DateLastEvaluated")
-        for child in node:
-            child_tag = _strip_namespace(child.tag)
-            if child_tag == "Description" and child.text:
-                descriptions.append(child.text.strip())
-            elif child_tag == "ReviewStatus" and child.text:
-                review_status.append(child.text.strip())
+        tag = _strip_namespace(node.tag)
+
+        # Old format: ClinicalSignificance
+        if tag == "ClinicalSignificance":
+            if node.get("DateLastEvaluated"):
+                last_evaluated = node.get("DateLastEvaluated")
+            for child in node:
+                child_tag = _strip_namespace(child.tag)
+                if child_tag == "Description" and child.text:
+                    descriptions.append(child.text.strip())
+                elif child_tag == "ReviewStatus" and child.text:
+                    review_status.append(child.text.strip())
+
+        # New VCV format: GermlineClassification or SomaticClinicalImpact
+        elif tag in ("GermlineClassification", "SomaticClinicalImpact", "OncogenicityClassification"):
+            if node.get("DateLastEvaluated"):
+                last_evaluated = node.get("DateLastEvaluated")
+            for child in node:
+                child_tag = _strip_namespace(child.tag)
+                if child_tag == "Description" and child.text:
+                    descriptions.append(child.text.strip())
+                elif child_tag == "ReviewStatus" and child.text:
+                    review_status.append(child.text.strip())
 
     return {
         "clinical_significance": descriptions[0] if descriptions else None,
