@@ -4,9 +4,9 @@
     "domain_end": 312,
     "domain_start": 94,
     "min_review_stars": 1,
-    "parsed_sha256": "4bd9f229e6e337e925be717614403be44d4726b6d0c9f7018f481d29102eb85b",
+    "parsed_sha256": "07c59cc94935c4542e57c5165e56e0fb3d5107efe5a6862f5bda2909aa4be170",
     "target_gene": "TP53",
     "uniprot_sha256": "89f1c453491ee0aab7abfc2c5bd12d8275424328dd936d0ca974190416365315"
   },
-  "signature_sha256": "59154ce10c3cb7b20abe10f769a93214c70f678916ef9950cb56776d1dea3793"
+  "signature_sha256": "8afc736daad4853bee6a7dc112e2a758ffaed6bb40a8cb4ba66258de98139956"
 }
