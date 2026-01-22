@@ -1,4 +1,4 @@
-# ProteinForge-p53 Final Deliverables Summary
+# StabiliMut-p53 Final Deliverables Summary
 
 **Date:** January 21, 2026
 **Status:** All milestones complete ✓
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The ProteinForge-p53 computational pipeline successfully designs stability-rescuing suppressor mutations for cancer-destabilized p53 variants. All deliverables are complete, validated, and reproducible.
+The StabiliMut-p53 computational pipeline successfully designs stability-rescuing suppressor mutations for cancer-destabilized p53 variants. All deliverables are complete, validated, and reproducible.
 
 ### Key Achievements
 
