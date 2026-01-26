@@ -1,0 +1,83 @@
+{
+  "target": "R273H",
+  "n_profiles": 4,
+  "top_n": 10,
+  "highly_robust": [
+    "L145I",
+    "T155A",
+    "T155S",
+    "V157I",
+    "L145V",
+    "L145M",
+    "V217L",
+    "V217I",
+    "T155V",
+    "V157L",
+    "V157M",
+    "V217M"
+  ],
+  "robust": [],
+  "moderately_robust": [],
+  "profile_descriptions": {
+    "balanced": {
+      "name": "Balanced (Current)",
+      "description": "Balance all factors with slight bias toward functional sites",
+      "weights": {
+        "functional": 0.4,
+        "conservation": 0.2,
+        "burial": 0.15,
+        "msa_conservation": 0.25
+      },
+      "top_3": [
+        "T155A",
+        "T155S",
+        "T155V"
+      ]
+    },
+    "safety_first": {
+      "name": "Safety-First",
+      "description": "Prioritize not breaking existing function above all else",
+      "weights": {
+        "functional": 0.7,
+        "conservation": 0.2,
+        "burial": 0.05,
+        "msa_conservation": 0.05
+      },
+      "top_3": [
+        "T155A",
+        "T155S",
+        "T155V"
+      ]
+    },
+    "evolution_pure": {
+      "name": "Evolution-Pure",
+      "description": "Trust evolution - highly conserved positions are conserved for a reason",
+      "weights": {
+        "functional": 0.1,
+        "conservation": 0.3,
+        "burial": 0.1,
+        "msa_conservation": 0.5
+      },
+      "top_3": [
+        "T155A",
+        "T155S",
+        "T155V"
+      ]
+    },
+    "structure_first": {
+      "name": "Structure-First",
+      "description": "Prioritize restoring protein stability/folding",
+      "weights": {
+        "functional": 0.2,
+        "conservation": 0.1,
+        "burial": 0.5,
+        "msa_conservation": 0.2
+      },
+      "top_3": [
+        "T155A",
+        "T155S",
+        "T155V"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+target,rescue_mutations,n_rescue,ddg_seed,ddg_gain,risk,risk_flags,n_flags,is_pareto,dG_mutant,Folded_Mutant_%,dG_rescued,Folded_Rescued_%,Rescue_Efficiency,PPI_Risk_DNA,MDM2_Risk,Druggable_Pockets,RaSP_ddg,Gen_Model_Competitive
+R175H,A159V,1,9.99,-4.79,0.28,,0,True,-6.99,0.0,-2.2,2.74,2309.6,Medium,Low (Distal to N-term),,2.67,Yes (Gen -9.36 vs Beam -5.79)
+R175H,T155A,1,9.99,-4.19,0.32,"High conservation, Near functional site",2,True,-6.99,0.0,-2.8,1.05,887.5,Low,Low (Distal to N-term),,2.3,Yes (Gen -9.36 vs Beam -5.79)
+R175H,"A159V,T155A",2,9.99,-5.79,0.3,"High conservation, Near functional site",2,True,-6.99,0.0,-1.2000000000000002,12.49,10529.2,Medium,Low (Distal to N-term),,3.22,Yes (Gen -9.36 vs Beam -5.79)
+R248Q,T123A,1,11.2,-4.4,0.38,"High conservation, Near functional site",2,True,-8.2,0.0,-3.799999999999999,0.21,1258.5,High (Near DNA interface),Low (Distal to N-term),,0.81,Pending
+R248Q,S166L,1,11.2,-4.1,0.45,Surface exposed,1,True,-8.2,0.0,-4.1,0.13,774.1,Medium,Low (Distal to N-term),,-0.73,Pending
+R248Q,"S166L,T123A",2,11.2,-5.9,0.42,"High conservation, Near functional site, Surface exposed",3,True,-8.2,0.0,-2.299999999999999,2.34,14046.1,High (Near DNA interface),Low (Distal to N-term),,-0.29,Pending

@@ -1,0 +1,29 @@
+{
+  "inputs": {
+    "engine": "evoef2",
+    "engine_cfg": {
+      "binary": "/Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2",
+      "chain_id": "A",
+      "consensus_method": "median",
+      "repaired_pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+      "require_all": false,
+      "structures": [
+        {
+          "chain_id": "A",
+          "id": "alphafold",
+          "pdb": "Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+          "weight": 1.0
+        },
+        {
+          "chain_id": "A",
+          "id": "2ocj_core",
+          "pdb": "Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
+          "weight": 1.0
+        }
+      ]
+    },
+    "pdb_sha256": "7c5b94e833a2ec66b37a836d35627581a0b4d3570e16a54f17356e020589ac0f",
+    "variants_sha256": "43756a1f17f4e045ca7a3923cbe85ff957f6ee8e7bb777dee1a10ab9fe92f386"
+  },
+  "signature_sha256": "8688fe1abbb9ffbe097aa25d71e3ae439b7a995a3c426d685ed4ec54c686b449"
+}

@@ -1,0 +1,62 @@
+{
+  "n_rescues_analyzed": 50,
+  "n_at_interface": 1,
+  "risk_distribution": {
+    "safe": 49,
+    "medium": 1
+  },
+  "mean_impact_score": 0.03,
+  "max_impact_score": 1.5,
+  "top_safe_rescues": [
+    {
+      "rescue_mutations": "R196Q",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "R196K",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "R196H",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "S95A",
+      "tetramer_impact_score": 1.5,
+      "tetramer_risk": "medium"
+    },
+    {
+      "rescue_mutations": "M133L",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "C229A",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "S269A",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "A189G",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "K132Q",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    },
+    {
+      "rescue_mutations": "L252V",
+      "tetramer_impact_score": 0.0,
+      "tetramer_risk": "safe"
+    }
+  ]
+}

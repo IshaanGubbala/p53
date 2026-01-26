@@ -3,6 +3,11 @@
     "base_pdb_sha256": "7c5b94e833a2ec66b37a836d35627581a0b4d3570e16a54f17356e020589ac0f",
     "beam_cfg": {
       "beam_width": 50,
+      "checkpointing": {
+        "enabled": true,
+        "save_interval": 1,
+        "verify_config_hash": true
+      },
       "depth": 3,
       "max_pairs": 200,
       "max_triples": 200
@@ -11,14 +16,16 @@
     "design_cfg": {
       "allow_exposed": false,
       "max_conservation": 0.8,
+      "max_msa_conservation": 0.85,
       "max_pairs": 300,
       "max_singles": 200,
       "max_triples": 200,
       "min_distance_protected": 8.0,
       "risk_weights": {
-        "burial": 0.2,
-        "conservation": 0.3,
-        "functional": 0.5
+        "burial": 0.15,
+        "conservation": 0.2,
+        "functional": 0.4,
+        "msa_conservation": 0.25
       },
       "top_positions": 80
     },
@@ -26,10 +33,26 @@
     "evoef2_cfg": {
       "binary": "/Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2",
       "chain_id": "A",
-      "repaired_pdb": "Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb"
+      "consensus_method": "median",
+      "repaired_pdb": "Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+      "require_all": false,
+      "structures": [
+        {
+          "chain_id": "A",
+          "id": "alphafold",
+          "pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+          "weight": 1.0
+        },
+        {
+          "chain_id": "A",
+          "id": "2ocj_core",
+          "pdb": "/Users/ishaangubbala/Documents/p53/Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
+          "weight": 1.0
+        }
+      ]
     },
     "sequence_sha256": "89f1c453491ee0aab7abfc2c5bd12d8275424328dd936d0ca974190416365315",
     "target": "R273H"
   },
-  "signature_sha256": "bb11c83f6eff6137f26d3afb92621ee99e7797508ef8774f32c14d71eccb7dcc"
+  "signature_sha256": "a9d68a866808456b4e2916d092c5e18914f863b503fb1e46b556c58d0911dbb0"
 }

@@ -1,0 +1,7 @@
+target,rescue_mutations,n_rescue,ddg_seed,ddg_gain,risk,risk_flags,n_flags,is_pareto
+R175H,A159V,1,9.99,-4.79,0.28,None,0,True
+R175H,T155A,1,9.99,-4.19,0.32,"High conservation, Near functional site",2,True
+R175H,"A159V,T155A",2,9.99,-5.79,0.3,"High conservation, Near functional site",2,True
+R248Q,T123A,1,11.2,-4.4,0.38,"High conservation, Near functional site",2,True
+R248Q,S166L,1,11.2,-4.1,0.45,Surface exposed,1,True
+R248Q,"S166L,T123A",2,11.2,-5.9,0.42,"High conservation, Near functional site, Surface exposed",3,True

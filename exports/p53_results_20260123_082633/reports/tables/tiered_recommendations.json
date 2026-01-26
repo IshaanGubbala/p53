@@ -1,0 +1,197 @@
+{
+  "R175H": {
+    "best_1mut": {
+      "rescue_mutations": [
+        "M133L"
+      ],
+      "full_mutations": "M133L,R175H",
+      "ddg_seed": 9.990000000000009,
+      "ddg_total": 4.389999999999986,
+      "ddg_gain": -5.600000000000023,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable"
+      }
+    },
+    "best_2mut": {
+      "rescue_mutations": [
+        "A189S",
+        "M133L"
+      ],
+      "full_mutations": "A189S,M133L,R175H",
+      "ddg_seed": 9.990000000000009,
+      "ddg_total": -0.8199999999999363,
+      "ddg_gain": -10.809999999999945,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "A189S": "buried core packing (burial=1.00); small residue substitution for flexibility",
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable"
+      }
+    },
+    "best_3mut": {
+      "rescue_mutations": [
+        "A189S",
+        "M133L",
+        "Y163F"
+      ],
+      "full_mutations": "A189S,M133L,R175H,Y163F",
+      "ddg_seed": 9.990000000000009,
+      "ddg_total": -3.939999999999941,
+      "ddg_gain": -13.92999999999995,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "A189S": "buried core packing (burial=1.00); small residue substitution for flexibility",
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable",
+        "Y163F": "buried core packing (burial=1.00); aromatic substitution maintains interactions"
+      }
+    }
+  },
+  "R248Q": {
+    "best_1mut": {
+      "rescue_mutations": [
+        "M133L"
+      ],
+      "full_mutations": "M133L,R248Q",
+      "ddg_seed": -1.9500000000000455,
+      "ddg_total": -7.5499999999999545,
+      "ddg_gain": -5.599999999999909,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable"
+      }
+    },
+    "best_2mut": {
+      "rescue_mutations": [
+        "A189S",
+        "M133L"
+      ],
+      "full_mutations": "A189S,M133L,R248Q",
+      "ddg_seed": -1.9500000000000455,
+      "ddg_total": -12.069999999999936,
+      "ddg_gain": -10.11999999999989,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "A189S": "buried core packing (burial=1.00); small residue substitution for flexibility",
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable"
+      }
+    },
+    "best_3mut": {
+      "rescue_mutations": [
+        "M133L",
+        "R196Q",
+        "R213Q"
+      ],
+      "full_mutations": "M133L,R196Q,R213Q,R248Q",
+      "ddg_seed": -1.9500000000000455,
+      "ddg_total": -20.970000000000027,
+      "ddg_gain": -19.019999999999982,
+      "risk": 0.03333333333333333,
+      "risk_components": {
+        "burial": 0.16666666666666666,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "M133L": "buried core packing (burial=1.00); Met\u2192Leu: similar hydrophobic, more stable",
+        "R196Q": "semi-buried stabilization (burial=0.50); conservative charged/polar substitution",
+        "R213Q": "buried core packing (burial=1.00); conservative charged/polar substitution"
+      }
+    }
+  },
+  "R273H": {
+    "best_1mut": {
+      "rescue_mutations": [
+        "A189S"
+      ],
+      "full_mutations": "A189S,R273H",
+      "ddg_seed": -1.8199999999999363,
+      "ddg_total": -6.330000000000041,
+      "ddg_gain": -4.510000000000105,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "A189S": "buried core packing (burial=1.00); small residue substitution for flexibility"
+      }
+    },
+    "best_2mut": {
+      "rescue_mutations": [
+        "A189S",
+        "Y163F"
+      ],
+      "full_mutations": "A189S,R273H,Y163F",
+      "ddg_seed": -1.8199999999999363,
+      "ddg_total": -9.740000000000009,
+      "ddg_gain": -7.920000000000073,
+      "risk": 0.0,
+      "risk_components": {
+        "burial": 0.0,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "A189S": "buried core packing (burial=1.00); small residue substitution for flexibility",
+        "Y163F": "buried core packing (burial=1.00); aromatic substitution maintains interactions"
+      }
+    },
+    "best_3mut": {
+      "rescue_mutations": [
+        "R196Q",
+        "S215A",
+        "Y163F"
+      ],
+      "full_mutations": "R196Q,R273H,S215A,Y163F",
+      "ddg_seed": -1.8199999999999363,
+      "ddg_total": -18.909999999999968,
+      "ddg_gain": -17.090000000000032,
+      "risk": 0.03333333333333333,
+      "risk_components": {
+        "burial": 0.16666666666666666,
+        "conservation": 0.0,
+        "functional": 0.0
+      },
+      "is_pareto": true,
+      "rationale": {
+        "R196Q": "semi-buried stabilization (burial=0.50); conservative charged/polar substitution",
+        "S215A": "buried core packing (burial=1.00); serine\u2192alanine removes potential instability",
+        "Y163F": "buried core packing (burial=1.00); aromatic substitution maintains interactions"
+      }
+    }
+  }
+}

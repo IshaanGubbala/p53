@@ -1,0 +1,7 @@
+check,target,n_candidates,max_difference,status,ddg_vs_risk_corr
+ddg_gain_calculation,R175H,685,0.0,PASS,
+ddg_gain_calculation,R248Q,685,0.0,PASS,
+ddg_gain_calculation,R273H,685,0.0,PASS,
+reproducibility,R175H,50,,PASS,0.3625375405892348
+reproducibility,R248Q,50,,PASS,0.30386639192522336
+reproducibility,R273H,50,,PASS,-0.39419516704605834

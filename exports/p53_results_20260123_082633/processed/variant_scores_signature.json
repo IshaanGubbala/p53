@@ -1,0 +1,13 @@
+{
+  "inputs": {
+    "engine": "evoef2",
+    "engine_cfg": {
+      "binary": "/Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2",
+      "chain_id": "A",
+      "repaired_pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb"
+    },
+    "pdb_sha256": "7c5b94e833a2ec66b37a836d35627581a0b4d3570e16a54f17356e020589ac0f",
+    "variants_sha256": "3fa927209ef9062bde05976cedcaf266467be375b00ff5df159f922c7996af74"
+  },
+  "signature_sha256": "999844a76987f6edc64d9153b4d820364fb8bd508bfa3d2877d7335aa3b815ce"
+}

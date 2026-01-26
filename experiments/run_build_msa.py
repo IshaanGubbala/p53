@@ -15,8 +15,8 @@ from pathlib import Path
 repo_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo_root))
 
-from src.utils.config_loader import load_config
-from src.utils.logging_config import setup_logging
+from src.core.config import load_configs
+from src.core.logging import get_logger
 from src.msa.alignment_cache import get_or_create_conservation, load_conservation
 from src.msa.conservation_scores import identify_conserved_regions
 
@@ -37,15 +37,16 @@ def _paths_from_config(paths_cfg: dict) -> dict[str, Path]:
 def main(recompute: bool = False):
     """Build MSA and conservation scores."""
     # Setup logging
-    setup_logging()
-    logger = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    logger = get_logger(__name__)
 
     logger.info("=" * 70)
     logger.info("MSA Builder: TP53 Conservation Analysis")
     logger.info("=" * 70)
 
     # Load config
-    configs = load_config()
+    config_dir = repo_root / "configs"
+    configs = load_configs(config_dir, ["paths", "p53"])
     paths = _paths_from_config(configs.get("paths", {}))
     p53_cfg = configs.get("p53", {})
     msa_cfg = p53_cfg.get("msa", {})

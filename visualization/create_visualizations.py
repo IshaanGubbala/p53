@@ -172,7 +172,7 @@ def create_composite_benchmark_figure(
 
 
 def create_3d_pareto_surface(candidates: pd.DataFrame, target: str, output_path: Path) -> None:
-    """Create an elegant 2D Pareto front visualization with gradient background."""
+    """Create a clean, publication-quality Pareto front visualization."""
     logger = get_logger(__name__)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
@@ -182,57 +182,87 @@ def create_3d_pareto_surface(candidates: pd.DataFrame, target: str, output_path:
     pareto = candidates[candidates['is_pareto']]
     non_pareto = candidates[~candidates['is_pareto']]
 
-    # LEFT PLOT: Stability vs Risk with gradient background
-    # Create gradient background
-    ddg_range = np.linspace(candidates['ddg_gain'].min(), candidates['ddg_gain'].max(), 100)
-    risk_range = np.linspace(candidates['risk'].min(), candidates['risk'].max(), 100)
-    X, Y = np.meshgrid(ddg_range, risk_range)
+    # LEFT PLOT: Clean Pareto front with simple gradient zones
+    # Define quality zones with clean boundaries
+    ddg_min, ddg_max = candidates['ddg_gain'].min(), candidates['ddg_gain'].max()
+    risk_min, risk_max = candidates['risk'].min(), candidates['risk'].max()
 
-    # Quality score: prefer high stability (negative ddg_gain) and low risk
-    Z = -X - Y * 10  # Weight risk more heavily
+    # Add padding for better visualization
+    ddg_pad = (ddg_max - ddg_min) * 0.1
+    risk_pad = (risk_max - risk_min) * 0.1
 
-    contour = ax1.contourf(X, Y, Z, levels=20, cmap='RdYlGn', alpha=0.3)
+    # Create simple colored regions instead of complex contours
+    # Green zone: good stability, low risk (bottom left)
+    ax1.axhspan(risk_min - risk_pad, (risk_min + risk_max) / 2,
+                facecolor='#d4edda', alpha=0.3, zorder=0)
+    # Yellow zone: medium risk (middle)
+    ax1.axhspan((risk_min + risk_max) / 2, (risk_max + risk_min) * 0.75,
+                facecolor='#fff3cd', alpha=0.3, zorder=0)
+    # Red zone: high risk (top)
+    ax1.axhspan((risk_max + risk_min) * 0.75, risk_max + risk_pad,
+                facecolor='#f8d7da', alpha=0.3, zorder=0)
 
-    # Plot non-Pareto points
+    # Plot non-Pareto points smaller and more transparent
     ax1.scatter(non_pareto['ddg_gain'], non_pareto['risk'],
-                c='lightgray', s=40, alpha=0.4, edgecolor='none',
-                label='Dominated', zorder=2)
+                c='#95a5a6', s=80, alpha=0.25, edgecolor='white',
+                linewidth=0.5, label='Dominated', zorder=2)
 
-    # Plot Pareto front with size based on complexity
-    sizes = 500 - (pareto['n_rescue'] - 1) * 100  # Larger for fewer mutations
+    # Plot Pareto front with clear visual hierarchy
+    # Size based on complexity (simpler = larger)
+    sizes = 600 - (pareto['n_rescue'] - 1) * 150  # More dramatic size difference
     scatter = ax1.scatter(pareto['ddg_gain'], pareto['risk'],
-                          c=pareto['n_rescue'], cmap='plasma_r',
-                          s=sizes, alpha=0.95, edgecolor='black',
-                          linewidth=2.5, label='Pareto Optimal', zorder=10)
+                          c=pareto['n_rescue'], cmap='viridis',
+                          s=sizes, alpha=0.9, edgecolor='black',
+                          linewidth=2, label='Pareto Optimal', zorder=10)
 
-    # Connect Pareto points
+    # Connect Pareto points with thicker, more visible line
     pareto_sorted = pareto.sort_values('ddg_gain')
     ax1.plot(pareto_sorted['ddg_gain'], pareto_sorted['risk'],
-             'k--', alpha=0.5, linewidth=2, zorder=5)
+             color='#2c3e50', linestyle='--', alpha=0.6, linewidth=2.5, zorder=5)
 
-    # Annotate top candidates
-    top_candidates = pareto.nsmallest(5, 'risk')
-    for _, row in top_candidates.iterrows():
-        muts = str(row['rescue_mutations']).replace(',', '\n')
+    # Annotate only top 3 candidates with smart label placement
+    top_candidates = pareto.nsmallest(3, 'risk')
+    for idx, (_, row) in enumerate(top_candidates.iterrows()):
+        muts = str(row['rescue_mutations'])
+
+        # Smart label positioning to avoid overlap
+        if idx == 0:
+            xytext = (15, -20)
+            ha = 'left'
+        elif idx == 1:
+            xytext = (-15, -20)
+            ha = 'right'
+        else:
+            xytext = (15, 15)
+            ha = 'left'
+
         ax1.annotate(muts, (row['ddg_gain'], row['risk']),
-                     xytext=(10, 10), textcoords='offset points',
-                     fontsize=7, bbox=dict(boxstyle='round,pad=0.5',
-                     facecolor='white', edgecolor='black', alpha=0.8),
-                     arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.3',
-                                     linewidth=1.5))
+                     xytext=xytext, textcoords='offset points',
+                     fontsize=10, fontweight='bold', ha=ha,
+                     bbox=dict(boxstyle='round,pad=0.6',
+                               facecolor='white', edgecolor='#2c3e50',
+                               linewidth=1.5, alpha=0.95),
+                     arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.2',
+                                     color='#2c3e50', linewidth=2))
 
-    ax1.set_xlabel('ΔΔG Gain (kcal/mol)', fontsize=13, fontweight='bold')
-    ax1.set_ylabel('Risk Score', fontsize=13, fontweight='bold')
+    ax1.set_xlabel('ΔΔG Gain (kcal/mol)', fontsize=14, fontweight='bold')
+    ax1.set_ylabel('Risk Score', fontsize=14, fontweight='bold')
     ax1.set_title(f'Pareto Front: {target}\nStability vs Safety Trade-off',
-                  fontsize=15, fontweight='bold', pad=15)
-    ax1.grid(True, alpha=0.2, linestyle='--')
-    ax1.legend(fontsize=11, framealpha=0.95, edgecolor='black', loc='best')
+                  fontsize=16, fontweight='bold', pad=20)
+    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=1)
+    ax1.legend(fontsize=12, framealpha=0.98, edgecolor='black',
+               loc='upper right', shadow=True)
 
-    # Colorbar for mutation count
-    cbar = plt.colorbar(scatter, ax=ax1, pad=0.02)
-    cbar.set_label('# Rescue Mutations', fontsize=11, fontweight='bold')
+    # Set axis limits with padding
+    ax1.set_xlim(ddg_min - ddg_pad, ddg_max + ddg_pad)
+    ax1.set_ylim(risk_min - risk_pad, risk_max + risk_pad)
 
-    # RIGHT PLOT: Complexity vs Benefit analysis
+    # Cleaner colorbar
+    cbar = plt.colorbar(scatter, ax=ax1, pad=0.02, aspect=30)
+    cbar.set_label('# Rescue Mutations', fontsize=12, fontweight='bold')
+    cbar.ax.tick_params(labelsize=11)
+
+    # RIGHT PLOT: Clean Complexity vs Benefit analysis
     # Group by number of mutations
     grouped = candidates.groupby('n_rescue').agg({
         'ddg_gain': ['mean', 'std', 'min'],
@@ -243,47 +273,63 @@ def create_3d_pareto_surface(candidates: pd.DataFrame, target: str, output_path:
     grouped.columns = ['n_rescue', 'mean_ddg', 'std_ddg', 'min_ddg',
                        'mean_risk', 'std_risk', 'count']
 
-    # Create dual-axis plot
+    # Create dual-axis plot with better color coordination
     ax2_twin = ax2.twinx()
 
     x = grouped['n_rescue']
 
-    # Bar plot for mean stability gain
-    bars = ax2.bar(x - 0.15, -grouped['mean_ddg'], width=0.3,
-                    label='Mean ΔΔG Gain', color='#2ecc71',
-                    alpha=0.8, edgecolor='black', linewidth=1.5)
+    # Bar plot for mean stability gain with gradient colors
+    colors = ['#27ae60', '#16a085', '#2980b9']  # Green to blue gradient
+    bars = ax2.bar(x, -grouped['mean_ddg'], width=0.5,
+                    label='Mean ΔΔG Gain',
+                    color=colors[:len(x)],
+                    alpha=0.85, edgecolor='black', linewidth=2)
 
-    # Error bars
-    ax2.errorbar(x - 0.15, -grouped['mean_ddg'], yerr=grouped['std_ddg'],
-                 fmt='none', ecolor='black', capsize=5, linewidth=2, alpha=0.7)
+    # Clean error bars
+    ax2.errorbar(x, -grouped['mean_ddg'], yerr=grouped['std_ddg'],
+                 fmt='none', ecolor='#2c3e50', capsize=6,
+                 linewidth=2, alpha=0.6, capthick=2)
 
-    # Line plot for risk on twin axis
-    line = ax2_twin.plot(x, grouped['mean_risk'], 'o-',
-                          color='#e74c3c', linewidth=3,
-                          markersize=12, markeredgecolor='black',
-                          markeredgewidth=2, label='Mean Risk', alpha=0.9)
+    # Line plot for risk on twin axis - more visible
+    ax2_twin.plot(x, grouped['mean_risk'], 'o-',
+                  color='#e74c3c', linewidth=4,
+                  markersize=15, markeredgecolor='white',
+                  markeredgewidth=2.5, label='Mean Risk',
+                  alpha=0.95, zorder=10)
 
-    # Add count labels on bars
-    for bar, count in zip(bars, grouped['count']):
-        height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2., height + 0.3,
+    # Better positioned count labels above bars
+    for i, (n_res, count, height) in enumerate(zip(x, grouped['count'], -grouped['mean_ddg'])):
+        ax2.text(n_res, height + grouped['std_ddg'].iloc[i] + 0.5,
                  f'n={int(count)}', ha='center', va='bottom',
-                 fontsize=10, fontweight='bold')
+                 fontsize=11, fontweight='bold',
+                 bbox=dict(boxstyle='round,pad=0.4',
+                           facecolor='white', edgecolor='black',
+                           linewidth=1.5, alpha=0.9))
 
-    ax2.set_xlabel('Number of Rescue Mutations', fontsize=13, fontweight='bold')
-    ax2.set_ylabel('Mean Stability Gain (kcal/mol)', fontsize=12, fontweight='bold', color='#2ecc71')
-    ax2_twin.set_ylabel('Mean Risk Score', fontsize=12, fontweight='bold', color='#e74c3c')
-    ax2.set_title('Complexity vs Benefit Analysis', fontsize=15, fontweight='bold', pad=15)
+    # Clean, larger labels
+    ax2.set_xlabel('Number of Rescue Mutations', fontsize=14, fontweight='bold')
+    ax2.set_ylabel('Mean Stability Gain (kcal/mol)',
+                   fontsize=13, fontweight='bold', color='#27ae60')
+    ax2_twin.set_ylabel('Mean Risk Score',
+                        fontsize=13, fontweight='bold', color='#e74c3c')
+    ax2.set_title('Complexity vs Benefit Analysis',
+                  fontsize=16, fontweight='bold', pad=20)
     ax2.set_xticks(x)
-    ax2.grid(True, alpha=0.2, axis='y', linestyle='--')
-    ax2.tick_params(axis='y', labelcolor='#2ecc71')
-    ax2_twin.tick_params(axis='y', labelcolor='#e74c3c')
+    ax2.set_xticklabels([f'{int(i)}' for i in x], fontsize=13)
+    ax2.grid(True, alpha=0.3, axis='y', linestyle='--', linewidth=1)
+    ax2.tick_params(axis='y', labelcolor='#27ae60', labelsize=11)
+    ax2_twin.tick_params(axis='y', labelcolor='#e74c3c', labelsize=11)
 
-    # Combined legend
+    # Set y-axis limits with padding for better visibility
+    y_max = (-grouped['mean_ddg'] + grouped['std_ddg']).max()
+    ax2.set_ylim(0, y_max * 1.2)
+
+    # Combined legend with better positioning
     lines1, labels1 = ax2.get_legend_handles_labels()
     lines2, labels2 = ax2_twin.get_legend_handles_labels()
-    ax2.legend(lines1 + lines2, labels1 + labels2, fontsize=11,
-               loc='upper left', framealpha=0.95, edgecolor='black')
+    ax2.legend(lines1 + lines2, labels1 + labels2, fontsize=12,
+               loc='upper left', framealpha=0.98, edgecolor='black',
+               shadow=True)
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')

@@ -1,0 +1,17 @@
+{
+  "total_candidates": 700,
+  "pareto_size": 162,
+  "candidates_with_dna": 10,
+  "pareto_with_dna": 1,
+  "pareto_with_dna_list": [
+    {
+      "rescue": "A159S",
+      "dna_positions": [
+        159
+      ],
+      "rank": 22,
+      "risk": 0.1533684534653906,
+      "ddg_gain": 1.1299999999999955
+    }
+  ]
+}

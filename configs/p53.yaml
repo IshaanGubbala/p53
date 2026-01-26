@@ -9,6 +9,58 @@ zinc_binding_residues:
   - 179
   - 238
   - 242
+
+# Functional site annotations (literature-curated)
+functional_sites:
+  # Direct DNA-contacting residues (Box I-V)
+  dna_contact:
+    - 120  # K120 (Box I)
+    - 277  # R273 (Box III, DNA backbone contact)
+    - 248  # R248 (Box II-III, DNA backbone)
+    - 280  # R280 (Box V, DNA backbone)
+    - 282  # R282 (Box V)
+    - 283  # K283 (Box V)
+    - 196  # R196 (Box II, CRITICAL direct DNA contact)
+    - 213  # R213 (DNA contact)
+    - 175  # R175 (DNA contact)
+    - 273  # R273 (DNA backbone contact)
+
+  # Zinc coordination (structural integrity)
+  zinc_coordination:
+    - 176  # C176 (Zn2+ ligand)
+    - 179  # H179 (Zn2+ ligand)
+    - 238  # C238 (Zn2+ ligand)
+    - 242  # C242 (Zn2+ ligand)
+
+  # Key phosphorylation sites (regulatory switches)
+  phosphorylation:
+    - 269  # S269 (PKA phosphorylation, activation switch)
+    - 315  # S315 (ATM/ATR phosphorylation)
+    - 392  # S392 (C-terminal activation)
+    - 15   # S15 (N-terminal, stress response)
+    - 20   # S20 (N-terminal, MDM2 regulation)
+    - 46   # S46 (apoptosis trigger)
+
+  # Protein-protein interaction hotspots
+  mdm2_binding:
+    - 19   # F19 (MDM2 hydrophobic pocket)
+    - 23   # W23 (MDM2 hydrophobic pocket)
+    - 26   # L26 (MDM2 hydrophobic pocket)
+
+  # Structurally critical loop residues
+  structural_loops:
+    - 229  # C229 (L2 loop, structural stability)
+    - 176  # C176 (L2 loop + Zn)
+    - 238  # C238 (L3 loop + Zn)
+    - 242  # C242 (L3 loop + Zn)
+
+  # Acetylation sites (transcriptional activity)
+  acetylation:
+    - 120  # K120 (DNA binding + acetylation)
+    - 164  # K164 (transcriptional activation)
+    - 305  # K305 (C-terminal regulation)
+    - 382  # K382 (C-terminal activation)
+
 design:
   max_mutations: 3
   protected_residues: []
@@ -34,7 +86,7 @@ labels:
 # MSA-based conservation analysis
 msa:
   enabled: true
-  precomputed_path: Data/processed/msa/P04637_conservation.json
+  precomputed_path: msa/P04637_conservation.json  # Relative to Data/processed
   min_sequence_identity: 0.5  # Filter homologs below this identity
   max_gap_fraction: 0.3       # Ignore positions with >30% gaps
   database: uniref90          # MAFFT database for homolog search

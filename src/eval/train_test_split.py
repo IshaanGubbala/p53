@@ -159,7 +159,22 @@ def save_split(split_info: dict[str, any], output_path: Path) -> None:
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    output_path.write_text(json.dumps(split_info, indent=2), encoding="utf-8")
+    # Convert numpy types to Python native types for JSON serialization
+    def convert_to_native(obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {k: convert_to_native(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_to_native(item) for item in obj]
+        return obj
+
+    split_info_native = convert_to_native(split_info)
+    output_path.write_text(json.dumps(split_info_native, indent=2), encoding="utf-8")
 
     logger.info(f"Saved split to {output_path}")
 

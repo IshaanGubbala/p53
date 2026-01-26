@@ -222,10 +222,15 @@ def score_mutation_set(
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path = cache_dir / f"{CACHE_PREFIX}_{key}.json"
+    cache_individual_energies = evoef2_cfg.get("cache", {}).get("cache_individual_energies", False)
+
     if cache_path.exists() and not recompute:
         payload = json.loads(cache_path.read_text(encoding="utf-8"))
         if "ddg" in payload:
             logger.debug("Using cached ddG for mutations: %s", ', '.join(canonical))
+            # Also use cached base_energy if available
+            if base_energy is None and "base_energy" in payload:
+                base_energy = float(payload["base_energy"])
             return float(payload["ddg"])
 
     workdir = work_root / key
@@ -284,5 +289,88 @@ def score_mutation_set(
         "mutations": canonical,
         "ddg": ddg,
     }
+
+    # Store individual energies if requested (enables better cache reuse)
+    if cache_individual_energies:
+        payload["base_energy"] = base_energy
+        payload["mutant_energy"] = mut_energy
+
     cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    logger.debug("Cached mutation score at %s", cache_path)
     return ddg
+
+
+def build_mutant_model(
+    mutations: list[str],
+    pdb_path: Path,
+    evoef2_cfg: dict[str, Any],
+    work_root: Path,
+    out_path: Path | None = None,
+    recompute: bool = False,
+) -> Path:
+    logger = get_logger(__name__)
+    canonical = canonicalize_mutation_set(list(mutations))
+
+    base_pdb = Path(evoef2_cfg.get("repaired_pdb") or pdb_path).expanduser()
+    if not base_pdb.is_absolute():
+        base_pdb = (Path.cwd() / base_pdb).resolve()
+    if not base_pdb.exists():
+        raise RuntimeError(f"EvoEF2 base PDB not found: {base_pdb}")
+
+    pdb_hash = file_sha256(base_pdb)
+    key = mutation_set_id(pdb_hash, canonical, evoef2_cfg)
+    workdir = work_root / f"model_{key}"
+
+    if workdir.exists() and not recompute:
+        try:
+            existing = _find_mutant_model(workdir)
+            if out_path:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(existing, out_path)
+                return out_path
+            return existing
+        except RuntimeError:
+            pass
+
+    if workdir.exists() and recompute:
+        shutil.rmtree(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+
+    chain_id = evoef2_cfg.get("chain_id") or _infer_chain_id(base_pdb)
+    mutant_file = workdir / "mutant.txt"
+    _write_mutant_file(canonical, chain_id, mutant_file)
+
+    local_pdb = workdir / base_pdb.name
+    if not local_pdb.exists() or local_pdb.stat().st_size != base_pdb.stat().st_size:
+        shutil.copy2(base_pdb, local_pdb)
+
+    binary_path = _resolve_evoef2_binary(evoef2_cfg.get("binary"))
+    _validate_evoef2_install(binary_path)
+
+    cmd = [
+        str(binary_path),
+        "--command=BuildMutant",
+        f"--pdb={base_pdb.name}",
+        f"--mutant_file={mutant_file.name}",
+    ]
+    num_runs = evoef2_cfg.get("num_of_runs")
+    if num_runs:
+        cmd.append(f"--num_of_runs={int(num_runs)}")
+    bbdep = evoef2_cfg.get("bbdep")
+    if bbdep is True:
+        cmd.append("--bbdep=enable")
+    elif bbdep is False:
+        cmd.append("--bbdep=disable")
+    rotlib = evoef2_cfg.get("rotlib")
+    if rotlib:
+        cmd.append(f"--rotlib={rotlib}")
+
+    logger.info("Building mutant model for animation: %s", ", ".join(canonical))
+    _run_evoef2(cmd, workdir)
+    mutant_pdb = _find_mutant_model(workdir)
+
+    if out_path:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(mutant_pdb, out_path)
+        return out_path
+    return mutant_pdb

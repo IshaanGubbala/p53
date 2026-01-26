@@ -11,6 +11,9 @@ beam_search:
 pareto:
   objectives:
     - ddg_gain
+    - rasp_ddg
+    - allosteric_dist
+    - docking_affinity
     - risk
     - n_rescue  # Penalize mutation count - simpler is better
 design:
@@ -18,7 +21,7 @@ design:
   max_singles: 200
   max_pairs: 300
   max_triples: 200
-  min_distance_protected: 8.0
+  min_distance_protected: 8.0  # RESTORED after algorithm test (confirmed useful)
   max_conservation: 0.8
   max_msa_conservation: 0.85  # NEW: Hard filter for MSA-based conservation
   allow_exposed: false

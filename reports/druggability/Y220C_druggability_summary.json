@@ -1,0 +1,25 @@
+{
+  "n_rescues_analyzed": 50,
+  "high_druggability": 43,
+  "medium_druggability": 0,
+  "low_druggability": 0,
+  "mean_score": 0.632,
+  "max_score": 0.674,
+  "top_druggable_rescues": [
+    {
+      "rescue_mutations": "Y234F",
+      "druggability_score": 0.674,
+      "pocket_flag": "\ud83c\udfaf Druggable Pocket"
+    },
+    {
+      "rescue_mutations": "A159S",
+      "druggability_score": 0.666,
+      "pocket_flag": "\ud83c\udfaf Druggable Pocket"
+    },
+    {
+      "rescue_mutations": "T253V",
+      "druggability_score": 0.666,
+      "pocket_flag": "\ud83c\udfaf Druggable Pocket"
+    }
+  ]
+}

@@ -17,7 +17,7 @@ RUNNERS = {
     "build-structure": ("experiments.run_build_structure", "run"),
     "score-variants": ("experiments.run_score_variants", "run"),
     "design": ("experiments.run_design_rescues", "run"),
-    "report": ("visualization.create_visualizations", "run"),
+    "report": ("experiments.run_report", "run"),
     "export-benchmark": ("experiments.run_export_benchmark_repro", "run"),
 }
 

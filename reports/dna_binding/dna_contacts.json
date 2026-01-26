@@ -1,0 +1,586 @@
+{
+  "contacts": {
+    "101": {
+      "position": 101,
+      "residue_name": "LYS",
+      "n_contacts": 3,
+      "min_distance": 3.7673444747924805,
+      "contacting_atoms": [
+        {
+          "protein_atom": "CE",
+          "dna_atom": "OP1",
+          "distance": 4.934163570404053
+        },
+        {
+          "protein_atom": "NZ",
+          "dna_atom": "OP1",
+          "distance": 3.7673444747924805
+        },
+        {
+          "protein_atom": "NZ",
+          "dna_atom": "O",
+          "distance": 4.593254089355469
+        }
+      ],
+      "contact_types": [
+        "van_der_waals",
+        "hydrogen_bond"
+      ]
+    },
+    "165": {
+      "position": 165,
+      "residue_name": "GLN",
+      "n_contacts": 20,
+      "min_distance": 2.8809852600097656,
+      "contacting_atoms": [
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 4.622915267944336
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "OP2",
+          "distance": 4.825643062591553
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.164251327514648
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 4.120063781738281
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "OP1",
+          "distance": 4.40535831451416
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "P",
+          "distance": 4.751040458679199
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "OP2",
+          "distance": 4.11311674118042
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 3.9859554767608643
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "O",
+          "distance": 3.6152870655059814
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "OP1",
+          "distance": 4.69077730178833
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "OP2",
+          "distance": 4.94932222366333
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "O",
+          "distance": 4.887806415557861
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 3.757291078567505
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O3'",
+          "distance": 4.550919532775879
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "C3'",
+          "distance": 4.582960605621338
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP1",
+          "distance": 3.2808620929718018
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O5'",
+          "distance": 4.734235763549805
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "P",
+          "distance": 3.499335527420044
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP2",
+          "distance": 2.8809852600097656
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 3.331477165222168
+        }
+      ],
+      "contact_types": [
+        "van_der_waals",
+        "hydrogen_bond"
+      ]
+    },
+    "167": {
+      "position": 167,
+      "residue_name": "GLN",
+      "n_contacts": 36,
+      "min_distance": 2.8703157901763916,
+      "contacting_atoms": [
+        {
+          "protein_atom": "CA",
+          "dna_atom": "O",
+          "distance": 4.783442974090576
+        },
+        {
+          "protein_atom": "CA",
+          "dna_atom": "O",
+          "distance": 4.608531475067139
+        },
+        {
+          "protein_atom": "CA",
+          "dna_atom": "O",
+          "distance": 4.9407782554626465
+        },
+        {
+          "protein_atom": "C",
+          "dna_atom": "O",
+          "distance": 4.799509525299072
+        },
+        {
+          "protein_atom": "O",
+          "dna_atom": "O",
+          "distance": 4.199316501617432
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "OP2",
+          "distance": 4.085186958312988
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 3.716043472290039
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 4.1781907081604
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 3.6415555477142334
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 3.6929781436920166
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "OP1",
+          "distance": 4.884794235229492
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O5'",
+          "distance": 4.8133864402771
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "P",
+          "distance": 4.377712249755859
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "OP2",
+          "distance": 3.1864917278289795
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 3.835183620452881
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 3.672058582305908
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.644373893737793
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.216771125793457
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O5'",
+          "distance": 4.940129280090332
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "P",
+          "distance": 4.983638286590576
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "OP2",
+          "distance": 4.011058807373047
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 3.8198904991149902
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 3.695713520050049
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 4.370091438293457
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "O",
+          "distance": 3.9819517135620117
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "O",
+          "distance": 4.406644821166992
+        },
+        {
+          "protein_atom": "OE1",
+          "dna_atom": "O",
+          "distance": 4.4386372566223145
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP1",
+          "distance": 4.956318378448486
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O5'",
+          "distance": 4.0833916664123535
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "P",
+          "distance": 4.467912673950195
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "C3'",
+          "distance": 4.202243804931641
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "C2'",
+          "distance": 4.30334997177124
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP2",
+          "distance": 3.8534252643585205
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP2",
+          "distance": 4.45213508605957
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 2.8703157901763916
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 3.6179134845733643
+        }
+      ],
+      "contact_types": [
+        "van_der_waals",
+        "hydrogen_bond"
+      ]
+    },
+    "168": {
+      "position": 168,
+      "residue_name": "HIS",
+      "n_contacts": 19,
+      "min_distance": 3.286432981491089,
+      "contacting_atoms": [
+        {
+          "protein_atom": "ND1",
+          "dna_atom": "OP1",
+          "distance": 4.6057915687561035
+        },
+        {
+          "protein_atom": "ND1",
+          "dna_atom": "OP2",
+          "distance": 4.924631118774414
+        },
+        {
+          "protein_atom": "CD2",
+          "dna_atom": "O",
+          "distance": 4.718215465545654
+        },
+        {
+          "protein_atom": "CD2",
+          "dna_atom": "O",
+          "distance": 4.594791412353516
+        },
+        {
+          "protein_atom": "CD2",
+          "dna_atom": "OP1",
+          "distance": 4.638092041015625
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "O",
+          "distance": 4.960185527801514
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "O",
+          "distance": 4.529207706451416
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "O",
+          "distance": 4.307927131652832
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "OP1",
+          "distance": 3.2982029914855957
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "O5'",
+          "distance": 4.718005657196045
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "P",
+          "distance": 4.0603837966918945
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "O",
+          "distance": 4.7393035888671875
+        },
+        {
+          "protein_atom": "CE1",
+          "dna_atom": "OP2",
+          "distance": 3.999061107635498
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 3.6963961124420166
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 3.7192249298095703
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP1",
+          "distance": 3.286432981491089
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "P",
+          "distance": 4.1715192794799805
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "OP2",
+          "distance": 4.101439952850342
+        },
+        {
+          "protein_atom": "NE2",
+          "dna_atom": "O",
+          "distance": 4.725598335266113
+        }
+      ],
+      "contact_types": [
+        "van_der_waals",
+        "hydrogen_bond"
+      ]
+    },
+    "247": {
+      "position": 247,
+      "residue_name": "ASN",
+      "n_contacts": 3,
+      "min_distance": 4.044636249542236,
+      "contacting_atoms": [
+        {
+          "protein_atom": "O",
+          "dna_atom": "O",
+          "distance": 4.7780375480651855
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.877141952514648
+        },
+        {
+          "protein_atom": "ND2",
+          "dna_atom": "O",
+          "distance": 4.044636249542236
+        }
+      ],
+      "contact_types": [
+        "hydrogen_bond"
+      ]
+    },
+    "248": {
+      "position": 248,
+      "residue_name": "ARG",
+      "n_contacts": 2,
+      "min_distance": 4.614311218261719,
+      "contacting_atoms": [
+        {
+          "protein_atom": "C",
+          "dna_atom": "O",
+          "distance": 4.990808486938477
+        },
+        {
+          "protein_atom": "O",
+          "dna_atom": "O",
+          "distance": 4.614311218261719
+        }
+      ],
+      "contact_types": [
+        "hydrogen_bond"
+      ]
+    },
+    "249": {
+      "position": 249,
+      "residue_name": "ARG",
+      "n_contacts": 12,
+      "min_distance": 3.5507724285125732,
+      "contacting_atoms": [
+        {
+          "protein_atom": "N",
+          "dna_atom": "O",
+          "distance": 4.978715896606445
+        },
+        {
+          "protein_atom": "CA",
+          "dna_atom": "O",
+          "distance": 4.542847633361816
+        },
+        {
+          "protein_atom": "CB",
+          "dna_atom": "O",
+          "distance": 4.472506046295166
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.4855828285217285
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 4.2550153732299805
+        },
+        {
+          "protein_atom": "CG",
+          "dna_atom": "O",
+          "distance": 3.989060163497925
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 4.736008644104004
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 3.5507724285125732
+        },
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 4.903195381164551
+        },
+        {
+          "protein_atom": "NE",
+          "dna_atom": "O",
+          "distance": 4.079722881317139
+        },
+        {
+          "protein_atom": "CZ",
+          "dna_atom": "O",
+          "distance": 4.448985576629639
+        },
+        {
+          "protein_atom": "NH1",
+          "dna_atom": "O",
+          "distance": 4.395181179046631
+        }
+      ],
+      "contact_types": [
+        "hydrogen_bond"
+      ]
+    },
+    "250": {
+      "position": 250,
+      "residue_name": "PRO",
+      "n_contacts": 1,
+      "min_distance": 4.692692279815674,
+      "contacting_atoms": [
+        {
+          "protein_atom": "CD",
+          "dna_atom": "O",
+          "distance": 4.692692279815674
+        }
+      ],
+      "contact_types": [
+        "hydrogen_bond"
+      ]
+    }
+  },
+  "classifications": {
+    "101": "strong",
+    "165": "strong",
+    "167": "strong",
+    "168": "strong",
+    "247": "medium",
+    "248": "weak",
+    "249": "strong",
+    "250": "weak"
+  }
+}

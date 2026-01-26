@@ -1,11 +1,20 @@
 engine: evoef2
+rasp:
+  enabled: true
+  model_path: src/scoring/rasp_repo/output/cavity_models/best_model.pt
+allosteric:
+  enabled: true
+  sites: ["Y220_POCKET"]
+docking:
+  enabled: true
+  ligand: "PHI-KAN-083"
 cache:
   enabled: true
   dir: processed/cache
   evoef2_repair_dir: processed/cache/evoef2_repair  # Persistent repaired PDB cache
   cache_individual_energies: true  # Store base_energy and mutant_energy separately
 parallel:
-  n_jobs: 2
+  n_jobs: 8
 recompute: false
 evoef2:
   binary: /Users/ishaangubbala/Downloads/EvoEF2-master/EvoEF2

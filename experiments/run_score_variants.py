@@ -8,6 +8,10 @@ from typing import Any
 
 import pandas as pd
 from tqdm import tqdm
+import sys
+
+# Add project root to path
+sys.path.append(str(Path.cwd()))
 
 from src.core.hashing import dict_sha256, file_sha256
 from src.core.logging import get_logger
@@ -54,8 +58,17 @@ def _normalize_cfg(value: Any) -> Any:
 
 def _load_variants(variant_path: Path) -> pd.DataFrame:
     df = pd.read_parquet(variant_path)
+    
+    # If we already have a 'mutation' column (like search/generative results), use it
+    if "mutation" in df.columns:
+        df = df.dropna(subset=["mutation"]).copy()
+        df["mutation"] = df["mutation"].astype(str)
+        return df
+
+    # Otherwise, require and build from pos/ref/alt
     if not {"pos", "ref", "alt"}.issubset(df.columns):
-        raise RuntimeError("Normalized variants missing required columns: pos/ref/alt")
+        raise RuntimeError("Variants missing required columns: 'mutation' OR 'pos/ref/alt'")
+    
     df = df.dropna(subset=["pos", "ref", "alt"]).copy()
     df["pos"] = df["pos"].astype(int)
     df["ref"] = df["ref"].astype(str).str.upper()
@@ -101,13 +114,24 @@ def run(args, configs: dict[str, Any]) -> int:
     if not cache_enabled:
         recompute = True
 
-    variant_path = paths["interim"] / "tp53_missense_normalized.parquet"
+    variant_path_str = getattr(args, "variants", None)
+    if variant_path_str:
+        variant_path = Path(variant_path_str)
+    else:
+        variant_path = paths["interim"] / "tp53_missense_normalized.parquet"
+        
     if not variant_path.exists():
-        raise RuntimeError(f"Missing normalized variants: {variant_path}")
+        raise RuntimeError(f"Missing variants path: {variant_path}")
 
     df = _load_variants(variant_path)
     mutations = sorted(df["mutation"].unique())
-    logger.info("Scoring %d unique mutations with EvoEF2", len(mutations))
+    
+    # [RaSP Integration]
+    rasp_cfg = scoring_cfg.get("rasp", {})
+    rasp_enabled = rasp_cfg.get("enabled", False)
+    
+    logger.info("Scoring %d unique mutations with %s %s", 
+                len(mutations), engine, "(+ RaSP)" if rasp_enabled else "")
 
     repaired_pdb = _resolve_repaired_pdb(evoef2_cfg, paths["project_root"])
     if repaired_pdb:
@@ -119,7 +143,10 @@ def run(args, configs: dict[str, Any]) -> int:
         raise RuntimeError(f"Base PDB not found: {base_pdb}")
 
     scores_path = paths["processed"] / "variant_scores.parquet"
-    signature_path = paths["processed"] / "variant_scores_signature.json"
+    if variant_path_str:
+        scores_path = variant_path.with_name(f"{variant_path.stem}_scored.parquet")
+    
+    signature_path = scores_path.with_suffix(".signature.json")
 
     signature = {
         "variants_sha256": file_sha256(variant_path),
@@ -171,13 +198,21 @@ def run(args, configs: dict[str, Any]) -> int:
     pending: list[str] = []
 
     for mut in mutations:
-        canonical = canonicalize_mutation_set([mut])
+        # Support multi-mutation strings like "M1A,V2L"
+        mut_list = [m.strip() for m in mut.split(",")]
+        canonical = canonicalize_mutation_set(mut_list)
         key = mutation_set_id(base_hash, canonical, evoef2_cfg)
         cache_path = cache_dir / f"evoef2_{key}.json"
         if cache_path.exists() and not recompute:
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
             if "ddg" in payload:
-                scores[mut] = float(payload["ddg"])
+                scores[mut] = {"ddg": float(payload["ddg"])}
+                # Try to get RaSP too if enabled
+                if rasp_enabled:
+                    rasp_cache = cache_dir / f"rasp_full_{key}.json"
+                    if rasp_cache.exists():
+                        r_payload = json.loads(rasp_cache.read_text(encoding="utf-8"))
+                        scores[mut]["rasp_ddg"] = float(r_payload.get("rasp_ddg", 0))
                 continue
         pending.append(mut)
 
@@ -185,19 +220,26 @@ def run(args, configs: dict[str, Any]) -> int:
     pbar = tqdm(total=len(mutations), desc="Scoring mutations", unit="mut")
     pbar.update(len(scores))
 
-    def _score(mut: str) -> tuple[str, float, float]:
+    def _score(mut: str) -> tuple[str, dict[str, float], float]:
         start = time.perf_counter()
-        ddg = score_mutation_set(
-            [mut],
+        mut_list = [m.strip() for m in mut.split(",")]
+        res = {"ddg": score_mutation_set(
+            mut_list,
             base_pdb,
             cache_dir,
             evoef2_cfg,
             work_root,
             base_energy=base_energy,
             recompute=recompute,
-        )
+        )}
+        
+        if rasp_enabled:
+            # Import here to avoid forcing dependency if not used
+            from src.scoring.rasp_scorer import score_mutation_set_rasp
+            res["rasp_ddg"] = score_mutation_set_rasp(mut_list, base_pdb, cache_dir, rasp_cfg)
+            
         elapsed = time.perf_counter() - start
-        return mut, ddg, elapsed
+        return mut, res, elapsed
 
     if pending:
         with ThreadPoolExecutor(max_workers=parallel) as executor:
@@ -205,8 +247,8 @@ def run(args, configs: dict[str, Any]) -> int:
             for future in as_completed(futures):
                 mut = futures[future]
                 try:
-                    key, ddg, _elapsed = future.result()
-                    scores[key] = ddg
+                    key, results, _elapsed = future.result()
+                    scores[key] = results
                 except Exception as exc:
                     errors.append(f"{mut}: {exc}")
                 pbar.update(1)
@@ -214,10 +256,13 @@ def run(args, configs: dict[str, Any]) -> int:
 
     if errors:
         sample = "\n".join(errors[:5])
-        raise RuntimeError(f"EvoEF2 scoring failed for {len(errors)} mutations:\n{sample}")
+        raise RuntimeError(f"Scoring failed for {len(errors)} mutations:\n{sample}")
 
     scored_df = df.copy()
-    scored_df["ddg"] = scored_df["mutation"].map(scores)
+    scored_df["ddg"] = scored_df["mutation"].apply(lambda x: scores.get(x, {}).get("ddg"))
+    if rasp_enabled:
+        scored_df["rasp_ddg"] = scored_df["mutation"].apply(lambda x: scores.get(x, {}).get("rasp_ddg"))
+    
     scored_df = scored_df.dropna(subset=["ddg"])
     scored_df["engine"] = engine
 
@@ -250,3 +295,25 @@ def run(args, configs: dict[str, Any]) -> int:
 
     logger.info("Variant scoring complete")
     return 0
+
+
+if __name__ == "__main__":
+    import argparse
+    import yaml
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--variants", help="Path to variants parquet/csv file")
+    parser.add_argument("--engine", help="Scoring engine to use")
+    parser.add_argument("--parallel", type=int, help="Number of parallel jobs")
+    parser.add_argument("--config", default="configs/scoring.yaml", help="Path to scoring config")
+    args = parser.parse_args()
+
+    with open(args.config, "r") as f:
+        scoring_cfg = yaml.safe_load(f)
+    
+    # Load default paths
+    with open("configs/paths.yaml", "r") as f:
+        paths_cfg = yaml.safe_load(f)
+        
+    configs = {"scoring": scoring_cfg, "paths": paths_cfg}
+    sys.exit(run(args, configs))
