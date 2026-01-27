@@ -175,6 +175,63 @@ def compute_stability(pdb_path: Path, evoef2_cfg: dict[str, Any], workdir: Path)
     return energy
 
 
+def compute_binding(pdb_path: Path, split_chains: str, evoef2_cfg: dict[str, Any], workdir: Path) -> float:
+    """
+    Compute binding free energy between protein chains using EvoEF2 ComputeBinding.
+
+    Args:
+        pdb_path: Path to complex PDB file (e.g., protein-DNA or protein-protein)
+        split_chains: Chain splitting specification (e.g., "ABC,EF" for protein vs DNA)
+        evoef2_cfg: EvoEF2 configuration dict
+        workdir: Working directory for temporary files
+
+    Returns:
+        Binding free energy in kcal/mol (negative = favorable binding)
+
+    Example:
+        # DNA binding: protein chains A,B,C vs DNA chains E,F
+        ddg_binding = compute_binding(pdb_path, "ABC,EF", cfg, workdir)
+
+        # Protein-protein interface: chain A vs chain B
+        ddg_interface = compute_binding(pdb_path, "A,B", cfg, workdir)
+    """
+    logger = get_logger(__name__)
+    logger.info("Computing binding energy for PDB: %s (split: %s)", pdb_path, split_chains)
+
+    binary_path = _resolve_evoef2_binary(evoef2_cfg.get("binary"))
+    logger.debug("Using EvoEF2 binary: %s", binary_path)
+    _validate_evoef2_install(binary_path)
+
+    # Copy PDB to workdir
+    workdir.mkdir(parents=True, exist_ok=True)
+    local_pdb = workdir / pdb_path.name
+    if not local_pdb.exists() or local_pdb.stat().st_size != pdb_path.stat().st_size:
+        shutil.copy2(pdb_path, local_pdb)
+        logger.debug("Copied PDB to workdir: %s", local_pdb)
+
+    cmd = [
+        str(binary_path),
+        "--command=ComputeBinding",
+        f"--pdb={pdb_path.name}",
+        f"--split_chains={split_chains}",
+    ]
+
+    bbdep = evoef2_cfg.get("bbdep")
+    if bbdep is True:
+        cmd.append("--bbdep=enable")
+    elif bbdep is False:
+        cmd.append("--bbdep=disable")
+
+    rotlib = evoef2_cfg.get("rotlib")
+    if rotlib:
+        cmd.append(f"--rotlib={rotlib}")
+
+    output = _run_evoef2(cmd, workdir)
+    binding_energy = _parse_total_energy(output)
+    logger.info("Computed binding energy: %.4f kcal/mol", binding_energy)
+    return binding_energy
+
+
 def _find_mutant_model(workdir: Path) -> Path:
     matches = sorted(workdir.glob("*_Model_*.pdb"))
     if matches:

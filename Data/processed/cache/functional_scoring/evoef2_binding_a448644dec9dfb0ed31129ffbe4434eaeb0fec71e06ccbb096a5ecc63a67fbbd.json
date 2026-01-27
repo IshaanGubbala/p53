@@ -1,0 +1,29 @@
+{
+  "ddg_binding": 0.0,
+  "wt_binding": -22.44,
+  "mut_binding": -22.44,
+  "category": "good",
+  "details": {
+    "mutations": [
+      [
+        133,
+        "M",
+        "L"
+      ],
+      [
+        235,
+        "N",
+        "Q"
+      ],
+      [
+        95,
+        "S",
+        "A"
+      ]
+    ],
+    "split_chains": "A,B",
+    "method": "evoef2",
+    "wt_pdb": "Data/raw/experimental_pdbs/3KMD.pdb",
+    "mut_pdb": "Data/processed/cache/functional_scoring/evoef2_work/a448644dec9dfb0ed31129ffbe4434eaeb0fec71e06ccbb096a5ecc63a67fbbd_mut/model_394db3c81e7e3ea2649f799ed07099c976148bc72d8ca5641f73687d34b1e595/3KMD_Model_0001.pdb"
+  }
+}

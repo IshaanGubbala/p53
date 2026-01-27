@@ -40,13 +40,13 @@
         {
           "chain_id": "A",
           "id": "alphafold",
-          "pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+          "pdb": "Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
           "weight": 1.0
         },
         {
           "chain_id": "A",
           "id": "2ocj_core",
-          "pdb": "/Users/ishaangubbala/Documents/p53/Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
+          "pdb": "Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
           "weight": 1.0
         }
       ]
@@ -54,5 +54,5 @@
     "sequence_sha256": "89f1c453491ee0aab7abfc2c5bd12d8275424328dd936d0ca974190416365315",
     "target": "R248Q"
   },
-  "signature_sha256": "0b7237e90eb5a0cb0dc4c2e87806f62b685442785774d605ad52bbe428b118c3"
+  "signature_sha256": "5960c0274954a9c624b9cc055b347f96565bd412d86cea97505da2e1a48a93c2"
 }

@@ -1,0 +1,30 @@
+; Energy minimization
+integrator  = steep         ; Steepest descent
+emtol       = 100.0         ; Stop when Fmax < 100 kJ/mol/nm
+emstep      = 0.01          ; Initial step size
+nsteps      = 5000          ; Maximum steps
+
+; Output control
+nstxout     = 100
+nstvout     = 100
+nstfout     = 100
+nstlog      = 100
+nstenergy   = 100
+
+; Neighbor searching
+cutoff-scheme   = Verlet
+ns_type         = grid
+nstlist         = 10
+rlist           = 1.0
+
+; Electrostatics
+coulombtype     = PME
+rcoulomb        = 1.0
+
+; VdW
+vdwtype         = cutoff
+rvdw            = 1.0
+
+; PME
+pme_order       = 4
+fourierspacing  = 0.16

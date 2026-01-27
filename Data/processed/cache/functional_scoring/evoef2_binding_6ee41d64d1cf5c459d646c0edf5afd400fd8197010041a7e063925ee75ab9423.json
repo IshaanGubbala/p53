@@ -1,0 +1,24 @@
+{
+  "ddg_binding": 0.0,
+  "wt_binding": -33.25,
+  "mut_binding": -33.25,
+  "category": "good",
+  "details": {
+    "mutations": [
+      [
+        145,
+        "L",
+        "I"
+      ],
+      [
+        196,
+        "R",
+        "Q"
+      ]
+    ],
+    "split_chains": "A,B,C,E,F",
+    "method": "evoef2",
+    "wt_pdb": "Data/raw/experimental_pdbs/1TSR.pdb",
+    "mut_pdb": "Data/processed/cache/functional_scoring/evoef2_work/6ee41d64d1cf5c459d646c0edf5afd400fd8197010041a7e063925ee75ab9423_mut/model_938f57b0d81065f8b5d2377210eb7bc865abb596ffb69aca5e2f3c4c244d37a5/1TSR_Model_0001.pdb"
+  }
+}
