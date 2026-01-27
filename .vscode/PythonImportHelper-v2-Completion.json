@@ -674,6 +674,135 @@
         "documentation": {}
     },
     {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
         "label": "matplotlib.pyplot",
         "kind": 6,
         "isExtraImport": true,
@@ -1470,6 +1599,14 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Any",
         "importPath": "typing",
         "description": "typing",
@@ -1670,6 +1807,46 @@
         "documentation": {}
     },
     {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Any",
         "importPath": "typing",
         "description": "typing",
@@ -1719,6 +1896,54 @@
     },
     {
         "label": "Iterable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -1791,6 +2016,182 @@
     },
     {
         "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Set",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Set",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -2255,6 +2656,22 @@
     },
     {
         "label": "setup_logging",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "get_logger",
+        "importPath": "src.core.logging",
+        "description": "src.core.logging",
+        "isExtraImport": true,
+        "detail": "src.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "get_logger",
         "importPath": "src.core.logging",
         "description": "src.core.logging",
         "isExtraImport": true,
@@ -2889,6 +3306,30 @@
         "documentation": {}
     },
     {
+        "label": "build_mutant_model",
+        "importPath": "src.scoring.evoef2_runner",
+        "description": "src.scoring.evoef2_runner",
+        "isExtraImport": true,
+        "detail": "src.scoring.evoef2_runner",
+        "documentation": {}
+    },
+    {
+        "label": "compute_binding",
+        "importPath": "src.scoring.evoef2_runner",
+        "description": "src.scoring.evoef2_runner",
+        "isExtraImport": true,
+        "detail": "src.scoring.evoef2_runner",
+        "documentation": {}
+    },
+    {
+        "label": "build_mutant_model",
+        "importPath": "src.scoring.evoef2_runner",
+        "description": "src.scoring.evoef2_runner",
+        "isExtraImport": true,
+        "detail": "src.scoring.evoef2_runner",
+        "documentation": {}
+    },
+    {
         "label": "score_mutation_set_multi",
         "importPath": "src.scoring.multi_structure",
         "description": "src.scoring.multi_structure",
@@ -3346,6 +3787,15 @@
         "documentation": {}
     },
     {
+        "label": "subprocess",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
+        "documentation": {}
+    },
+    {
         "label": "render_rotation_gif",
         "importPath": "src.viz.animations",
         "description": "src.viz.animations",
@@ -3466,6 +3916,30 @@
         "documentation": {}
     },
     {
+        "label": "score_rescue_candidates_evoef2",
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "isExtraImport": true,
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "load_evoef2_config",
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "isExtraImport": true,
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "score_rescue_candidates",
+        "importPath": "src.scoring.functional",
+        "description": "src.scoring.functional",
+        "isExtraImport": true,
+        "detail": "src.scoring.functional",
+        "documentation": {}
+    },
+    {
         "label": "create_mutation_network",
         "importPath": "visualization.create_advanced_visualizations",
         "description": "visualization.create_advanced_visualizations",
@@ -3515,29 +3989,11 @@
         "documentation": {}
     },
     {
-        "label": "subprocess",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "subprocess",
-        "description": "subprocess",
-        "detail": "subprocess",
-        "documentation": {}
-    },
-    {
         "label": "Axes3D",
         "importPath": "mpl_toolkits.mplot3d",
         "description": "mpl_toolkits.mplot3d",
         "isExtraImport": true,
         "detail": "mpl_toolkits.mplot3d",
-        "documentation": {}
-    },
-    {
-        "label": "numpy",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "numpy",
-        "description": "numpy",
-        "detail": "numpy",
         "documentation": {}
     },
     {
@@ -3903,6 +4359,70 @@
         "documentation": {}
     },
     {
+        "label": "PDBParser",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "PDBIO",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "Select",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "NeighborSearch",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "Polypeptide",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "PDBParser",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "NeighborSearch",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
+        "label": "Selection",
+        "importPath": "Bio.PDB",
+        "description": "Bio.PDB",
+        "isExtraImport": true,
+        "detail": "Bio.PDB",
+        "documentation": {}
+    },
+    {
         "label": "Vector",
         "importPath": "Bio.PDB",
         "description": "Bio.PDB",
@@ -4088,6 +4608,62 @@
         "description": "Bio.Blast",
         "isExtraImport": true,
         "detail": "Bio.Blast",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "asdict",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "asdict",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
         "documentation": {}
     },
     {
@@ -5079,6 +5655,42 @@
         "documentation": {}
     },
     {
+        "label": "load_target_results",
+        "kind": 2,
+        "importPath": "experiments.analyze_functional_results",
+        "description": "experiments.analyze_functional_results",
+        "peekOfCode": "def load_target_results(target: str) -> dict:\n    \"\"\"Load both old and new results for a target.\"\"\"\n    base_path = Path(\"Data/processed/rescues\") / target\n    pareto_path = base_path / \"pareto.parquet\"\n    if not pareto_path.exists():\n        return None\n    pareto_df = pd.read_parquet(pareto_path)\n    # Check if functional scoring was applied\n    has_functional = 'functional_score' in pareto_df.columns\n    return {",
+        "detail": "experiments.analyze_functional_results",
+        "documentation": {}
+    },
+    {
+        "label": "analyze_target",
+        "kind": 2,
+        "importPath": "experiments.analyze_functional_results",
+        "description": "experiments.analyze_functional_results",
+        "peekOfCode": "def analyze_target(data: dict) -> dict:\n    \"\"\"Analyze functional scoring results for one target.\"\"\"\n    if not data or not data['has_functional']:\n        return None\n    df = data['pareto_df']\n    target = data['target']\n    # Category distribution\n    categories = df['overall_category'].value_counts().to_dict()\n    # DNA binding analysis\n    binding_good = len(df[df['binding_category'] == 'good'])",
+        "detail": "experiments.analyze_functional_results",
+        "documentation": {}
+    },
+    {
+        "label": "print_target_report",
+        "kind": 2,
+        "importPath": "experiments.analyze_functional_results",
+        "description": "experiments.analyze_functional_results",
+        "peekOfCode": "def print_target_report(analysis: dict):\n    \"\"\"Print detailed report for one target.\"\"\"\n    if not analysis:\n        return\n    target = analysis['target']\n    print(\"=\" * 80)\n    print(f\"{target} - Functional Scoring Results\")\n    print(\"=\" * 80)\n    print()\n    # Overview",
+        "detail": "experiments.analyze_functional_results",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "experiments.analyze_functional_results",
+        "description": "experiments.analyze_functional_results",
+        "peekOfCode": "def main():\n    print()\n    print(\"=\" * 80)\n    print(\"Functional Scoring Analysis - All Targets\")\n    print(\"=\" * 80)\n    print()\n    targets = ['R175H', 'R248Q', 'R273H', 'Y220C']\n    # Load all results\n    all_data = {}\n    for target in targets:",
+        "detail": "experiments.analyze_functional_results",
+        "documentation": {}
+    },
+    {
         "label": "load_search_results",
         "kind": 2,
         "importPath": "experiments.compare_strategies",
@@ -5358,6 +5970,51 @@
         "documentation": {}
     },
     {
+        "label": "Initiative2Pipeline",
+        "kind": 6,
+        "importPath": "experiments.run_initiative2_pipeline",
+        "description": "experiments.run_initiative2_pipeline",
+        "peekOfCode": "class Initiative2Pipeline:\n    \"\"\"Run complete Initiative 2 pipeline.\"\"\"\n    def __init__(\n        self,\n        rescues: List[str],\n        drugs: List[str],\n        skip_md: bool = False,\n        skip_analysis: bool = False,\n        skip_docking: bool = False,\n        md_duration: int = 50",
+        "detail": "experiments.run_initiative2_pipeline",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "experiments.run_initiative2_pipeline",
+        "description": "experiments.run_initiative2_pipeline",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Run Initiative 2 full pipeline\")\n    parser.add_argument(\n        \"--rescues\",\n        default=\"top10\",\n        help=\"Rescues to run: 'top10', 'all', or comma-separated list (e.g., 'A189S_M133L_S95T,M133L_R196Q_S95T')\"\n    )\n    parser.add_argument(\n        \"--drugs\",\n        default=\"all\",",
+        "detail": "experiments.run_initiative2_pipeline",
+        "documentation": {}
+    },
+    {
+        "label": "TOP_10_RESCUES",
+        "kind": 5,
+        "importPath": "experiments.run_initiative2_pipeline",
+        "description": "experiments.run_initiative2_pipeline",
+        "peekOfCode": "TOP_10_RESCUES = [\n    \"A189S_M133L_S95T\",    # R175H, 0.895\n    \"M133L_R196Q_S95T\",    # R248Q, 0.883\n    \"R196Q_S215A_S95T\",    # R273H, 0.880\n    \"C229A_R196H_S95T\",    # R273H, 0.879\n    \"R196H_S95T\",          # R273H/Y220C, 0.874\n    \"M133L_S95T\",          # R175H/Y220C, 0.858\n    \"M133L_S95A_T155A\",    # R175H, 0.856\n    \"L145I_M133L_S95A\",    # R175H, 0.855\n    \"A189S_M133L_S95A\",    # R175H, 0.852",
+        "detail": "experiments.run_initiative2_pipeline",
+        "documentation": {}
+    },
+    {
+        "label": "RESCUE_TO_TARGET",
+        "kind": 5,
+        "importPath": "experiments.run_initiative2_pipeline",
+        "description": "experiments.run_initiative2_pipeline",
+        "peekOfCode": "RESCUE_TO_TARGET = {\n    \"A189S_M133L_S95T\": \"R175H\",\n    \"M133L_R196Q_S95T\": \"R248Q\",\n    \"R196Q_S215A_S95T\": \"R273H\",\n    \"C229A_R196H_S95T\": \"R273H\",\n    \"R196H_S95T\": \"R273H\",\n    \"M133L_S95T\": \"R175H\",\n    \"M133L_S95A_T155A\": \"R175H\",\n    \"L145I_M133L_S95A\": \"R175H\",\n    \"A189S_M133L_S95A\": \"R175H\",",
+        "detail": "experiments.run_initiative2_pipeline",
+        "documentation": {}
+    },
+    {
+        "label": "ALL_DRUGS",
+        "kind": 5,
+        "importPath": "experiments.run_initiative2_pipeline",
+        "description": "experiments.run_initiative2_pipeline",
+        "peekOfCode": "ALL_DRUGS = [\n    \"COTI-2\",\n    \"APR-246\",\n    \"Nutlin-3a\",\n    \"PHI-KAN-083\",\n    \"PRIMA-1\",\n    \"CP-31398\"\n]\nclass Initiative2Pipeline:\n    \"\"\"Run complete Initiative 2 pipeline.\"\"\"",
+        "detail": "experiments.run_initiative2_pipeline",
+        "documentation": {}
+    },
+    {
         "label": "run",
         "kind": 2,
         "importPath": "experiments.run_make_report",
@@ -5418,6 +6075,24 @@
         "description": "experiments.run_tetramer_interface_analysis",
         "peekOfCode": "logger = get_logger(__name__)\ndef run(args, configs: dict) -> int:\n    \"\"\"Run tetramer interface analysis on rescue candidates.\"\"\"\n    logger.info(\"Starting tetramer interface analysis...\")\n    # Paths\n    paths_cfg = configs.get(\"paths\", {})\n    data_cfg = paths_cfg.get(\"data\", {})\n    processed_dir = Path(data_cfg.get(\"processed\", \"Data/processed\"))\n    raw_dir = Path(data_cfg.get(\"raw\", \"Data/raw\"))\n    reports_dir = Path(paths_cfg.get(\"reports_dir\", \"reports\"))",
         "detail": "experiments.run_tetramer_interface_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "experiments.test_evoef2_functional_scoring",
+        "description": "experiments.test_evoef2_functional_scoring",
+        "peekOfCode": "def main():\n    print(\"=\" * 80)\n    print(\"EvoEF2-Based Functional Scoring Test: R175H Top Rescues\")\n    print(\"=\" * 80)\n    print()\n    # Load R175H Pareto front\n    pareto_path = Path(\"Data/processed/rescues/R175H/pareto.parquet\")\n    if not pareto_path.exists():\n        print(f\"Error: {pareto_path} not found\")\n        print(\"Please run rescue design first:\")",
+        "detail": "experiments.test_evoef2_functional_scoring",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "experiments.test_functional_scoring",
+        "description": "experiments.test_functional_scoring",
+        "peekOfCode": "def main():\n    print(\"=== Functional Scoring Test: R175H Top Rescues ===\\n\")\n    # Load R175H Pareto front\n    pareto_path = Path(\"Data/processed/rescues/R175H/pareto.parquet\")\n    if not pareto_path.exists():\n        print(f\"Error: {pareto_path} not found\")\n        print(\"Please run rescue design first\")\n        sys.exit(1)\n    pareto_df = pd.read_parquet(pareto_path)\n    print(f\"Loaded {len(pareto_df)} Pareto-optimal rescues\")",
+        "detail": "experiments.test_functional_scoring",
         "documentation": {}
     },
     {
@@ -6618,6 +7293,132 @@
         "documentation": {}
     },
     {
+        "label": "SynergyCalculator",
+        "kind": 6,
+        "importPath": "src.docking.calculate_synergy",
+        "description": "src.docking.calculate_synergy",
+        "peekOfCode": "class SynergyCalculator:\n    \"\"\"Calculate synergy scores for rescue-drug pairs.\"\"\"\n    def __init__(self):\n        self.docking_dir = Path(\"Data/processed/docking/results\")\n        self.rescues_dir = Path(\"Data/processed/rescues\")\n        self.output_dir = Path(\"Data/processed/synergy/scores\")\n        self.output_dir.mkdir(parents=True, exist_ok=True)\n        print(\"🧬 Synergy Calculator\")\n        print(f\"   Docking results: {self.docking_dir}\")\n        print(f\"   Rescue data: {self.rescues_dir}\")",
+        "detail": "src.docking.calculate_synergy",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.docking.calculate_synergy",
+        "description": "src.docking.calculate_synergy",
+        "peekOfCode": "def main():\n    calculator = SynergyCalculator()\n    try:\n        # Calculate synergies\n        synergy_df = calculator.calculate_all_synergies()\n        if not synergy_df.empty:\n            # Generate summary\n            calculator.generate_summary(synergy_df)\n            print(\"\\n✅ Synergy analysis complete!\")\n            exit(0)",
+        "detail": "src.docking.calculate_synergy",
+        "documentation": {}
+    },
+    {
+        "label": "EnsembleDocking",
+        "kind": 6,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "class EnsembleDocking:\n    \"\"\"Automated ensemble docking with AutoDock Vina.\"\"\"\n    def __init__(self, rescue_name: str, drug_name: str):\n        self.rescue_name = rescue_name\n        self.drug_name = drug_name\n        # Directories\n        self.md_dir = Path(\"Data/processed/md_simulations\") / rescue_name\n        self.conformers_dir = self.md_dir / \"analysis\" / \"conformers\"\n        self.drug_dir = Path(\"Data/raw/drugs\")\n        self.output_dir = Path(\"Data/processed/docking/results\") / rescue_name / drug_name",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Run ensemble docking\")\n    parser.add_argument(\"--rescue\", required=True, help=\"Rescue name (e.g., 'A189S_M133L_S95T')\")\n    parser.add_argument(\"--drug\", required=True, help=\"Drug name (e.g., 'COTI-2')\")\n    args = parser.parse_args()\n    # Create docking instance\n    docking = EnsembleDocking(args.rescue, args.drug)\n    # Run docking\n    try:\n        results = docking.run_ensemble_docking()",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "ligand",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "ligand = {ligand_pdbqt}\ncenter_x = {binding_site['center_x']:.3f}\ncenter_y = {binding_site['center_y']:.3f}\ncenter_z = {binding_site['center_z']:.3f}\nsize_x = {binding_site['size_x']:.1f}\nsize_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "center_x",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "center_x = {binding_site['center_x']:.3f}\ncenter_y = {binding_site['center_y']:.3f}\ncenter_z = {binding_site['center_z']:.3f}\nsize_x = {binding_site['size_x']:.1f}\nsize_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "center_y",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "center_y = {binding_site['center_y']:.3f}\ncenter_z = {binding_site['center_z']:.3f}\nsize_x = {binding_site['size_x']:.1f}\nsize_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "center_z",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "center_z = {binding_site['center_z']:.3f}\nsize_x = {binding_site['size_x']:.1f}\nsize_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "size_x",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "size_x = {binding_site['size_x']:.1f}\nsize_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "size_y",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "size_y = {binding_site['size_y']:.1f}\nsize_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [\n            \"vina\",",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "size_z",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "size_z = {binding_site['size_z']:.1f}\nexhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [\n            \"vina\",\n            \"--config\", str(config_file),",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "exhaustiveness",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "exhaustiveness = 32\nnum_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [\n            \"vina\",\n            \"--config\", str(config_file),\n            \"--out\", str(output_pdbqt),",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "num_modes",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "num_modes = 10\nenergy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [\n            \"vina\",\n            \"--config\", str(config_file),\n            \"--out\", str(output_pdbqt),\n            \"--log\", str(log_file)",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
+        "label": "energy_range",
+        "kind": 5,
+        "importPath": "src.docking.run_ensemble_docking",
+        "description": "src.docking.run_ensemble_docking",
+        "peekOfCode": "energy_range = 3\n\"\"\"\n        config_file.write_text(config_content)\n        # Run Vina\n        cmd = [\n            \"vina\",\n            \"--config\", str(config_file),\n            \"--out\", str(output_pdbqt),\n            \"--log\", str(log_file)\n        ]",
+        "detail": "src.docking.run_ensemble_docking",
+        "documentation": {}
+    },
+    {
         "label": "calculate_min_distance",
         "kind": 2,
         "importPath": "src.eval.analyze_ppi",
@@ -7041,6 +7842,159 @@
         "documentation": {}
     },
     {
+        "label": "TrajectoryAnalyzer",
+        "kind": 6,
+        "importPath": "src.md.analyze_trajectory",
+        "description": "src.md.analyze_trajectory",
+        "peekOfCode": "class TrajectoryAnalyzer:\n    \"\"\"Analyze MD trajectory and extract representative conformers.\"\"\"\n    def __init__(self, rescue_name: str, base_dir: Path):\n        self.rescue_name = rescue_name\n        self.work_dir = base_dir / rescue_name\n        self.analysis_dir = self.work_dir / \"analysis\"\n        self.analysis_dir.mkdir(exist_ok=True)\n        print(f\"🔬 Analyzing trajectory: {rescue_name}\")\n        print(f\"   Work directory: {self.work_dir}\")\n        print(f\"   Analysis directory: {self.analysis_dir}\")",
+        "detail": "src.md.analyze_trajectory",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.md.analyze_trajectory",
+        "description": "src.md.analyze_trajectory",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Analyze MD trajectory\")\n    parser.add_argument(\"--rescue\", required=True, help=\"Rescue name (e.g., 'A189S_M133L_S95T')\")\n    parser.add_argument(\"--n-clusters\", type=int, default=10, help=\"Number of clusters (default: 10)\")\n    parser.add_argument(\"--base-dir\", type=Path, default=Path(\"Data/processed/md_simulations\"),\n                        help=\"Base directory for MD simulations\")\n    args = parser.parse_args()\n    # Create analyzer\n    analyzer = TrajectoryAnalyzer(args.rescue, args.base_dir)\n    # Run analysis",
+        "detail": "src.md.analyze_trajectory",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.md.build_mutant_structure",
+        "description": "src.md.build_mutant_structure",
+        "peekOfCode": "def load_config():\n    \"\"\"Load EvoEF2 configuration.\"\"\"\n    import yaml\n    config_path = Path(\"configs/scoring.yaml\")\n    with open(config_path) as f:\n        config = yaml.safe_load(f)\n    return config.get(\"evoef2\", {})\ndef main():\n    parser = argparse.ArgumentParser(description=\"Build mutant structure using EvoEF2\")\n    parser.add_argument(\"--mutations\", required=True,",
+        "detail": "src.md.build_mutant_structure",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.md.build_mutant_structure",
+        "description": "src.md.build_mutant_structure",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Build mutant structure using EvoEF2\")\n    parser.add_argument(\"--mutations\", required=True,\n                        help=\"Comma-separated mutations (e.g., 'A189S,M133L,S95T')\")\n    parser.add_argument(\"--output\", required=True,\n                        help=\"Output PDB file path\")\n    parser.add_argument(\"--base-pdb\",\n                        default=\"Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb\",\n                        help=\"Base PDB structure (default: AlphaFold p53)\")\n    args = parser.parse_args()",
+        "detail": "src.md.build_mutant_structure",
+        "documentation": {}
+    },
+    {
+        "label": "project_root",
+        "kind": 5,
+        "importPath": "src.md.build_mutant_structure",
+        "description": "src.md.build_mutant_structure",
+        "peekOfCode": "project_root = Path(__file__).parent.parent.parent\nsys.path.insert(0, str(project_root))\nfrom src.scoring.evoef2_runner import build_mutant_model\ndef load_config():\n    \"\"\"Load EvoEF2 configuration.\"\"\"\n    import yaml\n    config_path = Path(\"configs/scoring.yaml\")\n    with open(config_path) as f:\n        config = yaml.safe_load(f)\n    return config.get(\"evoef2\", {})",
+        "detail": "src.md.build_mutant_structure",
+        "documentation": {}
+    },
+    {
+        "label": "load_drug_metadata",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def load_drug_metadata() -> Dict[str, Any]:\n    \"\"\"Load drug metadata from JSON file.\"\"\"\n    metadata_path = Path(\"Data/raw/drugs/metadata.json\")\n    with open(metadata_path) as f:\n        data = json.load(f)\n    return data[\"drugs\"]\ndef download_from_pubchem(drug_name: str, cid: int, output_dir: Path) -> bool:\n    \"\"\"\n    Download 3D structure from PubChem.\n    Args:",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "download_from_pubchem",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def download_from_pubchem(drug_name: str, cid: int, output_dir: Path) -> bool:\n    \"\"\"\n    Download 3D structure from PubChem.\n    Args:\n        drug_name: Name of the drug\n        cid: PubChem compound ID\n        output_dir: Directory to save structure\n    Returns:\n        True if successful, False otherwise\n    \"\"\"",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "generate_3d_from_smiles",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def generate_3d_from_smiles(drug_name: str, smiles: str, output_dir: Path) -> bool:\n    \"\"\"\n    Generate 3D structure from SMILES using RDKit.\n    Args:\n        drug_name: Name of the drug\n        smiles: SMILES string\n        output_dir: Directory to save structure\n    Returns:\n        True if successful, False otherwise\n    \"\"\"",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "convert_to_pdb",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def convert_to_pdb(drug_name: str, input_dir: Path, output_dir: Path) -> bool:\n    \"\"\"\n    Convert SDF to PDB using Open Babel.\n    Args:\n        drug_name: Name of the drug\n        input_dir: Directory containing SDF file\n        output_dir: Directory to save PDB\n    Returns:\n        True if successful, False otherwise\n    \"\"\"",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "minimize_structure",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def minimize_structure(drug_name: str, pdb_dir: Path) -> bool:\n    \"\"\"\n    Energy minimize structure using Open Babel.\n    Args:\n        drug_name: Name of the drug\n        pdb_dir: Directory containing PDB file\n    Returns:\n        True if successful, False otherwise\n    \"\"\"\n    pdb_path = pdb_dir / f\"{drug_name}.pdb\"",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "prepare_for_docking",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def prepare_for_docking(drug_name: str, pdb_dir: Path, output_dir: Path) -> bool:\n    \"\"\"\n    Prepare drug for docking (convert to PDBQT format).\n    Args:\n        drug_name: Name of the drug\n        pdb_dir: Directory containing PDB file\n        output_dir: Directory to save PDBQT\n    Returns:\n        True if successful, False otherwise\n    \"\"\"",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.md.download_drugs",
+        "description": "src.md.download_drugs",
+        "peekOfCode": "def main():\n    \"\"\"Main workflow: download and prepare all drugs.\"\"\"\n    print(\"=\" * 80)\n    print(\"Drug Structure Download & Preparation Pipeline\")\n    print(\"=\" * 80)\n    # Setup directories\n    base_dir = Path(\"Data/raw/drugs\")\n    structures_dir = base_dir / \"structures\"\n    prepared_dir = base_dir / \"prepared\"\n    structures_dir.mkdir(parents=True, exist_ok=True)",
+        "detail": "src.md.download_drugs",
+        "documentation": {}
+    },
+    {
+        "label": "MDSimulationSetup",
+        "kind": 6,
+        "importPath": "src.md.setup_md_simulation",
+        "description": "src.md.setup_md_simulation",
+        "peekOfCode": "class MDSimulationSetup:\n    \"\"\"Automate MD simulation setup workflow.\"\"\"\n    def __init__(self, rescue_name: str, target: str, base_dir: Path):\n        self.rescue_name = rescue_name.replace(\",\", \"_\")\n        self.target = target\n        self.base_dir = base_dir\n        self.work_dir = base_dir / self.rescue_name\n        self.work_dir.mkdir(parents=True, exist_ok=True)\n        print(f\"🧬 Setting up MD simulation for: {rescue_name}\")\n        print(f\"   Target: {target}\")",
+        "detail": "src.md.setup_md_simulation",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.md.setup_md_simulation",
+        "description": "src.md.setup_md_simulation",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Setup GROMACS MD simulation for p53 rescue mutant\")\n    parser.add_argument(\"--rescue\", required=True, help=\"Rescue mutation (e.g., 'A189S,M133L,S95T')\")\n    parser.add_argument(\"--target\", required=True, help=\"Target mutation (e.g., 'R175H')\")\n    parser.add_argument(\"--duration\", type=int, default=50, help=\"Simulation duration in ns (default: 50)\")\n    parser.add_argument(\"--base-dir\", type=Path, default=Path(\"Data/processed/md_simulations\"),\n                        help=\"Base directory for MD simulations\")\n    args = parser.parse_args()\n    # Create setup instance\n    setup = MDSimulationSetup(args.rescue, args.target, args.base_dir)",
+        "detail": "src.md.setup_md_simulation",
+        "documentation": {}
+    },
+    {
+        "label": "constraint_algorithm",
+        "kind": 5,
+        "importPath": "src.md.setup_md_simulation",
+        "description": "src.md.setup_md_simulation",
+        "peekOfCode": "constraint_algorithm = lincs\n\"\"\"\n    @staticmethod\n    def _default_npt_mdp() -> str:\n        \"\"\"Default NPT equilibration MDP parameters.\"\"\"\n        return \"\"\"\n; NPT equilibration\ndefine      = -DPOSRES\nintegrator  = md\ndt          = 0.002",
+        "detail": "src.md.setup_md_simulation",
+        "documentation": {}
+    },
+    {
+        "label": "constraint_algorithm",
+        "kind": 5,
+        "importPath": "src.md.setup_md_simulation",
+        "description": "src.md.setup_md_simulation",
+        "peekOfCode": "constraint_algorithm = lincs\n\"\"\"\n    @staticmethod\n    def _default_md_mdp(duration_ns: int) -> str:\n        \"\"\"Default production MD MDP parameters.\"\"\"\n        nsteps = duration_ns * 500000  # 2 fs timestep, 500000 steps = 1 ns\n        return f\"\"\"\n; Production MD ({duration_ns} ns)\nintegrator  = md\ndt          = 0.002",
+        "detail": "src.md.setup_md_simulation",
+        "documentation": {}
+    },
+    {
+        "label": "constraint_algorithm",
+        "kind": 5,
+        "importPath": "src.md.setup_md_simulation",
+        "description": "src.md.setup_md_simulation",
+        "peekOfCode": "constraint_algorithm = lincs\n; PBC\npbc             = xyz\n\"\"\"\n    def run_full_pipeline(self, duration_ns: int = 50):\n        \"\"\"Run complete MD simulation pipeline.\"\"\"\n        try:\n            # Find input structure\n            input_pdb = self.find_input_structure()\n            # Run all steps",
+        "detail": "src.md.setup_md_simulation",
+        "documentation": {}
+    },
+    {
         "label": "save_alignment",
         "kind": 2,
         "importPath": "src.msa.alignment_cache",
@@ -7362,6 +8316,294 @@
         "description": "src.reporting.risk_annotator",
         "peekOfCode": "def format_risk_flags(row: pd.Series) -> str:\n    \"\"\"Format risk flags as human-readable string.\n    Args:\n        row: DataFrame row with flag columns\n    Returns:\n        Comma-separated flag descriptions\n    \"\"\"\n    flags = []\n    if row.get(\"high_conservation\", False):\n        flags.append(\"High conservation\")",
         "detail": "src.reporting.risk_annotator",
+        "documentation": {}
+    },
+    {
+        "label": "BindingAffinityResult",
+        "kind": 6,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "class BindingAffinityResult:\n    \"\"\"Results from DNA binding affinity calculation.\"\"\"\n    ddg_binding: float  # Estimated ΔΔG_binding (kcal/mol)\n    wt_contacts: int\n    mut_contacts: int\n    lost_contacts: int\n    gained_contacts: int\n    wt_hbonds: int\n    mut_hbonds: int\n    lost_hbonds: int",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:\n        return yaml.safe_load(f)\ndef get_dna_contacts(structure, protein_chains: List[str], dna_chains: List[str],\n                     cutoff: float = 4.5) -> Dict[int, Set[str]]:\n    \"\"\"\n    Identify protein residues in contact with DNA.\n    Args:\n        structure: BioPython structure object",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "get_dna_contacts",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def get_dna_contacts(structure, protein_chains: List[str], dna_chains: List[str],\n                     cutoff: float = 4.5) -> Dict[int, Set[str]]:\n    \"\"\"\n    Identify protein residues in contact with DNA.\n    Args:\n        structure: BioPython structure object\n        protein_chains: List of protein chain IDs\n        dna_chains: List of DNA chain IDs\n        cutoff: Contact distance in Angstroms\n    Returns:",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "get_hydrogen_bonds",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def get_hydrogen_bonds(structure, protein_chains: List[str], dna_chains: List[str],\n                       cutoff: float = 3.5) -> List[Tuple[int, str]]:\n    \"\"\"\n    Identify potential hydrogen bonds between protein and DNA.\n    Simplified approach: check N/O atoms in protein within H-bond distance of DNA.\n    Returns:\n        List of (residue_number, DNA_atom_id) pairs\n    \"\"\"\n    hbonds = []\n    # Get donor/acceptor atoms from protein",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "mutate_residue_in_structure",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def mutate_residue_in_structure(structure, chain_id: str, resnum: int,\n                                 new_aa: str, rotamer_lib: str = \"dunbrack\") -> bool:\n    \"\"\"\n    Introduce mutation in structure (simplified - uses representative rotamer).\n    For now, this is a placeholder. A full implementation would:\n    1. Look up rotamer library for new amino acid\n    2. Model sidechain atoms\n    3. Minimize local geometry\n    Returns:\n        True if mutation successful, False otherwise",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "check_clashes",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def check_clashes(structure, chain_id: str, resnum: int,\n                  dna_chains: List[str], clash_cutoff: float = 2.0) -> int:\n    \"\"\"\n    Check for steric clashes between mutated residue and DNA.\n    Args:\n        structure: Structure with mutation\n        chain_id: Protein chain ID\n        resnum: Residue number\n        dna_chains: DNA chain IDs\n        clash_cutoff: Distance below which atoms clash (Angstroms)",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_binding_affinity",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def calculate_binding_affinity(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    config: Optional[Dict] = None\n) -> BindingAffinityResult:\n    \"\"\"\n    Calculate estimated ΔΔG_binding for mutation(s).\n    Args:\n        pdb_path: Path to DNA-bound structure (e.g., 2OCJ)\n        mutations: List of (position, wt_aa, mut_aa) tuples",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_binding_affinity_cached",
+        "kind": 2,
+        "importPath": "src.scoring.functional.binding_affinity",
+        "description": "src.scoring.functional.binding_affinity",
+        "peekOfCode": "def calculate_binding_affinity_cached(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],\n    config: Optional[Dict] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> BindingAffinityResult:\n    \"\"\"\n    Calculate binding affinity with caching.\n    Args:\n        pdb_path: Path to structure",
+        "detail": "src.scoring.functional.binding_affinity",
+        "documentation": {}
+    },
+    {
+        "label": "EvoEF2BindingResult",
+        "kind": 6,
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "peekOfCode": "class EvoEF2BindingResult:\n    \"\"\"Results from EvoEF2 binding energy calculation.\"\"\"\n    ddg_binding: float  # ΔΔG_binding (kcal/mol, positive = weaker binding)\n    wt_binding: float  # WT binding energy\n    mut_binding: float  # Mutant binding energy\n    category: str  # \"good\", \"acceptable\", \"bad\"\n    details: Dict\ndef load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:",
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "peekOfCode": "def load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:\n        return yaml.safe_load(f)\ndef load_evoef2_config(config_path: str = \"configs/scoring.yaml\") -> Dict:\n    \"\"\"Load EvoEF2 configuration.\"\"\"\n    with open(config_path) as f:\n        cfg = yaml.safe_load(f)\n    return cfg.get('evoef2', {})\ndef calculate_binding_evoef2(",
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "load_evoef2_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "peekOfCode": "def load_evoef2_config(config_path: str = \"configs/scoring.yaml\") -> Dict:\n    \"\"\"Load EvoEF2 configuration.\"\"\"\n    with open(config_path) as f:\n        cfg = yaml.safe_load(f)\n    return cfg.get('evoef2', {})\ndef calculate_binding_evoef2(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    split_chains: str,  # e.g., \"ABC,EF\" for protein vs DNA\n    config: Optional[Dict] = None,",
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_binding_evoef2",
+        "kind": 2,
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "peekOfCode": "def calculate_binding_evoef2(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    split_chains: str,  # e.g., \"ABC,EF\" for protein vs DNA\n    config: Optional[Dict] = None,\n    evoef2_cfg: Optional[Dict] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> EvoEF2BindingResult:\n    \"\"\"\n    Calculate ΔΔG_binding using EvoEF2 ComputeBinding.",
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_interface_evoef2",
+        "kind": 2,
+        "importPath": "src.scoring.functional.evoef2_binding",
+        "description": "src.scoring.functional.evoef2_binding",
+        "peekOfCode": "def calculate_interface_evoef2(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],\n    split_chains: str = \"A,B\",  # Default: monomer A vs B\n    config: Optional[Dict] = None,\n    evoef2_cfg: Optional[Dict] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> EvoEF2BindingResult:\n    \"\"\"\n    Calculate ΔΔG_interface using EvoEF2 ComputeBinding.",
+        "detail": "src.scoring.functional.evoef2_binding",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalScoreResult",
+        "kind": 6,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "class FunctionalScoreResult:\n    \"\"\"Complete functional scoring result.\"\"\"\n    # Component scores (raw)\n    ddg_folding: float\n    ddg_binding: float\n    ddg_interface: float\n    risk: float\n    # Normalized scores (0-1, higher is better)\n    folding_norm: float\n    binding_norm: float",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "def load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:\n        return yaml.safe_load(f)\ndef normalize_score(value: float, min_val: float, max_val: float,\n                    higher_is_better: bool = False) -> float:\n    \"\"\"\n    Normalize a score to 0-1 range.\n    Args:\n        value: Raw score",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "normalize_score",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "def normalize_score(value: float, min_val: float, max_val: float,\n                    higher_is_better: bool = False) -> float:\n    \"\"\"\n    Normalize a score to 0-1 range.\n    Args:\n        value: Raw score\n        min_val: Minimum possible value (best)\n        max_val: Maximum possible value (worst)\n        higher_is_better: If True, higher values are better\n    Returns:",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "categorize_overall",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "def categorize_overall(folding_cat: str, binding_cat: str,\n                       interface_cat: str) -> str:\n    \"\"\"\n    Determine overall category from component categories.\n    Rules:\n    - Excellent: All components \"good\"\n    - Good: ≥2 components \"good\", none \"bad\"\n    - Acceptable: ≥1 component \"good\", or all \"acceptable\"\n    - Poor: Any component \"bad\"\n    \"\"\"",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_functional_score",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "def calculate_functional_score(\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    ddg_folding: float,  # From EvoEF2\n    risk: float,  # From risk scoring\n    config: Optional[Dict] = None,\n    structure_paths: Optional[Dict[str, str]] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> FunctionalScoreResult:\n    \"\"\"\n    Calculate comprehensive functional score for a rescue mutation.",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "score_rescue_candidates",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score",
+        "description": "src.scoring.functional.functional_score",
+        "peekOfCode": "def score_rescue_candidates(\n    candidates_df: pd.DataFrame,\n    config: Optional[Dict] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\",\n    verbose: bool = True\n) -> pd.DataFrame:\n    \"\"\"\n    Score a dataframe of rescue candidates with functional scores.\n    Args:\n        candidates_df: DataFrame with columns: rescue_mutations, ddg_gain, risk",
+        "detail": "src.scoring.functional.functional_score",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalScoreEvoEF2Result",
+        "kind": 6,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "class FunctionalScoreEvoEF2Result:\n    \"\"\"Complete functional scoring result using EvoEF2.\"\"\"\n    # Component scores (raw)\n    ddg_folding: float\n    ddg_binding: float\n    ddg_interface: float\n    risk: float\n    # Normalized scores (0-1, higher is better)\n    folding_norm: float\n    binding_norm: float",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "def load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:\n        return yaml.safe_load(f)\ndef normalize_score(value: float, min_val: float, max_val: float,\n                    higher_is_better: bool = False) -> float:\n    \"\"\"\n    Normalize a score to 0-1 range.\n    Args:\n        value: Raw score",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "normalize_score",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "def normalize_score(value: float, min_val: float, max_val: float,\n                    higher_is_better: bool = False) -> float:\n    \"\"\"\n    Normalize a score to 0-1 range.\n    Args:\n        value: Raw score\n        min_val: Minimum possible value (best)\n        max_val: Maximum possible value (worst)\n        higher_is_better: If True, higher values are better\n    Returns:",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "categorize_overall",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "def categorize_overall(folding_cat: str, binding_cat: str,\n                       interface_cat: str) -> str:\n    \"\"\"\n    Determine overall category from component categories.\n    Rules:\n    - Excellent: All components \"good\"\n    - Good: ≥2 components \"good\", none \"bad\"\n    - Acceptable: ≥1 component \"good\", or all \"acceptable\"\n    - Poor: Any component \"bad\"\n    \"\"\"",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_functional_score_evoef2",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "def calculate_functional_score_evoef2(\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    ddg_folding: float,  # From EvoEF2\n    risk: float,  # From risk scoring\n    config: Optional[Dict] = None,\n    evoef2_cfg: Optional[Dict] = None,\n    structure_paths: Optional[Dict[str, str]] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> FunctionalScoreEvoEF2Result:\n    \"\"\"",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "score_rescue_candidates_evoef2",
+        "kind": 2,
+        "importPath": "src.scoring.functional.functional_score_evoef2",
+        "description": "src.scoring.functional.functional_score_evoef2",
+        "peekOfCode": "def score_rescue_candidates_evoef2(\n    candidates_df: pd.DataFrame,\n    config: Optional[Dict] = None,\n    evoef2_cfg: Optional[Dict] = None,\n    cache_dir: str = \"Data/processed/cache/functional_scoring\",\n    max_candidates: Optional[int] = None,\n    verbose: bool = True\n) -> pd.DataFrame:\n    \"\"\"\n    Score rescue candidates with EvoEF2-based functional scores.",
+        "detail": "src.scoring.functional.functional_score_evoef2",
+        "documentation": {}
+    },
+    {
+        "label": "InterfaceStabilityResult",
+        "kind": 6,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "class InterfaceStabilityResult:\n    \"\"\"Results from tetramer interface stability calculation.\"\"\"\n    ddg_interface: float  # Estimated ΔΔG_interface (kcal/mol)\n    wt_interface_contacts: int\n    mut_interface_contacts: int\n    lost_contacts: int\n    gained_contacts: int\n    wt_buried_area: float  # Approximate buried surface area (Å²)\n    mut_buried_area: float\n    clashes: int",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "load_config",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def load_config(config_path: str = \"configs/functional_scoring.yaml\") -> Dict:\n    \"\"\"Load functional scoring configuration.\"\"\"\n    with open(config_path) as f:\n        return yaml.safe_load(f)\ndef get_interface_residues(structure, chain_a_id: str, chain_b_id: str,\n                           cutoff: float = 8.0) -> Tuple[Set[int], Set[int]]:\n    \"\"\"\n    Identify residues at the interface between two chains.\n    Args:\n        structure: BioPython structure object",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "get_interface_residues",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def get_interface_residues(structure, chain_a_id: str, chain_b_id: str,\n                           cutoff: float = 8.0) -> Tuple[Set[int], Set[int]]:\n    \"\"\"\n    Identify residues at the interface between two chains.\n    Args:\n        structure: BioPython structure object\n        chain_a_id: First chain ID\n        chain_b_id: Second chain ID\n        cutoff: Interface distance cutoff in Angstroms\n    Returns:",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "get_interface_contacts",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def get_interface_contacts(structure, chain_a_id: str, chain_b_id: str,\n                           contact_cutoff: float = 4.5) -> Dict[int, int]:\n    \"\"\"\n    Count interface contacts for each residue.\n    Args:\n        structure: BioPython structure\n        chain_a_id: First chain ID\n        chain_b_id: Second chain ID\n        contact_cutoff: Contact distance in Angstroms\n    Returns:",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "estimate_buried_surface_area",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def estimate_buried_surface_area(structure, chain_a_id: str, chain_b_id: str,\n                                 residue_num: int, probe_radius: float = 1.4) -> float:\n    \"\"\"\n    Estimate buried surface area for a residue at the interface.\n    Simplified calculation based on number of contacts and residue size.\n    Args:\n        structure: BioPython structure\n        chain_a_id: Chain containing the residue\n        chain_b_id: Partner chain\n        residue_num: Residue number",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_interface_stability",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def calculate_interface_stability(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],  # (position, wt_aa, mut_aa)\n    config: Optional[Dict] = None,\n    chain_a_id: str = \"A\",\n    chain_b_id: str = \"B\"\n) -> InterfaceStabilityResult:\n    \"\"\"\n    Calculate estimated ΔΔG_interface for mutation(s).\n    Args:",
+        "detail": "src.scoring.functional.interface_stability",
+        "documentation": {}
+    },
+    {
+        "label": "calculate_interface_stability_cached",
+        "kind": 2,
+        "importPath": "src.scoring.functional.interface_stability",
+        "description": "src.scoring.functional.interface_stability",
+        "peekOfCode": "def calculate_interface_stability_cached(\n    pdb_path: str,\n    mutations: List[Tuple[int, str, str]],\n    config: Optional[Dict] = None,\n    chain_a_id: str = \"A\",\n    chain_b_id: str = \"B\",\n    cache_dir: str = \"Data/processed/cache/functional_scoring\"\n) -> InterfaceStabilityResult:\n    \"\"\"Calculate interface stability with caching.\"\"\"\n    # Create cache key",
+        "detail": "src.scoring.functional.interface_stability",
         "documentation": {}
     },
     {
@@ -8531,6 +9773,15 @@
         "importPath": "src.scoring.evoef2_runner",
         "description": "src.scoring.evoef2_runner",
         "peekOfCode": "def compute_stability(pdb_path: Path, evoef2_cfg: dict[str, Any], workdir: Path) -> float:\n    logger = get_logger(__name__)\n    logger.info(\"Computing stability for PDB: %s\", pdb_path)\n    binary_path = _resolve_evoef2_binary(evoef2_cfg.get(\"binary\"))\n    logger.debug(\"Using EvoEF2 binary: %s\", binary_path)\n    _validate_evoef2_install(binary_path)\n    # EvoEF2 has issues with absolute paths, so copy PDB to workdir and use relative path\n    workdir.mkdir(parents=True, exist_ok=True)\n    local_pdb = workdir / pdb_path.name\n    if not local_pdb.exists() or local_pdb.stat().st_size != pdb_path.stat().st_size:",
+        "detail": "src.scoring.evoef2_runner",
+        "documentation": {}
+    },
+    {
+        "label": "compute_binding",
+        "kind": 2,
+        "importPath": "src.scoring.evoef2_runner",
+        "description": "src.scoring.evoef2_runner",
+        "peekOfCode": "def compute_binding(pdb_path: Path, split_chains: str, evoef2_cfg: dict[str, Any], workdir: Path) -> float:\n    \"\"\"\n    Compute binding free energy between protein chains using EvoEF2 ComputeBinding.\n    Args:\n        pdb_path: Path to complex PDB file (e.g., protein-DNA or protein-protein)\n        split_chains: Chain splitting specification (e.g., \"ABC,EF\" for protein vs DNA)\n        evoef2_cfg: EvoEF2 configuration dict\n        workdir: Working directory for temporary files\n    Returns:\n        Binding free energy in kcal/mol (negative = favorable binding)",
         "detail": "src.scoring.evoef2_runner",
         "documentation": {}
     },

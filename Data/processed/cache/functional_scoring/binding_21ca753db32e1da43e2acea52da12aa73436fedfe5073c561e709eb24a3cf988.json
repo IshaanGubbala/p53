@@ -1,0 +1,27 @@
+{
+  "ddg_binding": 17.0,
+  "wt_contacts": 174,
+  "mut_contacts": 0,
+  "lost_contacts": 17.0,
+  "gained_contacts": 0,
+  "wt_hbonds": 29,
+  "mut_hbonds": 0,
+  "lost_hbonds": 0,
+  "gained_hbonds": 0,
+  "clashes": 0,
+  "category": "bad",
+  "details": {
+    "mutations": [
+      [
+        248,
+        "R",
+        "Q"
+      ]
+    ],
+    "ddg_components": [
+      17.0
+    ],
+    "method": "structural_heuristic",
+    "note": "Heuristic estimate - validate with FoldX or experiment"
+  }
+}

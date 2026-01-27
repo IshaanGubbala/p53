@@ -1,0 +1,106 @@
+{
+  "drugs": {
+    "COTI-2": {
+      "full_name": "COTI-2",
+      "pubchem_cid": 71464531,
+      "mechanism": "Stabilizes mutant p53, restores wild-type function",
+      "target_mutations": ["Y220C", "R175H", "R273H", "R248Q"],
+      "clinical_status": "Phase 1 clinical trials",
+      "indication": "Gynecological cancers",
+      "binding_site": "Hydrophobic core",
+      "molecular_weight": 318.45,
+      "smiles": "CC(C)N(C(=O)CN1CCCC1=O)C2=CC=C(C=C2)OC",
+      "references": [
+        "Lindemann A, et al. (2019) COTI-2 enhances anti-tumor immunity. Oncotarget 10:2703-2716"
+      ]
+    },
+    "APR-246": {
+      "full_name": "APR-246 (Eprenetapopt, PRIMA-1MET)",
+      "pubchem_cid": 11388326,
+      "mechanism": "Covalent modifier of mutant p53 cysteines, restores DNA binding",
+      "target_mutations": ["R175H", "R248Q", "R273H", "Y220C"],
+      "clinical_status": "Phase 3 clinical trials",
+      "indication": "AML, MDS, ovarian cancer",
+      "binding_site": "Core domain cysteines (C124, C135, C141)",
+      "molecular_weight": 162.19,
+      "smiles": "CC1=CC(=O)C=C(C1=O)C",
+      "references": [
+        "Bykov VJN, et al. (2018) Targeting mutant p53 for efficient cancer therapy. Nat Rev Cancer 18:89-102",
+        "Lambert JMR, et al. (2009) APR-246 reactivates mutant p53. Cancer Cell 15:376-388"
+      ]
+    },
+    "Nutlin-3a": {
+      "full_name": "Nutlin-3a",
+      "pubchem_cid": 11433190,
+      "mechanism": "MDM2 inhibitor, blocks p53-MDM2 interaction, stabilizes p53",
+      "target_mutations": ["Wild-type", "Potential synergy with rescues"],
+      "clinical_status": "Preclinical (analogs in trials: RG7112, RG7388)",
+      "indication": "Solid tumors, hematological malignancies",
+      "binding_site": "MDM2 binding pocket (not p53 directly)",
+      "molecular_weight": 581.67,
+      "smiles": "CC1=C(C(=O)N(C2=CC=CC=C12)C3=CC=C(C=C3)Cl)NC(=O)C4CCCN4C(=O)C5CC5",
+      "references": [
+        "Vassilev LT, et al. (2004) In vivo activation of p53 by small-molecule antagonists of MDM2. Science 303:844-848"
+      ],
+      "note": "May synergize with rescue mutations by preventing degradation of rescued p53"
+    },
+    "PHI-KAN-083": {
+      "full_name": "PhiKan083",
+      "pubchem_cid": null,
+      "mechanism": "Binds Y220C cavity, stabilizes core domain",
+      "target_mutations": ["Y220C"],
+      "clinical_status": "Preclinical",
+      "indication": "Y220C-specific cancers",
+      "binding_site": "Y220C-induced pocket (surface cavity)",
+      "molecular_weight": 353.38,
+      "smiles": "CC1=CC(=C(C=C1)NC(=O)C2=CC=C(C=C2)S(=O)(=O)N3CCCC3)C",
+      "references": [
+        "Boeckler FM, et al. (2008) Targeted rescue of a destabilized mutant of p53 by an in silico screened drug. PNAS 105:10360-10365",
+        "Bauer MR, et al. (2019) Targeting cavity-forming mutations in p53. Cell Chem Biol 26:1-14"
+      ]
+    },
+    "PRIMA-1": {
+      "full_name": "PRIMA-1",
+      "pubchem_cid": 5719,
+      "mechanism": "Restores mutant p53 to wild-type conformation, enhanced DNA binding",
+      "target_mutations": ["R175H", "R248Q", "R273H"],
+      "clinical_status": "Preclinical (PRIMA-1MET = APR-246 in trials)",
+      "indication": "Multiple cancer types",
+      "binding_site": "Core domain, mechanism not fully elucidated",
+      "molecular_weight": 162.19,
+      "smiles": "CC1=CC(=O)C=CC1=O",
+      "references": [
+        "Bykov VJN, et al. (2002) Restoration of the tumor suppressor function to mutant p53 by a low-molecular-weight compound. Nat Med 8:282-288"
+      ]
+    },
+    "CP-31398": {
+      "full_name": "CP-31398",
+      "pubchem_cid": 2842,
+      "mechanism": "Stabilizes p53 core domain, prevents thermal denaturation",
+      "target_mutations": ["Multiple hotspots"],
+      "clinical_status": "Preclinical",
+      "indication": "Broad p53 mutant stabilization",
+      "binding_site": "Surface groove near DNA binding domain",
+      "molecular_weight": 393.47,
+      "smiles": "C1=CC(=C(C=C1C(=O)NC2=NC=C(C=C2)Cl)O)C(=O)NCC3=CC=CC=C3",
+      "references": [
+        "Foster BA, et al. (1999) Pharmacological rescue of mutant p53 conformation and function. Science 286:2507-2510"
+      ]
+    }
+  },
+  "metadata": {
+    "total_drugs": 6,
+    "selection_criteria": [
+      "Clinical relevance (FDA-approved or in trials)",
+      "Mechanism targets p53 mutants",
+      "Structural data available or obtainable"
+    ],
+    "notes": {
+      "Nutlin-3a": "Indirect mechanism (MDM2 inhibition), but may synergize with rescues",
+      "PHI-KAN-083": "Highly specific for Y220C, limited to that mutation context",
+      "APR-246_PRIMA-1": "APR-246 is the methylated prodrug of PRIMA-1 (same active metabolite)"
+    },
+    "date_compiled": "2026-01-26",
+    "compiled_by": "Claude Code (Anthropic)"
+  }
+}

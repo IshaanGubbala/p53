@@ -20,7 +20,7 @@
       "max_pairs": 300,
       "max_singles": 200,
       "max_triples": 200,
-      "min_distance_protected": 0.0,
+      "min_distance_protected": 8.0,
       "risk_weights": {
         "burial": 0.15,
         "conservation": 0.2,
@@ -40,13 +40,13 @@
         {
           "chain_id": "A",
           "id": "alphafold",
-          "pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
+          "pdb": "Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
           "weight": 1.0
         },
         {
           "chain_id": "A",
           "id": "2ocj_core",
-          "pdb": "/Users/ishaangubbala/Documents/p53/Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
+          "pdb": "Data/raw/experimental_pdbs/2OCJ_chainA.pdb",
           "weight": 1.0
         }
       ]
@@ -54,5 +54,5 @@
     "sequence_sha256": "89f1c453491ee0aab7abfc2c5bd12d8275424328dd936d0ca974190416365315",
     "target": "R175H"
   },
-  "signature_sha256": "c38dac841db136b430c6ed923928ae6fd40ea9001a531a65bf19f6d8acdfa839"
+  "signature_sha256": "b1989df17fec4b318fa3b0554a8a1c4744d3ca20625a5c16d9c42060984f5fe9"
 }

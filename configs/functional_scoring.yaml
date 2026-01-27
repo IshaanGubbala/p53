@@ -1,0 +1,107 @@
+# Functional Rescue Scoring Configuration
+# Evaluates rescues across multiple dimensions: stability, DNA binding, tetramerization
+
+# Scoring method: start with lightweight Python implementation, can upgrade to FoldX later
+method: "structural_analysis"  # Options: structural_analysis, foldx, rosetta
+
+# Structure files for functional analysis
+structures:
+  dna_bound:
+    pdb: "Data/raw/experimental_pdbs/1TSR.pdb"  # DNA-bound p53 tetramer
+    protein_chains: ["A", "B", "C"]  # p53 protein chains
+    dna_chains: ["E", "F"]  # DNA chains (double helix)
+    resolution: 2.2
+
+  tetramer:
+    pdb: "Data/raw/experimental_pdbs/3KMD.pdb"  # p53 tetramer
+    chains: ["A", "B", "C", "D"]  # All 4 monomers
+    dimer_interface: ["A", "B"]  # Primary dimer for interface analysis
+    resolution: 2.5
+
+# DNA binding affinity parameters
+dna_binding:
+  # Contact distance thresholds (Angstroms)
+  contact_cutoff: 4.5  # Heavy atom distance for contacts
+  hydrogen_bond_cutoff: 3.5  # Donor-acceptor distance
+
+  # Scoring weights (empirical, based on structural analysis)
+  weights:
+    contact_loss: 2.0      # Penalty per lost DNA contact
+    contact_gain: -1.0     # Bonus per new DNA contact (usually bad - wrong contacts)
+    hbond_loss: 3.0        # Penalty per lost H-bond
+    hbond_gain: -0.5       # Small bonus for new H-bonds (if geometrically correct)
+    clash: 5.0             # Penalty for steric clashes with DNA
+
+  # Acceptance thresholds (kcal/mol equivalent)
+  thresholds:
+    good: 0.0        # ΔΔG_binding ≤ 0 (neutral or improved)
+    acceptable: 2.0  # ΔΔG_binding ≤ 2.0 (modest penalty)
+    bad: 4.0         # ΔΔG_binding > 4.0 (significantly disrupted)
+
+# Tetramer interface parameters
+tetramer_interface:
+  # Interface definition
+  interface_cutoff: 8.0  # Residues within 8Å of partner chain
+  contact_cutoff: 4.5    # Heavy atom distance for contacts
+
+  # Scoring weights
+  weights:
+    contact_loss: 1.5      # Penalty per lost interface contact
+    contact_gain: -1.0     # Penalty per new contact (may be unfavorable)
+    clash: 4.0             # Penalty for interface clashes
+    buried_area_loss: 0.01 # Penalty per Å² of lost buried surface area
+
+  # Acceptance thresholds (kcal/mol equivalent)
+  thresholds:
+    good: 0.0        # ΔΔG_interface ≤ 0 (neutral or improved)
+    acceptable: 2.5  # ΔΔG_interface ≤ 2.5 (modest destabilization)
+    bad: 5.0         # ΔΔG_interface > 5.0 (disrupts tetramer)
+
+# Composite functional score
+functional_score:
+  # Component weights (must sum to 1.0)
+  weights:
+    folding: 0.35      # Monomer stability (ΔΔG from EvoEF2)
+    dna_binding: 0.35  # DNA binding affinity
+    interface: 0.20    # Tetramer interface stability
+    risk: 0.10         # Safety (MSA conservation, etc.)
+
+  # Normalization ranges (for combining different score types)
+  normalization:
+    folding:
+      min: -10.0  # Best possible ΔΔG_folding
+      max: 5.0    # Worst acceptable ΔΔG_folding
+    dna_binding:
+      min: -2.0   # Best possible ΔΔG_binding
+      max: 5.0    # Worst acceptable ΔΔG_binding
+    interface:
+      min: -2.0   # Best possible ΔΔG_interface
+      max: 5.0    # Worst acceptable ΔΔG_interface
+    risk:
+      min: 0.0    # Lowest risk
+      max: 0.3    # Highest acceptable risk
+
+# FoldX configuration (for when available)
+foldx:
+  executable: "foldx"  # Path to FoldX binary
+  repair_pdb: true     # Run RepairPDB before analysis
+  commands:
+    binding: "AnalyseComplex"
+    stability: "Stability"
+
+  # FoldX parameters
+  parameters:
+    numberOfRuns: 3      # Replicates for averaging
+    temperature: 298     # 25°C
+    pH: 7.0
+    ionicStrength: 0.15  # 150 mM
+
+# Output paths
+output:
+  cache_dir: "Data/processed/cache/functional_scoring"
+  results_dir: "Data/processed/functional_scores"
+
+# Caching (avoid re-calculating)
+cache:
+  enabled: true
+  ttl: 2592000  # 30 days in seconds

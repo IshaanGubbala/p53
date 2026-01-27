@@ -1,0 +1,45 @@
+{
+  "targets": [
+    "R175H",
+    "R248Q",
+    "R273H",
+    "Y220C"
+  ],
+  "total_rescues": 749,
+  "category_distribution": {
+    "excellent": 525,
+    "good": 61,
+    "acceptable": 68,
+    "poor": 95
+  },
+  "pass_rates": {
+    "dna_binding": 100.0,
+    "interface": 100.0
+  },
+  "per_target": {
+    "R175H": {
+      "total": 169,
+      "excellent": 124,
+      "dna_pass_rate": 100.0,
+      "interface_pass_rate": 100.0
+    },
+    "R248Q": {
+      "total": 173,
+      "excellent": 125,
+      "dna_pass_rate": 100.0,
+      "interface_pass_rate": 100.0
+    },
+    "R273H": {
+      "total": 228,
+      "excellent": 153,
+      "dna_pass_rate": 100.0,
+      "interface_pass_rate": 100.0
+    },
+    "Y220C": {
+      "total": 179,
+      "excellent": 123,
+      "dna_pass_rate": 100.0,
+      "interface_pass_rate": 100.0
+    }
+  }
+}

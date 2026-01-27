@@ -1,0 +1,67 @@
+{
+  "ddg_interface": 0.0,
+  "wt_interface_contacts": 104,
+  "mut_interface_contacts": 0,
+  "lost_contacts": 0,
+  "gained_contacts": 0,
+  "wt_buried_area": 1396.5,
+  "mut_buried_area": 1396.5,
+  "clashes": 0,
+  "category": "good",
+  "details": {
+    "mutations": [
+      [
+        196,
+        "R",
+        "Q"
+      ]
+    ],
+    "ddg_components": [
+      0.0
+    ],
+    "interface_residues_chain_a": [
+      137,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      192,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      245,
+      247
+    ],
+    "interface_residues_chain_b": [
+      137,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      192,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      245,
+      247
+    ],
+    "method": "structural_heuristic",
+    "note": "Heuristic estimate - validate with FoldX or experiment"
+  }
+}

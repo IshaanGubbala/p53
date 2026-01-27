@@ -34,3 +34,7 @@ evoef2:
 
   consensus_method: median  # Options: median, mean, weighted
   require_all: false        # Allow partial failures
+
+foldx:
+  binary: tools/foldx/foldx
+  rotabase: tools/foldx/rotabase.txt

@@ -678,7 +678,38 @@ def run(args, configs: dict[str, Any]) -> int:
         summary_path = seed_out_dir / "summary.json"
 
         results_df.to_parquet(candidates_path, index=False)
-        results_df[results_df["is_pareto"]].to_parquet(pareto_path, index=False)
+
+        # Get Pareto dataframe
+        pareto_df = results_df[results_df["is_pareto"]].copy()
+
+        # Apply functional scoring if requested
+        if args.functional_scoring:
+            logger.info("Applying functional scoring to %d Pareto rescues for %s", len(pareto_df), seed)
+            try:
+                from src.scoring.functional.functional_score_evoef2 import score_rescue_candidates_evoef2
+                from src.scoring.functional.evoef2_binding import load_evoef2_config
+
+                # Load EvoEF2 config
+                evoef2_cfg = load_evoef2_config(args.config_score)
+
+                # Score Pareto rescues with functional scoring
+                pareto_scored = score_rescue_candidates_evoef2(
+                    pareto_df,
+                    evoef2_cfg=evoef2_cfg,
+                    cache_dir=str(paths["cache"] / "functional_scoring"),
+                    verbose=True
+                )
+
+                # Use scored version as the Pareto dataframe
+                pareto_df = pareto_scored
+                logger.info("Functional scoring complete for %s", seed)
+
+            except Exception as e:
+                logger.error("Functional scoring failed for %s: %s", seed, e)
+                logger.warning("Continuing without functional scores")
+
+        # Save Pareto dataframe (with or without functional scores)
+        pareto_df.to_parquet(pareto_path, index=False)
 
         summary = {
             "target": seed,
@@ -730,6 +761,8 @@ def main():
     parser.add_argument("--config_opt", type=Path, default="configs/optimizer.yaml")
     parser.add_argument("--config_score", type=Path, default="configs/scoring.yaml")
     parser.add_argument("--config_paths", type=Path, default="configs/paths.yaml")
+    parser.add_argument("--functional-scoring", action="store_true",
+                        help="Apply EvoEF2-based functional scoring (DNA binding + interface) to Pareto rescues")
 
     args = parser.parse_args()
 
