@@ -1,10 +1,3 @@
-{
-  "parts": [
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part000"},
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part001"},
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part002"},
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part003"},
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part004"},
-    {"path": "ClinVarVCVRelease_00-latest.xml.gz.part005"}
-  ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:74caebd76c5ae603df9fbf8adc4e0ca20275daf6c196b1825385974f3980607d
+size 379
