@@ -1,0 +1,48 @@
+; Production MD (10 ns)
+integrator  = md
+dt          = 0.002
+nsteps      = 5000000       ; 10 ns
+
+; Output (save every 10 ps)
+nstxout     = 0             ; Don't save coordinates (use xtc)
+nstvout     = 0
+nstxtcout   = 5000          ; Save to xtc every 10 ps
+nstenergy   = 5000
+nstlog      = 5000
+
+; Neighbor searching
+cutoff-scheme   = Verlet
+ns_type         = grid
+nstlist         = 10
+rlist           = 1.0
+
+; Electrostatics
+coulombtype     = PME
+rcoulomb        = 1.0
+
+; VdW
+vdwtype         = cutoff
+rvdw            = 1.0
+
+; Temperature coupling
+tcoupl          = V-rescale
+tc-grps         = Protein Non-Protein
+tau_t           = 0.1 0.1
+ref_t           = 300 300
+
+; Pressure coupling
+pcoupl              = Parrinello-Rahman
+pcoupltype          = isotropic
+tau_p               = 2.0
+ref_p               = 1.0
+compressibility     = 4.5e-5
+
+; Velocity generation
+gen_vel         = no
+
+; Constraints
+constraints     = h-bonds
+constraint_algorithm = lincs
+
+; PBC
+pbc             = xyz
