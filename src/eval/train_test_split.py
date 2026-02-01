@@ -1,8 +1,40 @@
-"""Train/test splitting for ClinVar variants with stratification."""
+"""
+Train/test splitting for ClinVar variants with stratification.
+
+DATA LEAKAGE WARNING:
+---------------------
+When using MSA-based features (conservation scores), there is a risk of data leakage
+if the MSA is computed using ALL variants (train + test). The conservation signal
+from test variants would leak into the training features.
+
+To prevent this:
+1. Compute MSA-based features using ONLY training set sequences
+2. Apply the SAME training-derived features to the test set
+3. Use the functions in this module to enforce this separation
+
+Example of CORRECT usage:
+    split_info = create_split_indices(benign_path, pathogenic_path)
+
+    # Compute conservation using ONLY training data
+    train_msa = compute_msa(train_sequences_only)
+    conservation = compute_conservation(train_msa)
+
+    # Apply same conservation to both sets
+    train_df['conservation'] = train_df['pos'].map(conservation)
+    test_df['conservation'] = test_df['pos'].map(conservation)  # Uses TRAIN conservation
+
+Example of WRONG usage (causes leakage):
+    # Computing conservation on ALL data before split - WRONG!
+    all_msa = compute_msa(all_sequences)
+    conservation = compute_conservation(all_msa)  # Test data leaked!
+    df['conservation'] = df['pos'].map(conservation)
+    train_df, test_df = split(df)  # Features already contaminated
+"""
 from __future__ import annotations
 
 import json
 import logging
+import warnings
 from pathlib import Path
 from typing import Optional
 import numpy as np
@@ -10,6 +42,55 @@ import pandas as pd
 
 
 logger = logging.getLogger(__name__)
+
+
+def check_for_leakage(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    feature_columns: list[str],
+) -> list[str]:
+    """
+    Check for potential data leakage in features.
+
+    This function checks if any feature columns appear to have been computed
+    using information from the test set.
+
+    Args:
+        train_df: Training dataframe
+        test_df: Test dataframe
+        feature_columns: Columns to check for leakage
+
+    Returns:
+        List of warning messages about potential leakage
+    """
+    warnings_list = []
+
+    for col in feature_columns:
+        if col not in train_df.columns or col not in test_df.columns:
+            continue
+
+        # Check if test features are suspiciously correlated with train features
+        # at the same positions (would indicate shared computation)
+        if 'pos' in train_df.columns and 'pos' in test_df.columns:
+            # Get overlapping positions
+            train_pos_vals = train_df.groupby('pos')[col].first()
+            test_pos_vals = test_df.groupby('pos')[col].first()
+
+            overlap_pos = train_pos_vals.index.intersection(test_pos_vals.index)
+
+            if len(overlap_pos) > 0:
+                train_overlap = train_pos_vals.loc[overlap_pos]
+                test_overlap = test_pos_vals.loc[overlap_pos]
+
+                # If features at same positions are IDENTICAL, likely computed together
+                if (train_overlap == test_overlap).all():
+                    warnings_list.append(
+                        f"POTENTIAL LEAKAGE in '{col}': Features at overlapping positions "
+                        f"are identical between train and test. This may indicate the "
+                        f"feature was computed on the full dataset before splitting."
+                    )
+
+    return warnings_list
 
 
 def stratified_train_test_split(

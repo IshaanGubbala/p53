@@ -77,6 +77,12 @@ def bootstrap_ci(
     n: int = 2000,
     seed: int = 1337,
 ) -> tuple[float, float]:
+    """
+    Compute bootstrap confidence interval for AUC.
+
+    NOTE: This uses simple bootstrap without stratification.
+    For imbalanced datasets, use bootstrap_ci_stratified() instead.
+    """
     labels_arr = np.asarray(list(labels))
     scores_arr = np.asarray(list(scores))
     rng = np.random.default_rng(seed)
@@ -87,3 +93,118 @@ def bootstrap_ci(
         aucs.append(compute_auc(labels_arr[idx], scores_arr[idx]))
     lo, hi = np.quantile(aucs, [0.025, 0.975])
     return float(lo), float(hi)
+
+
+def bootstrap_ci_stratified(
+    labels: Iterable[int],
+    scores: Iterable[float],
+    n: int = 10000,
+    seed: int = 1337,
+    confidence: float = 0.95,
+) -> tuple[float, float, float]:
+    """
+    Compute STRATIFIED bootstrap confidence interval for AUC.
+
+    This is the CORRECT method for imbalanced datasets because:
+    - Simple bootstrap may create samples with no positives or negatives
+    - Stratified bootstrap maintains class ratios in each sample
+    - More accurate confidence intervals, especially for small datasets
+
+    Args:
+        labels: Binary labels (0/1)
+        scores: Prediction scores (higher = more likely positive)
+        n: Number of bootstrap iterations (10000 recommended)
+        seed: Random seed
+        confidence: Confidence level (default 0.95 for 95% CI)
+
+    Returns:
+        Tuple of (lower_bound, upper_bound, point_estimate)
+    """
+    labels_arr = np.asarray(list(labels))
+    scores_arr = np.asarray(list(scores))
+    rng = np.random.default_rng(seed)
+
+    # Get indices for each class
+    pos_idx = np.where(labels_arr == 1)[0]
+    neg_idx = np.where(labels_arr == 0)[0]
+
+    n_pos = len(pos_idx)
+    n_neg = len(neg_idx)
+
+    if n_pos == 0 or n_neg == 0:
+        raise ValueError("Both positive and negative labels are required")
+
+    aucs: list[float] = []
+
+    for _ in range(n):
+        # Stratified sampling: sample with replacement within each class
+        boot_pos = rng.choice(pos_idx, size=n_pos, replace=True)
+        boot_neg = rng.choice(neg_idx, size=n_neg, replace=True)
+
+        # Combine
+        boot_idx = np.concatenate([boot_pos, boot_neg])
+
+        try:
+            auc = compute_auc(labels_arr[boot_idx], scores_arr[boot_idx])
+            aucs.append(auc)
+        except ValueError:
+            # Skip invalid samples (shouldn't happen with stratified)
+            continue
+
+    if len(aucs) < n * 0.9:
+        raise RuntimeError(f"Too many invalid bootstrap samples: {n - len(aucs)}/{n}")
+
+    # Compute percentiles
+    alpha = (1 - confidence) / 2
+    lo, hi = np.quantile(aucs, [alpha, 1 - alpha])
+    point_estimate = compute_auc(labels_arr, scores_arr)
+
+    return float(lo), float(hi), float(point_estimate)
+
+
+def compute_auprc(labels: Iterable[int], scores: Iterable[float]) -> float:
+    """
+    Compute Area Under Precision-Recall Curve.
+
+    AUPRC is more informative than AUC for imbalanced datasets because:
+    - AUC can be high even when many positives are missed
+    - AUPRC directly measures precision at each recall level
+    - More sensitive to performance on the minority class
+
+    Args:
+        labels: Binary labels (0/1)
+        scores: Prediction scores (higher = more likely positive)
+
+    Returns:
+        AUPRC score (0-1, higher is better)
+    """
+    labels_arr = np.asarray(list(labels))
+    scores_arr = np.asarray(list(scores))
+
+    # Sort by descending scores
+    desc_order = np.argsort(-scores_arr)
+    labels_sorted = labels_arr[desc_order]
+
+    # Compute precision at each threshold
+    n_pos = labels_arr.sum()
+    if n_pos == 0:
+        raise ValueError("No positive labels found")
+
+    tp_cumsum = np.cumsum(labels_sorted)
+    fp_cumsum = np.cumsum(1 - labels_sorted)
+
+    # Precision = TP / (TP + FP)
+    precision = tp_cumsum / (tp_cumsum + fp_cumsum)
+
+    # Recall = TP / total_positives
+    recall = tp_cumsum / n_pos
+
+    # AUPRC via trapezoidal integration
+    # Prepend (0, 1) point for precision-recall curve
+    recall_with_zero = np.concatenate([[0], recall])
+    precision_with_one = np.concatenate([[1], precision])
+
+    # Area under curve
+    auprc = np.trapz(precision_with_one, recall_with_zero)
+
+    return float(auprc)

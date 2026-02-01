@@ -1,5 +1,20 @@
 # Functional Rescue Scoring Configuration
 # Evaluates rescues across multiple dimensions: stability, DNA binding, tetramerization
+#
+# SIGN CONVENTION (CRITICAL):
+# ---------------------------
+# ΔΔG = ΔG_mutant - ΔG_wildtype
+#
+# - NEGATIVE ΔΔG → mutation STABILIZES (GOOD for rescue)
+# - POSITIVE ΔΔG → mutation DESTABILIZES (BAD)
+#
+# For thresholds below:
+#   "good" threshold: ΔΔG ≤ threshold means mutation is acceptable
+#   Example: good: 0.0 means ΔΔG ≤ 0 (neutral or stabilizing)
+#
+# NORMALIZATION:
+# Uses Boltzmann-aware scaling: score = exp(-ΔΔG/RT) normalized
+# This correctly weights thermodynamic significance
 
 # Scoring method: start with lightweight Python implementation, can upgrade to FoldX later
 method: "structural_analysis"  # Options: structural_analysis, foldx, rosetta

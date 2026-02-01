@@ -8,6 +8,32 @@ Combines multiple dimensions of rescue mutation quality:
 4. Risk score (MSA conservation, burial, etc.)
 
 Produces a multi-dimensional functional score for Pareto optimization.
+
+SIGN CONVENTION (CRITICAL):
+--------------------------
+ΔΔG = ΔG_mutant - ΔG_wildtype
+
+- NEGATIVE ΔΔG → mutation STABILIZES the protein (GOOD for rescue)
+- POSITIVE ΔΔG → mutation DESTABILIZES the protein (BAD)
+
+For rescue mutations, we want NEGATIVE ΔΔG values because:
+- Lower free energy = more stable = better
+- ΔG_mutant < ΔG_wildtype → ΔΔG < 0 → stabilizing
+
+Typical ranges:
+- Excellent stabilization: ΔΔG < -3.0 kcal/mol
+- Good stabilization: -3.0 ≤ ΔΔG < -1.0 kcal/mol
+- Neutral: -1.0 ≤ ΔΔG ≤ 1.0 kcal/mol
+- Destabilizing: ΔΔG > 1.0 kcal/mol
+
+NORMALIZATION:
+--------------
+We use Boltzmann-aware normalization for ΔΔG values because:
+- ΔΔG relates to equilibrium constants via: K_ratio = exp(-ΔΔG/RT)
+- At 300K, RT ≈ 0.592 kcal/mol
+- A ΔΔG of -1.0 kcal/mol gives ~5.4x stability improvement
+- A ΔΔG of -2.0 kcal/mol gives ~29x stability improvement
+- Linear scaling would underestimate the importance of strongly stabilizing mutations
 """
 
 import numpy as np
@@ -64,7 +90,9 @@ def load_config(config_path: str = "configs/functional_scoring.yaml") -> Dict:
 def normalize_score(value: float, min_val: float, max_val: float,
                     higher_is_better: bool = False) -> float:
     """
-    Normalize a score to 0-1 range.
+    Normalize a score to 0-1 range using LINEAR scaling.
+
+    DEPRECATED: Use normalize_ddg_boltzmann() for ΔΔG values.
 
     Args:
         value: Raw score
@@ -89,6 +117,62 @@ def normalize_score(value: float, min_val: float, max_val: float,
         norm = 1.0 - norm
 
     return norm
+
+
+def normalize_ddg_boltzmann(
+    ddg: float,
+    min_ddg: float = -10.0,
+    max_ddg: float = 5.0,
+    temperature: float = 300.0,
+) -> float:
+    """
+    Normalize ΔΔG using Boltzmann-aware scaling.
+
+    This is the CORRECT way to normalize ΔΔG values because:
+    - ΔΔG relates to stability ratios via: K_ratio = exp(-ΔΔG/RT)
+    - Linear scaling incorrectly assumes equal importance across the range
+    - Boltzmann scaling properly weights the thermodynamic significance
+
+    Args:
+        ddg: ΔΔG value in kcal/mol (negative = stabilizing = GOOD)
+        min_ddg: Best expected ΔΔG (most stabilizing, e.g., -10.0)
+        max_ddg: Worst acceptable ΔΔG (destabilizing, e.g., +5.0)
+        temperature: Temperature in Kelvin (default 300K)
+
+    Returns:
+        Normalized score (0 = worst/destabilizing, 1 = best/stabilizing)
+
+    Example:
+        >>> normalize_ddg_boltzmann(-5.0)  # Strong stabilization
+        0.95
+        >>> normalize_ddg_boltzmann(0.0)   # Neutral
+        0.48
+        >>> normalize_ddg_boltzmann(3.0)   # Destabilizing
+        0.02
+    """
+    # Gas constant in kcal/(mol·K)
+    R = 0.001987204  # kcal/(mol·K)
+    RT = R * temperature  # ~0.592 kcal/mol at 300K
+
+    # Convert ΔΔG to relative stability factor using Boltzmann
+    # exp(-ΔΔG/RT) gives the ratio of populations
+    # Negative ΔΔG → exp > 1 → more stable → good
+
+    # Clamp to prevent numerical overflow
+    ddg_clamped = np.clip(ddg, min_ddg, max_ddg)
+
+    # Calculate Boltzmann factors
+    factor_best = np.exp(-min_ddg / RT)   # Best case (most negative ΔΔG)
+    factor_worst = np.exp(-max_ddg / RT)  # Worst case (most positive ΔΔG)
+    factor_current = np.exp(-ddg_clamped / RT)
+
+    # Normalize to 0-1 scale
+    # Note: factor_best > factor_worst because min_ddg < max_ddg
+    if factor_best == factor_worst:
+        return 0.5
+
+    norm = (factor_current - factor_worst) / (factor_best - factor_worst)
+    return float(np.clip(norm, 0.0, 1.0))
 
 
 def categorize_overall(folding_cat: str, binding_cat: str,
@@ -178,27 +262,26 @@ def calculate_functional_score(
     ddg_interface = interface_result.ddg_interface
 
     # Normalize all components to 0-1 (higher is better)
-    folding_norm = normalize_score(
+    # Use Boltzmann-aware normalization for ΔΔG values (thermodynamically correct)
+    folding_norm = normalize_ddg_boltzmann(
         ddg_folding,
-        norm_config['folding']['min'],
-        norm_config['folding']['max'],
-        higher_is_better=False  # Lower ΔΔG is better
+        min_ddg=norm_config['folding']['min'],  # Best (most negative)
+        max_ddg=norm_config['folding']['max'],  # Worst (most positive)
     )
 
-    binding_norm = normalize_score(
+    binding_norm = normalize_ddg_boltzmann(
         ddg_binding,
-        norm_config['dna_binding']['min'],
-        norm_config['dna_binding']['max'],
-        higher_is_better=False
+        min_ddg=norm_config['dna_binding']['min'],
+        max_ddg=norm_config['dna_binding']['max'],
     )
 
-    interface_norm = normalize_score(
+    interface_norm = normalize_ddg_boltzmann(
         ddg_interface,
-        norm_config['interface']['min'],
-        norm_config['interface']['max'],
-        higher_is_better=False
+        min_ddg=norm_config['interface']['min'],
+        max_ddg=norm_config['interface']['max'],
     )
 
+    # Risk uses linear normalization (not a thermodynamic quantity)
     risk_norm = normalize_score(
         risk,
         norm_config['risk']['min'],

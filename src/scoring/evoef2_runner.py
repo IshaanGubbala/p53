@@ -1,3 +1,34 @@
+"""
+EvoEF2 Runner Module
+
+This module provides an interface to EvoEF2 for stability scoring.
+
+IMPORTANT - WHEN TO USE EVOEF2:
+-------------------------------
+✓ USE EvoEF2 for:
+  - ΔΔG scoring (stability prediction)
+  - Quick mutation screening
+  - Ranking rescue candidates
+  - Computing binding energies
+
+✗ DO NOT USE EvoEF2 BuildMutant for:
+  - Generating structures for MD simulation
+  - Detailed structural analysis
+  - Accurate mutant geometry
+
+EvoEF2's BuildMutant only swaps side chains without backbone relaxation,
+creating strained geometries. For structure prediction, use:
+  - src.structure.structure_prediction.predict_mutant_structure()
+  - ESMFold or ColabFold/AlphaFold2
+
+SIGN CONVENTION:
+----------------
+ΔΔG = E_mutant - E_wildtype
+
+- NEGATIVE ΔΔG → mutation STABILIZES (lower energy = more stable = GOOD)
+- POSITIVE ΔΔG → mutation DESTABILIZES (higher energy = less stable = BAD)
+"""
+
 from __future__ import annotations
 
 import json
@@ -5,6 +36,7 @@ import os
 import re
 import shutil
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -263,6 +295,29 @@ def score_mutation_set(
     base_energy: float | None = None,
     recompute: bool = False,
 ) -> float:
+    """
+    Score a set of mutations using EvoEF2.
+
+    Computes ΔΔG = E_mutant - E_wildtype
+
+    SIGN CONVENTION:
+    - NEGATIVE ΔΔG → mutation STABILIZES (GOOD for rescue)
+    - POSITIVE ΔΔG → mutation DESTABILIZES (BAD)
+
+    Args:
+        mutations: List of mutations in "X123Y" format
+        pdb_path: Path to wildtype PDB
+        cache_dir: Cache directory for results
+        evoef2_cfg: EvoEF2 configuration
+        work_root: Working directory
+        base_energy: Pre-computed wildtype energy (optimization)
+        recompute: Force recomputation
+
+    Returns:
+        ΔΔG in EvoEF2 energy units (approximately kcal/mol)
+        Negative = stabilizing = GOOD
+        Positive = destabilizing = BAD
+    """
     logger = get_logger(__name__)
     mutations = list(mutations)
     canonical = canonicalize_mutation_set(mutations)
@@ -365,7 +420,46 @@ def build_mutant_model(
     out_path: Path | None = None,
     recompute: bool = False,
 ) -> Path:
+    """
+    Build a mutant model using EvoEF2 BuildMutant.
+
+    WARNING: This function only swaps side chains without backbone relaxation!
+    The resulting structure will have strained geometries and is NOT suitable for:
+    - MD simulations (will show 6-8 Å RMSD drift)
+    - Detailed structural analysis
+    - Accurate binding predictions
+
+    For proper mutant structures, use:
+        from src.structure.structure_prediction import predict_mutant_structure
+        predict_mutant_structure(mutations, output_path, method="esmfold")
+
+    This function IS suitable for:
+    - Quick visualization
+    - Rotamer analysis
+    - As input to EvoEF2 scoring (which accounts for the limitations)
+
+    Args:
+        mutations: List of mutations in "X123Y" format
+        pdb_path: Path to wildtype PDB
+        evoef2_cfg: EvoEF2 configuration
+        work_root: Working directory
+        out_path: Optional output path
+        recompute: Force recomputation
+
+    Returns:
+        Path to mutant PDB (WARNING: not relaxed!)
+    """
     logger = get_logger(__name__)
+
+    # Emit warning about limitations
+    warnings.warn(
+        "EvoEF2 BuildMutant creates UNRELAXED structures. "
+        "For MD simulation or accurate analysis, use "
+        "src.structure.structure_prediction.predict_mutant_structure() instead.",
+        UserWarning,
+        stacklevel=2
+    )
+
     canonical = canonicalize_mutation_set(list(mutations))
 
     base_pdb = Path(evoef2_cfg.get("repaired_pdb") or pdb_path).expanduser()
