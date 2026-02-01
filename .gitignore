@@ -43,6 +43,10 @@ Data/
 processed/
 exports/
 
+# Simulation outputs (regeneratable)
+structures/
+trajectories/
+
 # Environment
 .env
 .venv
