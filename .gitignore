@@ -43,9 +43,13 @@ Data/
 processed/
 exports/
 
-# Simulation outputs (regeneratable)
+# Simulation outputs (large files, regeneratable)
 structures/
-trajectories/
+trajectories/*.dcd
+trajectories/*.npy
+trajectories/*.csv
+# Keep analysis images
+!trajectories/*.png
 
 # Environment
 .env
