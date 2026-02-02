@@ -8,6 +8,14 @@ import pandas as pd
 
 from src.core.logging import get_logger
 from src.eval.variant_separation import bootstrap_ci, compute_auc, load_labelled_scores
+from src.eval.train_test_split import load_split
+from src.eval.per_target_metrics import per_target_bootstrap_ci
+from src.reporting.guide_generator import generate_guide, render_guide_to_pdf
+from src.reporting.executive_summary import (
+    generate_executive_summary,
+    save_summary_csv,
+    save_summary_latex,
+)
 from src.scoring.evoef2_runner import build_mutant_model
 from src.viz.animations import render_rotation_gif
 from src.viz.plots_pareto import plot_pareto_front
@@ -52,6 +60,9 @@ def run(args, configs: dict[str, Any]) -> int:
 
     scores_path = paths["processed"] / "variant_scores.parquet"
     labels_dir = paths["processed"] / "labels"
+    splits_dir = paths["processed"] / "splits"
+    split_path = splits_dir / "clinvar_split_seed42.json"
+
     if scores_path.exists() and labels_dir.exists():
         try:
             labelled = load_labelled_scores(scores_path, labels_dir)
@@ -60,6 +71,7 @@ def run(args, configs: dict[str, Any]) -> int:
             labelled = None
 
         if labelled is not None:
+            # Overall AUC
             auc = compute_auc(labelled["label"], labelled["ddg"])
             lo, hi = bootstrap_ci(labelled["label"], labelled["ddg"], n=2000)
 
@@ -69,6 +81,60 @@ def run(args, configs: dict[str, Any]) -> int:
                 "auc_ci_upper": hi,
                 "n_variants": int(len(labelled)),
             }
+
+            # Train/test split validation
+            if split_path.exists():
+                try:
+                    split_data = load_split(split_path)
+                    train_idx = set(split_data.get("train_indices", []))
+                    test_idx = set(split_data.get("test_indices", []))
+
+                    # Create train/test masks
+                    train_mask = labelled.index.isin(train_idx)
+                    test_mask = labelled.index.isin(test_idx)
+
+                    train_data = labelled[train_mask]
+                    test_data = labelled[test_mask]
+
+                    if len(train_data) > 10 and len(test_data) > 10:
+                        train_auc = compute_auc(train_data["label"], train_data["ddg"])
+                        train_lo, train_hi = bootstrap_ci(train_data["label"], train_data["ddg"], n=2000)
+
+                        test_auc = compute_auc(test_data["label"], test_data["ddg"])
+                        test_lo, test_hi = bootstrap_ci(test_data["label"], test_data["ddg"], n=2000)
+
+                        summary["train_auc"] = train_auc
+                        summary["train_auc_ci_lower"] = train_lo
+                        summary["train_auc_ci_upper"] = train_hi
+                        summary["n_train"] = int(len(train_data))
+
+                        summary["test_auc"] = test_auc
+                        summary["test_auc_ci_lower"] = test_lo
+                        summary["test_auc_ci_upper"] = test_hi
+                        summary["n_test"] = int(len(test_data))
+
+                        logger.info("Train AUC: %.3f, Test AUC: %.3f", train_auc, test_auc)
+                except Exception as exc:
+                    logger.warning("Train/test split validation failed: %s", exc)
+
+            # Per-target metrics (require 'pos' column in labelled data)
+            if "pos" in labelled.columns:
+                try:
+                    per_target_df = per_target_bootstrap_ci(
+                        labelled,
+                        min_variants=5,
+                        n_bootstrap=1000,
+                        confidence_level=0.95,
+                    )
+                    if not per_target_df.empty:
+                        per_target_df = per_target_df.sort_values("n_variants", ascending=False)
+                        per_target_df.to_csv(tables_dir / "per_target_auc.csv", index=False)
+                        logger.info("Per-target AUC metrics written for %d positions", len(per_target_df))
+                except Exception as exc:
+                    logger.warning("Per-target metrics failed: %s", exc)
+            else:
+                logger.info("Skipping per-target metrics (no 'pos' column in variant scores)")
+
             (tables_dir / "variant_separation.json").write_text(
                 json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
             )
@@ -79,8 +145,8 @@ def run(args, configs: dict[str, Any]) -> int:
         logger.warning("Variant scores or labels not found; skipping variant report")
 
     rescues_root = paths["processed"] / "rescues"
+    target_candidates: dict[str, pd.DataFrame] = {}
     if rescues_root.exists():
-        target_candidates: dict[str, pd.DataFrame] = {}
         anim_dir = figures_dir / "animations"
         anim_pdb_dir = anim_dir / "pdb"
         anim_work_dir = anim_dir / "work"
@@ -219,6 +285,67 @@ def run(args, configs: dict[str, Any]) -> int:
                 logger.warning("Skipping rescue ddg summary plot: %s", exc)
 
         logger.info("Rescue report outputs written")
+
+        # Generate executive summary with risk annotations
+        guide_cfg = report_cfg.get("guide", {})
+        exec_cfg = report_cfg.get("executive_summary", {})
+
+        if exec_cfg.get("enabled", True) and target_candidates:
+            try:
+                # Load auxiliary data for risk flags
+                p53_cfg = configs.get("p53", {})
+                msa_cfg = p53_cfg.get("msa", {})
+                msa_cons_map = {}
+                if msa_cfg.get("enabled", False):
+                    msa_path = paths["processed"] / msa_cfg.get("precomputed_path", "msa/P04637_conservation.json")
+                    if msa_path.exists():
+                        msa_data = json.loads(msa_path.read_text(encoding="utf-8"))
+                        msa_cons_map = {int(k): float(v) for k, v in msa_data.items()}
+                        logger.info("Loaded MSA conservation scores for %d positions", len(msa_cons_map))
+
+                # Combine all candidates for executive summary
+                all_candidates = pd.concat(target_candidates.values(), ignore_index=True)
+
+                top_per_target = int(exec_cfg.get("top_per_target", 5))
+                high_cons_threshold = float(exec_cfg.get("high_conservation_threshold", 0.8))
+                near_functional_dist = float(exec_cfg.get("near_functional_distance", 10.0))
+
+                exec_summary = generate_executive_summary(
+                    all_candidates,
+                    top_per_target=top_per_target,
+                    msa_cons_map=msa_cons_map if msa_cons_map else None,
+                    high_cons_threshold=high_cons_threshold,
+                    near_functional_threshold=near_functional_dist,
+                )
+
+                if not exec_summary.empty:
+                    # Save CSV
+                    save_summary_csv(exec_summary, output_dir / "executive_summary.csv")
+
+                    # Save LaTeX
+                    save_summary_latex(exec_summary, output_dir / "executive_summary.tex")
+
+                    logger.info("Executive summary generated: %d top rescues", len(exec_summary))
+            except Exception as exc:
+                logger.warning("Executive summary generation failed: %s", exc)
+
+        # Generate interpretation guide
+        if guide_cfg.get("enabled", True):
+            try:
+                guide_path = output_dir / "guide.md"
+                generate_guide(guide_path, config=configs)
+                logger.info("Generated interpretation guide: %s", guide_path)
+
+                # Optionally render to PDF
+                if guide_cfg.get("output_format", "md") == "pdf":
+                    try:
+                        pdf_path = render_guide_to_pdf(guide_path)
+                        logger.info("Rendered guide to PDF: %s", pdf_path)
+                    except RuntimeError as exc:
+                        logger.warning("PDF rendering failed (pandoc not installed?): %s", exc)
+            except Exception as exc:
+                logger.warning("Guide generation failed: %s", exc)
+
     else:
         logger.warning("No rescue outputs found; skipping rescue report")
 
@@ -234,9 +361,38 @@ def run(args, configs: dict[str, Any]) -> int:
             sep_data = json.load(f)
         print("\n🧬 Variant Discrimination (ClinVar Pathogenic vs Benign)")
         print("-" * 80)
-        print(f"  AUC: {sep_data['auc']:.3f} (95% CI: {sep_data['auc_ci_lower']:.3f}-{sep_data['auc_ci_upper']:.3f})")
+
+        # Check if train/test split available
+        if "train_auc" in sep_data and "test_auc" in sep_data:
+            print(f"  Overall AUC: {sep_data['auc']:.3f} (95% CI: {sep_data['auc_ci_lower']:.3f}-{sep_data['auc_ci_upper']:.3f})")
+            print(f"  Train AUC:   {sep_data['train_auc']:.3f} (95% CI: {sep_data['train_auc_ci_lower']:.3f}-{sep_data['train_auc_ci_upper']:.3f}) [n={sep_data['n_train']}]")
+            print(f"  Test AUC:    {sep_data['test_auc']:.3f} (95% CI: {sep_data['test_auc_ci_lower']:.3f}-{sep_data['test_auc_ci_upper']:.3f}) [n={sep_data['n_test']}]")
+
+            # Check for overfitting
+            auc_diff = abs(sep_data['train_auc'] - sep_data['test_auc'])
+            if auc_diff < 0.05:
+                print(f"  ✓ Train/Test AUC within 0.05 - no evidence of overfitting")
+            else:
+                print(f"  ⚠ Train/Test AUC differ by {auc_diff:.3f} - potential overfitting")
+        else:
+            print(f"  AUC: {sep_data['auc']:.3f} (95% CI: {sep_data['auc_ci_lower']:.3f}-{sep_data['auc_ci_upper']:.3f})")
+
         print(f"  Total variants scored: {sep_data['n_variants']}")
         print(f"  ✓ Model successfully discriminates pathogenic from benign mutations")
+
+        # Per-target AUC summary
+        per_target_csv = tables_dir / "per_target_auc.csv"
+        if per_target_csv.exists():
+            per_target_df = pd.read_csv(per_target_csv)
+            if not per_target_df.empty:
+                print(f"\n  Per-Position AUC (top 5 by variant count):")
+                for _, row in per_target_df.head(5).iterrows():
+                    pos = int(row['pos'])
+                    n = int(row['n_variants'])
+                    auc = row['auc']
+                    ci_lo = row.get('ci_lower', 0)
+                    ci_hi = row.get('ci_upper', 1)
+                    print(f"    Position {pos:4d}: AUC={auc:.3f} (95% CI: {ci_lo:.3f}-{ci_hi:.3f}) [n={n}]")
 
     # Rescue Design Summary
     if target_candidates:
@@ -333,6 +489,31 @@ def run(args, configs: dict[str, Any]) -> int:
         except ValueError:
             rel_path = sep_json.resolve()
         print(f"    • {rel_path}")
+
+    # Executive summary
+    exec_csv = output_dir / "executive_summary.csv"
+    if exec_csv.exists():
+        try:
+            rel_path = exec_csv.resolve().relative_to(Path.cwd())
+        except ValueError:
+            rel_path = exec_csv.resolve()
+        print(f"    • {rel_path} (Executive Summary)")
+
+    # Guide
+    guide_md = output_dir / "guide.md"
+    guide_pdf = output_dir / "guide.pdf"
+    if guide_pdf.exists():
+        try:
+            rel_path = guide_pdf.resolve().relative_to(Path.cwd())
+        except ValueError:
+            rel_path = guide_pdf.resolve()
+        print(f"    • {rel_path} (Interpretation Guide)")
+    elif guide_md.exists():
+        try:
+            rel_path = guide_md.resolve().relative_to(Path.cwd())
+        except ValueError:
+            rel_path = guide_md.resolve()
+        print(f"    • {rel_path} (Interpretation Guide)")
 
     print("\n" + "=" * 80)
     print("✅ Report generation complete!")
