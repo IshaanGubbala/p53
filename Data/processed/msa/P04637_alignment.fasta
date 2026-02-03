@@ -1,369 +1,0 @@
-outputhat23=16
-treein = 0
-compacttree = 0
-stacksize: 8176 kb
-rescale = 1
-All-to-all alignment.
-    0 / 34 (by thread   0)    10 / 34 (by thread   0)    20 / 34 (by thread   1)    30 / 34 (by thread   2) tbfast-pair (aa) Version 7.526
-alg=L, model=BLOSUM62, 2.00, -0.10, +0.10, noshift, amax=0.0
-4 thread(s)
-
-outputhat23=16
-Loading 'hat3.seed' ... 
-done.
-Writing hat3 for iterative refinement
-rescale = 1
-Gap Penalty = -1.53, +0.00, +0.00
-tbutree = 1, compacttree = 0
-Constructing a UPGMA tree ... 
-    0 / 34   10 / 34   20 / 34   30 / 34
-done.
-
-Progressive alignment ... 
-STEP     1 /33 (thread    2) STEP     4 /33 (thread    0) STEP     3 /33 (thread    1) STEP     6 /33 (thread    1) STEP     2 /33 (thread    3) STEP     8 /33 (thread    1) STEP     9 /33 (thread    3) STEP     5 /33 (thread    0) STEP    11 /33 (thread    3) STEP    12 /33 (thread    0) STEP     7 /33 (thread    2) STEP    13 /33 (thread    3) STEP    10 /33 (thread    1) STEP    16 /33 (thread    3) STEP    14 /33 (thread    0) STEP    17 /33 (thread    1) STEP    15 /33 (thread    2) STEP    18 /33 (thread    3) STEP    19 /33 (thread    0) STEP    20 /33 (thread    1) STEP    24 /33 (thread    1) STEP    21 /33 (thread    2) STEP    25 /33 (thread    1) STEP    26 /33 (thread    2) STEP    22 /33 (thread    3) STEP    27 /33 (thread    1) STEP    29 /33 (thread    1) STEP    28 /33 (thread    2) 
-Reallocating (by thread 0) ..done. *alloclen = 1796
-STEP    23 /33 (thread    0) STEP    30 /33 (thread    3) STEP    31 /33 (thread    2) STEP    32 /33 (thread    1) STEP    33 /33 (thread    0) 
-done.
-tbfast (aa) Version 7.526
-alg=A, model=BLOSUM62, 1.53, -0.00, -0.00, noshift, amax=0.0
-4 thread(s)
-
-minimumweight = 0.000010
-autosubalignment = 0.000000
-nthread = 4
-randomseed = 0
-blosum 62 / kimura 200
-poffset = 0
-niter = 16
-sueff_global = 0.100000
-nadd = 16
-Loading 'hat3' ... done.
-rescale = 1
-
-    0 / 34   10 / 34   20 / 34   30 / 34
-Segment   1/  1    1- 443
-001-0000-1 (thread    4) identical     001-0001-1 (thread    1) identical     001-0002-1 (thread    1) identical     001-0003-0 (thread    3) identical     001-0004-0 (thread    4) identical     001-0005-0 (thread    2) identical     001-0006-0 (thread    1) identical     001-0007-0 (thread    4) identical     001-0008-1 (thread    2) identical     001-0009-1 (thread    3) identical     001-0010-0 (thread    1) identical     001-0011-0 (thread    2) identical     001-0012-1 (thread    3) identical     001-0013-1 (thread    4) identical     001-0014-0 (thread    1) identical     001-0014-0 (thread    1) worse      001-0015-1 (thread    4) identical     001-0016-0 (thread    3) identical     001-0017-1 (thread    2) identical     001-0018-1 (thread    4) identical     001-0019-0 (thread    1) identical     001-0020-0 (thread    3) identical     001-0020-0 (thread    3) better     001-0021-1 (thread    2) identical     001-0022-0 (thread    3) identical     001-0022-0 (thread    3) better     001-0023-1 (thread    1) identical     001-0024-1 (thread    2) identical     001-0024-0 (thread    3) identical     001-0025-1 (thread    2) worse      001-0026-0 (thread    4) identical     001-0027-1 (thread    2) identical     001-0027-1 (thread    2) better     001-0028-1 (thread    2) identical     001-0028-1 (thread    2) better     001-0029-0 (thread    2) identical     001-0030-1 (thread    1) identical     001-0031-0 (thread    3) identical     001-0032-1 (thread    2) identical     001-0033-0 (thread    1) identical     001-0033-0 (thread    1) better     001-0034-1 (thread    3) identical     001-0035-0 (thread    4) identical     001-0036-1 (thread    1) identical     001-0037-0 (thread    3) identical     001-0038-0 (thread    2) identical     001-0039-1 (thread    4) identical     001-0039-1 (thread    4) better     001-0040-0 (thread    2) identical     001-0040-0 (thread    2) better     001-0041-1 (thread    3) identical     001-0042-0 (thread    1) identical     001-0043-0 (thread    2) identical     001-0044-0 (thread    1) identical     001-0044-0 (thread    1) better     001-0045-1 (thread    2) identical     001-0045-0 (thread    1) identical     001-0045-1 (thread    2) better     001-0045-0 (thread    1) worse      001-0047-0 (thread    1) identical     001-0047-0 (thread    1) better     001-0048-1 (thread    1) identical     001-0048-1 (thread    1) better     001-0049-0 (thread    1) identical     001-0050-1 (thread    1) identical     001-0050-1 (thread    1) better     001-0051-0 (thread    1) identical     001-0051-0 (thread    1) worse      001-0052-1 (thread    1) identical     001-0052-1 (thread    1) worse      001-0053-0 (thread    1) identical     001-0054-1 (thread    1) identical     001-0054-1 (thread    1) better     001-0055-0 (thread    1) identical     001-0055-0 (thread    1) better     001-0056-1 (thread    1) identical     001-0056-1 (thread    1) better     001-0057-1 (thread    2) identical     001-0058-1 (thread    3) identical     001-0059-0 (thread    1) identical     001-0060-1 (thread    2) identical     001-0060-1 (thread    2) worse      001-0061-0 (thread    3) identical     001-0061-1 (thread    4) identical     001-0062-0 (thread    3) better     001-0063-1 (thread    1) identical     001-0063-1 (thread    1) better     001-0064-1 (thread    2) identical     001-0064-1 (thread    2) better     002-0000-0 (thread    1) identical     002-0001-1 (thread    2) identical     002-0002-1 (thread    4) identical     002-0003-0 (thread    3) identical     002-0004-1 (thread    2) identical     002-0005-0 (thread    4) identical     002-0006-0 (thread    1) identical     002-0007-1 (thread    3) identical     002-0008-1 (thread    4) identical     002-0009-1 (thread    3) identical     002-0010-0 (thread    2) identical     002-0011-0 (thread    4) identical     002-0012-0 (thread    1) identical     002-0013-1 (thread    3) identical     002-0014-0 (thread    2) identical     002-0014-1 (thread    4) identical     002-0014-0 (thread    2) better     002-0016-0 (thread    1) identical     002-0017-1 (thread    3) identical     002-0018-1 (thread    2) identical     002-0019-0 (thread    4) identical     002-0020-0 (thread    1) identical     002-0020-1 (thread    3) identical     002-0020-0 (thread    1) better     002-0021-1 (thread    3) better     002-0022-0 (thread    1) identical     002-0022-0 (thread    1) better     002-0023-1 (thread    4) identical     002-0024-0 (thread    1) identical     002-0025-0 (thread    2) identical     002-0026-1 (thread    3) identical     002-0026-1 (thread    3) better     002-0027-1 (thread    2) identical     002-0027-1 (thread    2) better     002-0028-1 (thread    2) identical     002-0028-1 (thread    2) better     002-0029-0 (thread    3) identical     002-0030-1 (thread    4) identical     002-0030-0 (thread    2) identical     002-0032-1 (thread    3) identical     002-0033-1 (thread    2) identical     002-0034-0 (thread    3) identical     002-0035-0 (thread    4) identical     002-0036-1 (thread    2) identical     002-0036-0 (thread    3) identical     002-0037-1 (thread    2) better     002-0038-1 (thread    2) identical     002-0039-1 (thread    4) identical     002-0039-1 (thread    4) better     002-0040-0 (thread    2) identical     002-0041-1 (thread    4) identical     002-0042-0 (thread    2) identical     002-0043-0 (thread    3) identical     002-0044-1 (thread    4) identical     002-0045-0 (thread    2) identical     002-0045-0 (thread    2) worse      002-0046-1 (thread    3) identical     002-0046-1 (thread    3) worse      002-0047-1 (thread    2) identical     002-0048-0 (thread    4) identical     002-0048-0 (thread    4) worse      002-0049-0 (thread    3) identical     002-0049-0 (thread    3) better     002-0050-1 (thread    3) identical     002-0050-1 (thread    2) identical     002-0050-1 (thread    3) better     002-0051-1 (thread    2) better     002-0052-0 (thread    4) identical     002-0053-0 (thread    4) identical     002-0053-0 (thread    4) better     002-0054-1 (thread    4) identical     002-0054-1 (thread    4) better     002-0055-0 (thread    1) identical     002-0056-0 (thread    4) identical     002-0056-0 (thread    4) worse      002-0057-0 (thread    3) identical     002-0058-1 (thread    1) identical     002-0058-1 (thread    1) better     002-0059-0 (thread    4) identical     002-0060-0 (thread    1) identical     002-0060-1 (thread    3) identical     002-0060-0 (thread    1) worse      002-0061-1 (thread    3) worse      002-0062-1 (thread    4) identical     002-0062-1 (thread    4) better     002-0063-1 (thread    1) identical     002-0064-1 (thread    2) identical     002-0064-1 (thread    2) better     003-0000-0 (thread    4) identical     003-0001-0 (thread    1) identical     003-0002-1 (thread    2) identical     003-0003-0 (thread    4) identical     003-0004-1 (thread    3) identical     003-0005-1 (thread    1) identical     003-0006-0 (thread    3) identical     003-0007-1 (thread    4) identical     003-0007-0 (thread    2) identical     003-0009-1 (thread    4) identical     003-0010-0 (thread    3) identical     003-0011-1 (thread    1) identical     003-0012-1 (thread    1) identical     003-0013-1 (thread    4) identical     003-0014-0 (thread    3) identical     003-0015-0 (thread    2) identical     003-0016-1 (thread    4) identical     003-0017-0 (thread    1) identical     003-0018-1 (thread    2) identical     003-0019-0 (thread    3) identical     003-0020-0 (thread    4) identical     003-0020-0 (thread    4) better     003-0021-1 (thread    3) identical     003-0022-0 (thread    4) identical     003-0023-1 (thread    1) identical     003-0024-1 (thread    3) identical     003-0024-1 (thread    3) worse      003-0025-0 (thread    2) identical     003-0026-0 (thread    4) identical     003-0027-1 (thread    1) identical     003-0028-1 (thread    2) identical     003-0029-0 (thread    4) identical     003-0030-0 (thread    3) identical     003-0031-1 (thread    1) identical     003-0032-0 (thread    2) identical     003-0033-1 (thread    4) identical     003-0034-0 (thread    3) identical     003-0035-1 (thread    1) identical     003-0036-0 (thread    2) identical     003-0037-1 (thread    4) identical     003-0038-1 (thread    1) identical     003-0039-1 (thread    4) identical     003-0040-0 (thread    1) identical     003-0041-0 (thread    2) identical     003-0042-0 (thread    3) identical     003-0043-0 (thread    1) identical     003-0044-1 (thread    4) identical     003-0045-1 (thread    2) identical     003-0046-0 (thread    3) identical     003-0046-0 (thread    3) worse      003-0047-1 (thread    1) identical     003-0047-1 (thread    1) worse      003-0048-1 (thread    2) identical     003-0049-1 (thread    1) identical     003-0049-1 (thread    1) worse      003-0050-0 (thread    4) identical     003-0050-0 (thread    4) better     003-0051-0 (thread    2) identical     003-0052-1 (thread    1) identical     003-0052-0 (thread    4) identical     003-0053-1 (thread    1) better     003-0054-1 (thread    1) identical     003-0054-1 (thread    1) better     003-0055-0 (thread    3) identical     003-0055-0 (thread    3) worse      003-0056-1 (thread    2) identical     003-0056-1 (thread    2) worse      003-0057-0 (thread    1) identical     003-0058-0 (thread    4) identical     003-0058-0 (thread    4) worse      003-0059-0 (thread    2) identical     003-0060-1 (thread    2) identical     003-0061-1 (thread    1) identical     003-0061-1 (thread    2) identical     003-0061-1 (thread    2) better     003-0062-1 (thread    1) better     003-0063-1 (thread    3) identical     003-0063-1 (thread    3) better     003-0064-0 (thread    4) identical     004-0000-1 (thread    3) identical     004-0001-0 (thread    2) identical     004-0002-1 (thread    1) identical     004-0003-0 (thread    3) identical     004-0004-1 (thread    2) identical     004-0005-1 (thread    3) identical     004-0006-0 (thread    1) identical     004-0007-0 (thread    2) identical     004-0008-1 (thread    3) identical     004-0009-0 (thread    1) identical     004-0010-0 (thread    3) identical     004-0011-0 (thread    4) identical     004-0012-0 (thread    3) identical     004-0012-0 (thread    3) worse      004-0013-1 (thread    1) identical     004-0014-1 (thread    2) identical     004-0015-1 (thread    1) identical     004-0016-0 (thread    3) identical     004-0017-0 (thread    2) identical     004-0018-1 (thread    1) identical     004-0019-0 (thread    3) identical     004-0020-1 (thread    2) identical     004-0021-0 (thread    2) identical     004-0022-1 (thread    3) identical     004-0023-1 (thread    4) identical     004-0024-1 (thread    4) identical     004-0024-1 (thread    2) identical     004-0025-1 (thread    2) worse      004-0026-0 (thread    1) identical     004-0027-1 (thread    2) identical     004-0028-0 (thread    3) identical     004-0029-0 (thread    4) identical     004-0030-1 (thread    2) identical     004-0031-0 (thread    1) identical     004-0032-1 (thread    4) identical     004-0033-0 (thread    4) identical     004-0034-1 (thread    1) identical     004-0035-0 (thread    2) identical     004-0036-0 (thread    3) identical     004-0037-1 (thread    4) identical     004-0038-1 (thread    2) identical     004-0039-0 (thread    1) identical     004-0040-1 (thread    4) identical     004-0041-0 (thread    2) identical     004-0042-1 (thread    1) identical     004-0043-0 (thread    3) identical     004-0044-0 (thread    4) identical     004-0045-1 (thread    3) identical     004-0045-1 (thread    3) worse      004-0046-1 (thread    2) identical     004-0047-0 (thread    1) identical     004-0047-0 (thread    1) worse      004-0048-1 (thread    3) identical     004-0048-1 (thread    3) better     004-0049-0 (thread    3) identical     004-0049-0 (thread    3) better     004-0050-1 (thread    1) identical     004-0050-1 (thread    1) better     004-0051-1 (thread    3) identical     004-0051-1 (thread    3) worse      004-0052-0 (thread    2) identical     004-0053-0 (thread    1) identical     004-0054-0 (thread    4) identical     004-0055-1 (thread    3) identical     004-0055-1 (thread    3) worse      004-0056-0 (thread    2) identical     004-0056-0 (thread    2) better     004-0057-1 (thread    1) identical     004-0057-1 (thread    1) better     004-0058-1 (thread    3) identical     004-0059-1 (thread    1) identical     004-0060-0 (thread    2) identical     004-0061-0 (thread    3) identical     004-0062-1 (thread    1) identical     004-0062-1 (thread    1) worse      004-0063-0 (thread    4) identical     004-0064-1 (thread    2) identical     004-0064-1 (thread    2) better     005-0000-1 (thread    1) identical     005-0001-0 (thread    4) identical     005-0002-0 (thread    3) identical     005-0003-1 (thread    2) identical     005-0004-0 (thread    1) identical     005-0005-1 (thread    2) identical     005-0006-1 (thread    4) identical     005-0007-0 (thread    1) identical     005-0008-0 (thread    3) identical     005-0009-0 (thread    4) identical     005-0010-1 (thread    2) identical     005-0011-1 (thread    1) identical     005-0012-0 (thread    2) identical     005-0012-0 (thread    2) worse      005-0013-1 (thread    4) identical     005-0014-0 (thread    3) identical     005-0015-1 (thread    1) identical     005-0016-0 (thread    2) identical     005-0017-1 (thread    4) identical     005-0018-0 (thread    3) identical     005-0019-1 (thread    1) identical     005-0020-0 (thread    2) identical     005-0021-1 (thread    4) identical     005-0022-1 (thread    1) identical     005-0023-0 (thread    3) identical     005-0024-1 (thread    4) identical     005-0024-1 (thread    4) worse      005-0025-0 (thread    2) identical     005-0026-0 (thread    1) identical     005-0027-1 (thread    3) identical     005-0028-1 (thread    2) identical     005-0029-0 (thread    4) identical     005-0030-0 (thread    1) identical     005-0031-0 (thread    2) identical     005-0032-1 (thread    3) identical     005-0033-0 (thread    1) identical     005-0034-1 (thread    4) identical     005-0035-0 (thread    3) identical     005-0036-1 (thread    2) identical     005-0037-1 (thread    3) identical     005-0038-0 (thread    4) identical     005-0039-1 (thread    3) identical     005-0040-0 (thread    4) identical     005-0041-1 (thread    1) identical     005-0042-1 (thread    3) identical     005-0043-0 (thread    2) identical     005-0044-0 (thread    4) identical     005-0045-1 (thread    2) identical     005-0045-1 (thread    2) worse      005-0046-0 (thread    4) identical     005-0047-1 (thread    1) identical     005-0048-1 (thread    2) identical     005-0048-1 (thread    2) worse      005-0049-0 (thread    3) identical     005-0049-1 (thread    1) identical     005-0049-1 (thread    1) worse      005-0050-0 (thread    3) worse      005-0050-0 (thread    2) identical     005-0052-1 (thread    1) identical     005-0053-1 (thread    2) identical     005-0053-1 (thread    2) worse      005-0054-0 (thread    1) identical     005-0055-0 (thread    3) identical     005-0055-0 (thread    3) worse      005-0056-1 (thread    2) identical     005-0057-0 (thread    4) identical     005-0058-0 (thread    1) identical     005-0058-0 (thread    2) identical     005-0060-1 (thread    3) identical     005-0061-1 (thread    2) identical     005-0061-1 (thread    2) worse      005-0062-1 (thread    4) identical     005-0063-0 (thread    1) identical     005-0064-1 (thread    3) identical     
-Converged.
-done
-dvtditr (aa) Version 7.526
-alg=A, model=BLOSUM62, 1.53, -0.00, -0.00, noshift, amax=0.0
-4 thread(s)
-
-
-Strategy:
- L-INS-i (Probably most accurate, very slow)
- Iterative refinement method (<16) with LOCAL pairwise alignment information
-
-If unsure which option to use, try 'mafft --auto input > output'.
-For more information, see 'mafft --help', 'mafft --man' and the mafft page.
-
-The default gap scoring scheme has been changed in version 7.110 (2013 Oct).
-It tends to insert more gaps into gap-rich regions than previous versions.
-To disable this change, add the --leavegappyregion option.
-
->sp|O09185|P53_CRIGR Cellular tumor antigen p53 OS=Cricetulus griseus OX=10029 GN=TP53 PE=2 SV=1
----MEE--PQSDLSIELPLS-QETFSDLWKLLPPNNVLSTLP--SSDSIEELFL-SEN--
-VTGWL-----EDSGGALQGVAAA---AASTAEDPVTE---TPAPVASAPATPWPLSSSVP
-SYKTYQGDYGFRLGFLHSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVNSTPPPGTRVR
-AMAIYKKLQYMTEVVRRCPHHERSSE-GDSLAPPQHLIRVEGNLHAEYLDDKQTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDPSGNLLGRNSFEVRICAC
-PGRDRRTEEKNFQKKGEPCPE---LPPKSAKRALPTNT-------S-SSPPPKKKT----
--LDGEYFTLKIRGHERFKMFQELNEALELKDAQASKGSE-DNGAHSSY---LKSKKGQ--
-SASRLKKLMIKRE-GPDSD
->sp|O36006|P53_MARMO Cellular tumor antigen p53 OS=Marmota monax OX=9995 GN=TP53 PE=2 SV=1
----MEE--AQSDLSIEPPLS-QETFSDLWNLLPENNVLSPVL--S-PPMDDLLLSSED--
-VENWF----DKGPDEALQMS------AAPAPKAPTPA---ASTLAAPSPATSWPLSSSVP
-SQNTYPGVYGFRLGFLHSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVDSTPPPGTRVR
-AMAIYKKSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSECTTIHYNYMCNSSCMGGMNRRPILTIITLEGSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKRGEPCPE---PPPRSTKRALPNGT-------S-SSPQPKKKP----
--LDGEYFTLKIRGRARFEMFQELNEALELKDAQAEKEPG-ESRPHPSY---LKSKKGQ--
-STSRHKKIIFKRE-GPDSD
->sp|P02340|P53_MOUSE Cellular tumor antigen p53 OS=Mus musculus OX=10090 GN=Tp53 PE=1 SV=4
-MTAMEE--SQSDISLELPLS-QETFSGLWKLLPPEDILP-----SPHCMDDLLL-PQD--
-VEEFF-----EGPSEALRVS------GAPAAQDPVTE---TPGPVAPAPATPWPLSSFVP
-SQKTYQGNYGFHLGFLQSGTAKSVMCTYSPPLNKLFCQLAKTCPVQLWVSATPPAGSRVR
-AMAIYKKSQHMTEVVRRCPHHERCSD-GDGLAPPQHLIRVEGNLYPEYLEDRQTFRHSVV
-VPYEPPEAGSEYTTIHYKYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRDSFEVRVCAC
-PGRDRRTEEENFRKKEVLCPE---LPPGSAKRALPTCT-------S-ASPPQKKKP----
--LDGEYFTLKIRGRKRFEMFRELNEALELKDAHATEESG-DSRAHSSY---LKTKKGQ--
-STSRHKKTMVKKV-GPDSD
->sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens OX=9606 GN=TP53 PE=1 SV=4
----MEE--PQSDPSVEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAMDDLMLSPDD--
-IEQWFTE--DPGPDEAPRMP------EAAPPVAPAPA---APTPAAPAPAPSWPLSSSVP
-SQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVR
-AMAIYKQSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENLRKKGEPHHE---LPPGSTKRALPNNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG-GSRAHSSH---LKSKKGQ--
-STSRHKKLMFKTE-GPDSD
->sp|P07193|P53_XENLA Cellular tumor antigen p53 OS=Xenopus laevis OX=8355 GN=tp53 PE=2 SV=1
----ME---PSSETGMDPPLS-QETFEDLWSLLP-------------DPLQTVTCRLDN--
-LSEFP--------------------------DYPLAADMTVLQEGLMGNAVPTVTSCAVP
-STDDYAGKYGLQLDFQQNGTAKSVTCTYSPELNKLFCQLAKTCPLLVRVESPPPRGSILR
-ATAVYKKSEHVAEVVKRCPHHERSVEPGEDAAPPSHLMRVEGNLQAYYMEDVNSGRHSVC
-VPYEGPQVGTECTTVLYNYMCNSSCMGGMNRRPILTIITLETPQGLLLGRRCFEVRVCAC
-PGRDRRTEEDNYTKKRGLKP--------SGKRELAHPP-------S-SEPPLPKKRLVVV
-DDDEEIFTLRIKGRSRYEMIKKLNDALELQESLDQQKVTIKCR---------KCRDEI--
-KPKKGKKLLVKDE-QPDSE
->sp|P10360|P53_CHICK Cellular tumor antigen p53 OS=Gallus gallus OX=9031 GN=TP53 PE=1 SV=1
----MAE-------EMEPLLEPTEVFMDLWSMLP-------------YSMQQLPL-PED--
-HSNWQ----ELSPLEPSDPPP-----PPPPPPLPLAAA--APPPLNPPTPPRAAPSPVVP
-STEDYGGDFDFRVGFVEAGTAKSVTCTYSPVLNKVYCRLAKPCPVQVRVGVAPPPGSSLR
-AVAVYKKSEHVAEVVRRCPHHERCGGGTDGLAPAQHLIRVEGNPQARYHDDETTKRHSVV
-VPYEPPEVGSDCTTVLYNFMCNSSCMGGMNRRPILTILTLEGPGGQLLGRRCFEVRVCAC
-PGRDRKIEEENFRKRGG--------AGGVAKRAMSPPT-------E-APEPPKKRV---L
-NPDNEIFYLQVRGRRRYEMLKEINEALQLAEGGSAPRPS-KGR--------RVKVEGP--
-QPSCGKKLLQKGS-----D
->sp|P10361|P53_RAT Cellular tumor antigen p53 OS=Rattus norvegicus OX=10116 GN=Tp53 PE=1 SV=1
----MED--SQSDMSIELPLS-QETFSCLWKLLPPDDILPTTATGSPNSMEDLFL-PQD--
-VAELL-----EGPEEALQVS-------APAAQEPGTE---APAPVAPASATPWPLSSSVP
-SQKTYQGNYGFHLGFLQSGTAKSVMCTYSISLNKLFCQLAKTCPVQLWVTSTPPPGTRVR
-AMAIYKKSQHMTEVVRRCPHHERCSD-GDGLAPPQHLIRVEGNPYAEYLDDRQTFRHSVV
-VPYEPPEVGSDYTTIHYKYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRDSFEVRVCAC
-PGRDRRTEEENFRKKEEHCPE---LPPGSAKRALPTST-------S-SSPQQKKKP----
--LDGEYFTLKIRGRERFEMFRELNEALELKDARAAEESG-DSRAHSSY---PKTKKGQ--
-STSRHKKPMIKKV-GPDSD
->sp|P13481|P53_CHLAE Cellular tumor antigen p53 OS=Chlorocebus aethiops OX=9534 GN=TP53 PE=1 SV=1
----MEE--PQSDPSIEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAVDDLMLSPDD--
-LAQWLTE--DPGPDEAPRMS------EAAPHMAPTPA---APTPAAPAPAPSWPLSSSVP
-SQKTYHGSYGFRLGFLHSGTAKSVTCTYSPDLNKMFCQLAKTCPVQLWVDSTPPPGSRVR
-AMAIYKQSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRVEYSDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCHE---LPPGSTKRALPNNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPA-GSRAHSSH---LKSKKGQ--
-STSRHKKFMFKTE-GPDSD
->sp|P41685|P53_FELCA Cellular tumor antigen p53 OS=Felis catus OX=9685 GN=TP53 PE=2 SV=1
----MQE--PPLELTIEPPLS-QETFSELWNLLPENNVLSSEL--S-SAMNELPL-SED--
-VANWL----DEAPDDASGMS------AV-----PAPA---APAPATPAPAISWPLSSFVP
-SQKTYPGAYGFHLGFLQSGTAKSVTCTYSPPLNKLFCQLAKTCPVQLWVRSPPPPGTCVR
-AMAIYKKSEFMTEVVRRCPHHERCPDSSDGLAPPQHLIRVEGNLHAKYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNFMCNSSCMGGMNRRPIITIITLEDSNGKLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCPE---PPPGSTKRALPPST-------S-STPPQKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQSGKEPG-GSRAHSSH---LKAKKGQ--
-STSRHKKPMLKRE-GLDSD
->sp|P51664|P53_SHEEP Cellular tumor antigen p53 OS=Ovis aries OX=9940 GN=TP53 PE=2 SV=1
----MEE--SQAELGVEPPLS-QETFSDLWNLLPENNLLSSEL--S-APVDDLLPYSED--
-VVTWL----DECPNEAPQMP------EP-------------PAQAALAPATSWPLSSFVP
-SQKTYPGNYGFRLGFLHSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVDSPPPPGTRVR
-AMAIYKKLEHMTEVVRRSPHHERSSDYSDGLAPPQHLIRVEGNLRAEYFDDRNTFRHSVV
-VPYESPEIESECTTIHYNFMCNSSCMGGMNRRPILTIITLEDSRGNLLGRSSFEVRVCAC
-PGRDRRTEEENFRKKGQSCPE---PPPGSTKRALPSST-------S-SSPQQKKKP----
--LDGEYFTLQIRGRKRFEMFRELNEALELMDAQAGREPG-ESRAHSSH---LKSKKGP--
-SPSCHKKPMLKRE-GPDSD
->sp|P56423|P53_MACFA Cellular tumor antigen p53 OS=Macaca fascicularis OX=9541 GN=TP53 PE=2 SV=2
----MEE--PQSDPSIEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAVDDLMLSPDD--
-LAQWLTE--DPGPDEAPRMS------EAAPPMAPTPA---APTPAAPAPAPSWPLSSSVP
-SQKTYHGSYGFRLGFLHSGTAKSVTCTYSPDLNKMFCQLAKTCPVQLWVDSTPPPGSRVR
-AMAIYKQSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRVEYSDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCHQ---LPPGSTKRALPNNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPA-GSRAHSSH---LKSKKGQ--
-STSRHKKFMFKTE-GPDSD
->sp|P56424|P53_MACMU Cellular tumor antigen p53 OS=Macaca mulatta OX=9544 GN=TP53 PE=2 SV=1
----MEE--PQSDPSIEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAVDDLMLSPDD--
-LAQWLTE--DPGPDEAPRMS------EAAPPMAPTPA---APTPAAPAPAPSWPLSSSVP
-SQKTYHGSYGFRLGFLHSGTAKSVTCTYSPDLNKMFCQLAKTCPVQLWVDSTPPPGSRVR
-AMAIYKQSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRVEYSDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCHQ---LPPGSTKRALPNNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPA-GSRAHSSH---LKSKKGQ--
-STSRHKKFMFKTE-GPDSD
->sp|P61260|P53_MACFU Cellular tumor antigen p53 OS=Macaca fuscata fuscata OX=9543 GN=TP53 PE=2 SV=1
----MEE--PQSDPSIEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAVDDLMLSPDD--
-LAQWLTE--DPGPDEAPRMS------EAAPPMAPTPA---APTPAAPAPAPSWPLSSSVP
-SQKTYHGSYGFRLGFLHSGTAKSVTCTYSPDLNKMFCQLAKTCPVQLWVDSTPPPGSRVR
-AMAIYKQSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRVEYSDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCHQ---LPPGSTKRALPNNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPA-GSRAHSSH---LKSKKGQ--
-STSRHKKFMFKTE-GPDSD
->sp|P67938|P53_BOSIN Cellular tumor antigen p53 OS=Bos indicus OX=9915 GN=TP53 PE=2 SV=1
----MEE--SQAELNVEPPLS-QETFSDLWNLLPENNLLSSEL--S-APVDDLLP-YTD--
-VATWL----DECPNEAPQMP------EP-----SAPA---APPPATPAPATSWPLSSFVP
-SQKTYPGNYGFRLGFLQSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVDSPPPPGTRVR
-AMAIYKKLEHMTEVVRRCPHHERSSDYSDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYESPEIDSECTTIHYNFMCNSSCMGGMNRRPILTIITLEDSCGNLLGRNSFEVRVCAC
-PGRDRRTEEENLRKKGQSCPE---PPPRSTKRALPTNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGFKRYEMFRELNDALELKDALDGREPG-ESRAHSSH---LKSKKRP--
-SPSCHKKPMLKRE-GPDSD
->sp|P67939|P53_BOVIN Cellular tumor antigen p53 OS=Bos taurus OX=9913 GN=TP53 PE=2 SV=1
----MEE--SQAELNVEPPLS-QETFSDLWNLLPENNLLSSEL--S-APVDDLLP-YTD--
-VATWL----DECPNEAPQMP------EP-----SAPA---APPPATPAPATSWPLSSFVP
-SQKTYPGNYGFRLGFLQSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVDSPPPPGTRVR
-AMAIYKKLEHMTEVVRRCPHHERSSDYSDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYESPEIDSECTTIHYNFMCNSSCMGGMNRRPILTIITLEDSCGNLLGRNSFEVRVCAC
-PGRDRRTEEENLRKKGQSCPE---PPPRSTKRALPTNT-------S-SSPQPKKKP----
--LDGEYFTLQIRGFKRYEMFRELNDALELKDALDGREPG-ESRAHSSH---LKSKKRP--
-SPSCHKKPMLKRE-GPDSD
->sp|P79734|P53_DANRE Cellular tumor antigen p53 OS=Danio rerio OX=7955 GN=tp53 PE=1 SV=1
----MAQ-----------NDS-QE-FAELWEK----NL---------------IIQPPG-G
-GSCWD----IINDEEYLPGSF-----DPNFFENVLEE---QPQPST------LPPTSTVP
-ETSDYPGDHGFRLRFPQSGTAKSVTCTYSPDLNKLFCQLAKTCPVQMVVDVAPPQGSVVR
-ATAIYKKSEHVAEVVRRCPHHERTPD-GDNLAPAGHLIRVEGNQRANYREDNITLRHSVF
-VPYEAPQLGAEWTTVLLNYMCNSSCMGGMNRRPILTIITLETQEGQLLGRRSFEVRVCAC
-PGRDRKTEESNFKKDQETKTMA--KTTTGTKRSLVKESSSATLRPE-GSKKAKGSS----
--SDEEIFTLQVRGRERYEILKKLNDSLELSDVVPASDAE-KYRQKFMTKNKKENRESS--
-EPKQGKKLMVKDEGRSDSD
->sp|P79892|P53_HORSE Cellular tumor antigen p53 (Fragment) OS=Equus caballus OX=9796 GN=TP53 PE=2 SV=2
-----------------------------------------------PAVNNLLL-SPD--
-VVNWL----DEGPDEAPRMP------A-------------APAPLAPAPATSWPLSSFVP
-SQKTYPGCYGFRLGFLNSGTAKSVTCTYSPTLNKLFCQLAKTCPVQLLVSSPPPPGTRVR
-AMAIYKKSEFMTEVVRRCPHHERCSDSSDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNFMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKEEPCPE---PPPRSTKRVLSSNT-------S-SSPPQKKKP----
--LDGEYFT----------------------------------------------------
--------------------
->sp|Q00366|P53_MESAU Cellular tumor antigen p53 OS=Mesocricetus auratus OX=10036 GN=TP53 PE=2 SV=1
----MEE--PQSDLSIELPLS-QETFSDLWKLLPPNNVLSTLP--SSDSIEELFL-SEN--
-VAGWL-----EDPGEALQGSAAAAAPAAPAAEDPVAE---TPAPVASAPATPWPLSSSVP
-SYKTYQGDYGFRLGFLHSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVSSTPPPGTRVR
-AMAIYKKLQYMTEVVRRCPHHERSSE-GDGLAPPQHLIRVEGNMHAEYLDDKQTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDPSGNLLGRNSFEVRICAC
-PGRDRRTEEKNFQKKGEPCPE---LPPKSAKRALPTNT-------S-SSPQPKRKT----
--LDGEYFTLKIRGQERFKMFQELNEALELKDAQALKASE-DSGAHSSY---LKSKKGQ--
-SASRLKKLMIKRE-GPDSD
->sp|Q29480|P53_EQUAS Cellular tumor antigen p53 (Fragment) OS=Equus asinus OX=9793 GN=TP53 PE=3 SV=1
-------------------------------------------------------------
-------------------------------------------------------------
----------------------------YSPALNKMFCQLAKTCPVYLRISSPPPPGTRVR
-AMAIYKKSEFMTEVVRRCPHHERCSDSSDGLAPPQHLIRVEGNLRAEYLDDRNTLRHSVV
-VPYEPPEVGSDCTTIHYNFMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKEEPCPE---PPPRSTKRVLSSNT-------S-SSPPQKEDP----
--LDGEYFTLH--------------------------------------------------
--------------------
->sp|Q29537|P53_CANLF Cellular tumor antigen p53 OS=Canis lupus familiaris OX=9615 GN=TP53 PE=2 SV=2
----MEE--SQSELNIDPPLS-QETFSELWNLLPENNVLSSEL--C-PAVDELLL-PES--
-VVNWL----DEDSDDAPRMP------A-------------TSAPTAPGPAPSWPLSSSVP
-SPKTYPGTYGFRLGFLHSGTAKSVTWTYSPLLNKLFCQLAKTCPVQLWVSSPPPPNTCVR
-AMAIYKKSEFVTEVVRRCPHHERCSDSSDGLAPPQHLIRVEGNLRAKYLDDRNTFRHSVV
-VPYEPPEVGSDYTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNVLGRNSFEVRVCAC
-PGRDRRTEEENFHKKGEPCPE---PPPGSTKRALPPST-------S-SSPPQKKKP----
--LDGEYFTLQIRGRERYEMFRNLNEALELKDAQSGKEPG-GSRAHSSH---LKAKKGQ--
-STSRHKKLMFKRE-GLDSD
->sp|Q64662|P53_OTOBE Cellular tumor antigen p53 (Fragment) OS=Otospermophilus beecheyi OX=34862 GN=TP53 PE=2 SV=1
---------------------------DLWNLLPENNVLSPVL--S-PPMDDLLLSSED--
-VENWF----DKGPDEALQMS------AAPAPKAPTPA---ASTLAAPTPAISWPLSSSVP
-SQNTYPGVYGFRLGFIHSGTAKSVTCTYSPSLNKLFCQLAKTCPVQLWVDSTPPPGTRVR
-AMAIYKKSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSESTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKRGEPCPE---PPPGSTKRALPTGT-------N-SSPQPKKKP----
--LDGEYFTLKIRGRA---------------------------------------------
--------------------
->sp|Q8SPZ3|P53_DELLE Cellular tumor antigen p53 OS=Delphinapterus leucas OX=9749 GN=TP53 PE=2 SV=1
----MEE--SQAELGVEPPLS-QETFSDLWKLLPENNLLSSEL--S-PAVDDLLLSPED--
-VANWL----DERPDEAPQMP------EP-----PAPA---APTPAAPAPATSWPLSSFVP
-SQKTYPGSYGFHLGFLHSGTAKSVTCTYSPALNKLFCQLAKTCPVQLWVSSPPPPGTRVR
-AMAIYKKSEYMTEVVRRCPHHERCSDYSDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNFMCNSSCMGGMNRRPILTIITLEDSNGNLLGRNSFEVRVCAC
-PGRDRRTEEENFHKKGQSCPE---LPTGSAKRALPTGT-------S-SSPPQKKKP----
--LDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPG-ESRAHSSH---LKSKKGQ--
-SPSRHKKLMFKRE-GPDSD
->sp|Q95330|P53_RABIT Cellular tumor antigen p53 OS=Oryctolagus cuniculus OX=9986 GN=TP53 PE=2 SV=1
----MEE--SQSDLSLEPPLS-QETFSDLWKLLPENNLLTTSL--N-PPVDDLLS-AED--
-VANWL----NEDPEEGLRVP------AAPAPEAPAPA---APALAAPAPATSWPLSSSVP
-SQKTYHGNYGFRLGFLHSGTAKSVTCTYSPCLNKLFCQLAKTCPVQLWVDSTPPPGTRVR
-AMAIYKKSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCAC
-PGRDRRTEEENFRKKGEPCPE---LPPGSSKRALPTTT-------TDSSPQTKKKP----
--LDGEYFILKIRGRERFEMFRELNEALELKDAQAEKEPG-GSRAHSSY---LKAKKGQ--
-STSRHKKPMFKRE-GPDSD
->sp|Q9TTA1|P53_TUPBE Cellular tumor antigen p53 OS=Tupaia belangeri OX=37347 GN=TP53 PE=2 SV=1
----MEE--PQSDPSVEPPLS-QETFSDLWKLLPENNVLSPLP--S-QAMDDLMLSPDD--
-IEQWFTE--DPGPDEAPRMP------EAAPPVAPAPA---APTPAAPAPAPSWPLSSSVP
-SQKTYQGSYGFRLGFLHSGTAKSVTCTYSPDLNKLFCQLAKTCPVQLWVDSAPPPGTRVR
-AMAIYKQSQYVTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLHAEYSDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGKLLGRNSFEVRICAC
-PGRDRRTEEENFRKKGESCPK---LPTGSIKRALPTGS-------S-SSPQPKKKP----
--LDEEYFTLQIRGRERFEMLREINEALELKDAMAGKESA-GSRAHSSH---LKSKKGQ--
-STSRHRKLMFKTE-GPDSD
->sp|Q9TUB2|P53_PIG Cellular tumor antigen p53 OS=Sus scrofa OX=9823 GN=TP53 PE=2 SV=1
----MEE--SQSELGVEPPLS-QETFSDLWKLLPENNLLSSEL--SLAAVNDLLLSP----
-VTNWL----DENPDDASRVP------AP-----PAAT---APAPAAPAPATSWPLSSFVP
-SQKTYPGSYDFRLGFLHSGTAKSVTCTYSPALNKLFCQLAKTCPVQLWVSSPPPPGTRVR
-AMAIYKKSEYMTEVVRRCPHHERSSDYSDGLAPPQHLIRVEGNLRAEYLDDRNTFRHSVV
-VPYEPPEVGSDCTTIHYNFMCNSSCMGGMNRRPILTIITLEDASGNLLGRNSFEVRVCAC
-PGRDRRTEEENFLKKGQSCPE---PPPGSTKRALPTST-------S-SSPVQKKKP----
--LDGEYFTLQIRGRERFEMFRELNDALELKDAQTARESG-ENRAHSSH---LKSKKGQ--
-SPSRHKKPMFKRE-GPDSD
->sp|Q9WUR6|P53_CAVPO Cellular tumor antigen p53 OS=Cavia porcellus OX=10141 GN=TP53 PE=2 SV=1
----MEE--PHSDLSIEPPLS-QETFSDLWKLLPENNVLSDSL--S-PPMDHLLLSPEE--
-VASWL----GENPDGDGHVS------AAPVSEAPTSA---GPALVAPAPATSWPLSSSVP
-SHKPYRGSYGFEVHFLKSGTAKSVTCTYSPGLNKLFCQLAKTCPVQVWVESPPPPGTRVR
-ALAIYKKSQHMTEVVRRCPHHERCSD-SDGLAPPQHLIRVEGNLHAEYVDDRTTFRHSVV
-VPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGKLLGRDSFEVRVCAC
-PGRDRRTEEENFRKKGGLCPE---PTPGNIKRALPTST-------S-SSPQPKKKP----
--LDAEYFTLKIRGRKNFEILREINEALEFKDAQTEKEPG-ESRPHSSY---PKSKKGQ--
-STSCHKKLMFKRE-GLDSD
->sp|O12946|P53_PLAFE Cellular tumor antigen p53 OS=Platichthys flesus OX=8260 GN=tp53 PE=2 SV=1
-M--MDE--QGLDGMQILPGS-QDSFSELWASVQT------------PSIATIA-------
-------EEFDDHLGNLLQNGF-----DMNLFELPPEM---VAKDSV------TPPSSTVP
-VVTDYPGEYGFQLRFQKSGTAKSVTSTFSELLKKLYCQLAKTSPVEVLLSKEPPQGAVLR
-ATAVYKKTEHVADVVRRCPHHQT----EDTAEHRSHLIRLEGSQRALYFEDPHTKRQSVT
-VPYEPPQLGSETTAILLSFMCNSSCMGGMNRRQILTILTLETPDGLVLGRRCFEVRVCAC
-PGRDRKTDEESSTKTPN-------GPKQTKKRKQAPSN--SAPHTT-TVMKSKSSSSA-E
-EEDKEVFTVLVKGRERYEIIKKINEAFEGAAEKEKAKNK-----------VAVKQELP--
-VPSSGKRLVQRGE-RSDSD
->sp|O57538|P53_XIPHE Cellular tumor antigen p53 OS=Xiphophorus hellerii OX=8084 GN=tp53 PE=2 SV=1
----MEE--ADLT----LPLS-QDTFHDLWNNVF-------------LSTENESLAPPE--
-----------GLLSQ-----------NMDFWEDPET----MQETKN------VPTAPTVP
-AISNYAGEHGFNLEFNDSGTAKSVTSTYSVKLGKLFCQLAKTTPIGVLVKEEPPQGAVIR
-ATSVYKKTEHVGEVVKRCPHHQS----EDLSDNKSHLIRVEGSQLAQYFEDPNTRRHSVT
-VPYERPQLGSEMTTILLSFMCNSSCMGGMNRRPILTILTLETTEGEVLGRRCFEVRVCAC
-PGRDRKTEEGNLEKS---------GTKQTKKRKSAPA-----PDTS-TAKKSKSASSG-E
-DEDKEIYTLSIRGRNRYLWFKSLNDGLELMDKTGPK----------------IKQEIP--
-APSSGKRLLKGGS---DSD
->sp|O93379|P53_ICTPU Cellular tumor antigen p53 OS=Ictalurus punctatus OX=7998 GN=tp53 PE=2 SV=1
----MEGNGERDTMMVEPPDS-QE-FAELWLR----NLI-----------------VRD--
-NSLWG-------KEEEIPDDL-----QEVPCDVLLSDM-LQPQSSS------SPPTSTVP
-VTSDYPGLLNFTLHFQESSGTKSVTCTYSPDLNKLFCQLAKTCPVLMAVSSSPPPGSVLR
-ATAVYKRSEHVAEVVRRCPHHERSNDSSDGPAPPGHLLRVEGNSRAVYQEDGNTQAHSVV
-VPYEPPQVGSQSTTVLYNYMCNSSCMGGMNRRPILTIITLETQDGHLLGRRTFEVRVCAC
-PGRDRKTEESNFKKQQEPKTSG----KTLTKRSMKDPP----SHPE-ASKKSKNSS----
--SDDEIYTLQVRGKERYEFLKKINDGLELSDVVPPADQE-KYRQKLLSKTCRKERDGAAG
-EPKRGKKRLVKEE-KCDSD
->sp|P25035|P53_ONCMY Cellular tumor antigen p53 OS=Oncorhynchus mykiss OX=8022 GN=tp53 PE=2 SV=1
----MAD----LAENVSLPLS-QESFEDLWKM----NL------------NLVAVQPPE--
-TESWVGY-DNFMMEAPLQVEF-----DPSLFEVSATEP--APQPSISTLDTGSPPTSTVP
-TTSDYPGALGFQLRFLQSSTAKSVTCTYSPDLNKLFCQLAKTCPVQIVVDHPPPPGAVVR
-ALAIYKKLSDVADVVRRCPHHQSTSENNEGPAPRGHLVRVEGNQRSEYMEDGNTLRHSVL
-VPYEPPQVGSECTTVLYNFMCNSSCMGGMNRRPILTIITLETQEGQLLGRRSFEVRVCAC
-PGRDRKTEEINLKKQQETTLETKTKPAQGIKRAMKEAS-LPAPQPG-ASKKTKSSPAV--
--SDDEIYTLQIRGKEKYEMLKKFNDSLELSELVPVADAD-KYRQKCLTKRVAKRDFGV--
-GPKKRKKLLVKEE-KSDSD
->sp|P79820|P53_ORYLA Cellular tumor antigen p53 OS=Oryzias latipes OX=8090 GN=tp53 PE=2 SV=2
----MDP-------VPDLPES-QGSFQELWETVSY------------PPLETLSLPTVNEP
-TGSWVATGDMFLLDQDLSGTF-----DDKIFDIPIEP---VPTNEV------NPPPTTVP
-VTTDYPGSYELELRFQKSGTAKSVTSTYSETLNKLYCQLAKTSPIEVRVSKEPPKGAILR
-ATAVYKKTEHVADVVRRCPHHQN----EDSVEHRSHLIRVEGSQLAQYFEDPYTKRQSVT
-VPYEPPQPGSEMTTILLSYMCNSSCMGGMNRRPILTILTLET-EGLVLGRRCFEVRICAC
-PGRDRKTEEESRQKTQ------------PKKRKVTPNT-------S-SSKRKKSHSSGEE
-EDNREVFHFEVYGRERYEFLKKINDGLELLEKESKSK---------------NKDSGM--
-VPSSGKKL--------KSN
->sp|Q92143|P53_XIPMA Cellular tumor antigen p53 OS=Xiphophorus maculatus OX=8083 GN=tp53 PE=2 SV=2
----MEE--ADLT----LPLS-QDTFHDLWNNVF-------------LSTENESLPPPE--
-----------GLLSQ-----------NMDFWEDPET----MQETKN------VPTAPTVP
-AISNYAGEHGFNLEFNDSGTAKSVTSTYSVKLGKLFCQLAKTTPIGVLVKEEPPQGAVIR
-ATAVYKKTEHVGEVVKRCPHHQS----EDLSDNKSHLIRVEGSQLAQYFEDPNTRRHSVT
-VPYERPQLGSEMTTILLSFMCNSSCMGGMNRRPILTILTLETTEGEVLGRRCFEVRVCAC
-PGRDRKTEEGNLEKS---------GTKQTKKRKSAPA-----PDTS-TAKKSKSASSG-E
-DEDKEIYTLSIRGRNRYLWFKSLNDGLELMDKTGPK----------------IKQEIP--
-APSSGKRLLKGGS---DSD
->sp|Q9W678|P53_BARBU Cellular tumor antigen p53 OS=Barbus barbus OX=40830 GN=tp53 PE=2 SV=1
----MA-------------ES-QE-FAELWER----NL----------------ISTQE-A
-GTCWE----LIN-DEYLPSSF-----DPNIFDNVLTE---QPQPST------SPPTASVP
-VATDYPGEHGFKLGFPQSGTAKSVTCTYSSDLNKLFCQLAKTCPVQMVVNVAPPQGSVIR
-ATAIYKKSEHVAEVVRRCPHHERTPD-GDGLAPAAHLIRVEGNSRALYREDDVNSRHSVV
-VPYEVPQLGSEFTTVLYNFMCNSSCMGGMNRRPILTIISLETHDGQLLGRRSFEVRVCAC
-PGRDRKTEESNFRKDQETKTLD--KIPSANKRSLTKDSTSSVPRPE-GSKKAKLSGS---
--SDEEIYTLQVRGKERYEMLKKINDSLELSDVVPPSEMD-RYRQKLLTKGKKKDGQTP--
-EPKRGKKLMVKDE-KSDSD
->sp|Q9W679|P53_TETMU Cellular tumor antigen p53 OS=Tetraodon miurus OX=94908 GN=tp53 PE=2 SV=1
----MEE--ENIS----LPLS-QDTFQDLWDNVSA------------PPISTIQTAALE--
-NEAWPAERQMNMMCNFMDSTF-----NEALFNLLPEP---PSRDGA------NSSSPTVP
-VTTDYPGEYGFKLRFQKSGTAKSVTSTYSEILNKLYCQLAKTSLVEVLLGKDPPMGAVLR
-ATAIYKKTEHVAEVVRRCPHHQN----EDSAEHRSHLIRMEGSERAQYFEHPHTKRQSVT
-VPYEPPQLGSEFTTILLSFMCNSSCMGGMNRRPILTILTLETQEGIVLGRRCFEVRVCAC
-PGRDRKTEETNSTKMQN-------DAKDAKKRKSVPT-----PDST-TIKKSKTASSA-E
-EDNNEVYTLQIRGRKRYEMLKKINDGLDLLENKPKSKA-------------THRPDGP--
-IPPSGKRLLHRGE-KSDSD

@@ -1,8 +1,0 @@
-output_dir: reports
-fig_format: png
-tables_dir: reports/tables
-figures_dir: reports/figures
-top_rescues: 20
-rescue_bubble_annotate: 6
-rescue_risk_top_n: 12
-rescue_position_top_n: 200

@@ -1,9 +1,0 @@
-{
-  "base_energy": -725.24,
-  "base_pdb": "/Users/ishaangubbala/Documents/p53/Data/processed/cache/evoef2_repair/5a7051e8f97848d43b3747268825b29cafb5fa99d2e3fff6f58efcdb74e74cc3/AF-P04637-F1-model_v6.pdb",
-  "completed_at": "2026-01-21 17:59:33",
-  "engine": "evoef2",
-  "scored_mutations": 871,
-  "unique_mutations": 871,
-  "variants": 871
-}
