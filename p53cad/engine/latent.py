@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 from p53cad.core.logging import get_logger
 
-class LatentEmbedder:
+class ManifoldEmbedder:
     """
     Handles interactions with the ESM-2 Protein Language Model.
     Focuses on encoding sequences into latent space and decoding them back.
@@ -31,25 +31,55 @@ class LatentEmbedder:
         try:
             self.tokenizer = EsmTokenizer.from_pretrained(model_name)
             self.model = EsmForMaskedLM.from_pretrained(model_name).to(self.device)
+            # Ensure hidden states are always returned to avoid NoneType errors during navigation
+            self.model.config.output_hidden_states = True 
             self.model.eval()
-            self.logger.info("Model loaded successfully.")
+            self.logger.info("Model loaded successfully with output_hidden_states=True.")
         except Exception as e:
             self.logger.error(f"Failed to load model: {e}")
             raise
 
+    def get_embeddings(self, sequence: str) -> torch.Tensor:
+        """
+        Retrieves the initial token embeddings (input to the first layer).
+        Returns: Tensor with requires_grad=True
+        """
+        inputs = self.tokenizer(sequence, return_tensors="pt", add_special_tokens=False).to(self.device)
+        input_ids = inputs.input_ids
+        
+        # Get the embedding layer
+        with torch.no_grad():
+            # ESM-2 embedding layer is usually model.esm.embeddings.word_embeddings
+            # but depends on HuggingFace version. For EsmForMaskedLM:
+            emb_layer = self.model.esm.embeddings.word_embeddings
+            embeddings = emb_layer(input_ids) # (1, L, D)
+            
+        return embeddings
+
+    def latent_forward_ascent(self, embeddings: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Runs the transformer forward pass starting from soft embeddings.
+        Returns: (last_hidden_state, logits, probabilities)
+        """
+        # Optimized: Explicit hidden state extraction (D=320)
+        # Using .esm directly ensures we get the 320-dim latent state for the oracle.
+        esm_outputs = self.model.esm(inputs_embeds=embeddings, output_hidden_states=True, return_dict=True)
+        h = esm_outputs.last_hidden_state
+        
+        logits = self.model.lm_head(h)
+        probs = torch.softmax(logits[0], dim=-1)
+        return h, logits, probs
+
     def encode(self, sequence: str) -> torch.Tensor:
         """
         Embeds a protein sequence into the latent space (last hidden state).
-        Returns: Tensor of shape (1, L, D) - typically 1280 dim for t33.
+        Uses the base ESM model for cleaner embedding extraction.
         """
         inputs = self.tokenizer(sequence, return_tensors="pt", add_special_tokens=False).to(self.device)
         with torch.no_grad():
-            outputs = self.model(**inputs, output_hidden_states=True)
-            # Last hidden state is typically used as the "embedding" for per-residue tasks
-            # outputs.hidden_states[-1] is the same as outputs.last_hidden_state
-            # Shape: (Batch, Seq_Len, Dim)
-            embeddings = outputs.hidden_states[-1]
-            
+            # Use the base model (esm) directly for hidden states
+            outputs = self.model.esm(**inputs, output_hidden_states=True, return_dict=True)
+            embeddings = outputs.last_hidden_state
         return embeddings
 
     def decode(self, embeddings: torch.Tensor, sequence_len: Optional[int] = None) -> str:
@@ -94,11 +124,85 @@ class LatentEmbedder:
             outputs = self.model(**inputs)
         return outputs.logits
 
+    def get_dna_contact_prob(self, z: torch.Tensor, logits: Optional[torch.Tensor] = None, probs: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Refined Mechanistic Proxy: Estimates DNA binding recruitment force.
+        Optimized: Accepts pre-calculated probabilities to skip redundant softmax.
+        """
+        z_sq = z.squeeze(0)
+        hotspots = [119, 174, 240, 247, 272, 279]
+        hotspots = [i for i in hotspots if i < z_sq.shape[0]]
+        
+        if not hotspots:
+            return torch.tensor(0.0, device=z.device)
+            
+        latent_force = z_sq[hotspots, :].norm(dim=-1).mean()
+        
+        if probs is not None:
+            # probs: (L, Vocab)
+            pos_charge_ids = [10, 15, 21]
+            charge_prob = probs[hotspots][:, pos_charge_ids].sum(dim=-1).mean()
+            return 0.5 * latent_force + 5.0 * charge_prob
+        elif logits is not None:
+            probs_local = torch.softmax(logits[0], dim=-1)
+            pos_charge_ids = [10, 15, 21]
+            charge_prob = probs_local[hotspots][:, pos_charge_ids].sum(dim=-1).mean()
+            return 0.5 * latent_force + 5.0 * charge_prob
+            
+        return latent_force
+
+    def get_surface_charge_density(self, logits: Optional[torch.Tensor] = None, probs: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Calculates the density of positively charged residues at the DNA interface loops.
+        """
+        if probs is None and logits is not None:
+             probs = torch.softmax(logits[0], dim=-1)
+        
+        if probs is None:
+             return torch.tensor(0.0)
+
+        pos_ids = [10, 15, 21] # R, K, H
+        l1 = list(range(111, 124))
+        l2 = list(range(162, 195))
+        l3 = list(range(235, 251))
+        all_interface = [i for i in (l1 + l2 + l3) if i < probs.shape[0]]
+        
+        if not all_interface:
+            return torch.tensor(0.0, device=logits.device)
+            
+        charge_density = probs[all_interface][:, pos_ids].sum(dim=-1).mean()
+        return charge_density
+
+    def get_hydrophobic_packing(self, logits: Optional[torch.Tensor] = None, probs: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Estimates the core stability via hydrophobic packing density.
+        """
+        if probs is None and logits is not None:
+             probs = torch.softmax(logits[0], dim=-1)
+        
+        if probs is None:
+             return torch.tensor(0.0)
+
+        # L(4), I(12), V(7), F(18), W(22), M(20)
+        hydro_ids = [4, 12, 7, 18, 22, 20]
+        
+        # Scaffold residues (general core)
+        core_res = [i for i in range(93, 312) if i < probs.shape[0]]
+        # Exclude loops to focus on internal packing
+        loops = set(range(111, 124)) | set(range(162, 195)) | set(range(235, 251))
+        true_core = [i for i in core_res if i not in loops]
+        
+        if not true_core:
+            return torch.tensor(0.0, device=logits.device)
+            
+        packing_score = probs[true_core][:, hydro_ids].sum(dim=-1).mean()
+        return packing_score
+
 class ManifoldWalker:
     """
     Performs vector arithmetic and interpolation in the latent space.
     """
-    def __init__(self, embedder: LatentEmbedder):
+    def __init__(self, embedder: ManifoldEmbedder):
         self.embedder = embedder
         self.logger = get_logger(__name__)
 

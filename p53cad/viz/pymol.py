@@ -100,4 +100,59 @@ class PyMolGenerator:
         with open(output_path, "w") as f:
             f.write("\n".join(pml_lines))
             
-        logger.info(f"Generated PyMol script at {output_path}")
+    def render_candidate_png(self, sequence: str, output_image: Path) -> bool:
+        """
+        Renders a specific protein sequence as a PNG by mapping mutations onto the WT structure.
+        """
+        import subprocess
+        import re
+        
+        muts = [f"{self.wt_seq[j]}{j+1}{sequence[j]}" for j in range(len(self.wt_seq)) if self.wt_seq[j] != sequence[j]]
+        res_nums = []
+        for m in muts:
+            match = re.search(r"(\d+)", m)
+            if match:
+                res_nums.append(match.group(1))
+        
+        pml_path = output_image.with_suffix(".pml")
+        pml_lines = [
+            f"load {self.pdb_path}, wt_p53",
+            "hide everything",
+            "show cartoon, wt_p53",
+            "color gray70, wt_p53",
+            "set transparency, 0.4",
+            "bg_color white"
+        ]
+        
+        if res_nums:
+            resi_str = "+".join(res_nums)
+            pml_lines.extend([
+                f"select muts, resi {resi_str}",
+                "show sticks, muts",
+                "color red, muts",
+                "set stick_radius, 0.3",
+                "zoom muts, 20"
+            ])
+        else:
+            pml_lines.append("zoom wt_p53")
+            
+        pml_lines.extend([
+            "set ray_opaque_background, off",
+            "set ray_shadows, on",
+            f"png {output_image}, width=800, height=600, ray=1",
+            "quit"
+        ])
+        
+        with open(pml_path, "w") as f:
+            f.write("\n".join(pml_lines))
+            
+        try:
+            # Run PyMol in batch mode (no GUI)
+            result = subprocess.run(["pymol", "-cq", str(pml_path)], capture_output=True, text=True)
+            if result.returncode != 0:
+                logger.error(f"PyMol error: {result.stderr}")
+                return False
+            return output_image.exists()
+        except Exception as e:
+            logger.error(f"Failed to render PNG: {e}")
+            return False

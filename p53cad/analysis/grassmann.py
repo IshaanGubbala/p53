@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
-from p53cad.engine.latent import LatentEmbedder
+from p53cad.engine.latent import ManifoldEmbedder
 from p53cad.core.logging import get_logger
 import numpy as np
 
@@ -16,7 +16,7 @@ class GrassmannMetric:
     These define a subspace in R^D.
     We compare the subspace of a Mutant vs Wild-Types using Principal Angles.
     """
-    def __init__(self, embedder: LatentEmbedder):
+    def __init__(self, embedder: ManifoldEmbedder):
         self.embedder = embedder
         self.logger = get_logger(__name__)
 
@@ -36,25 +36,21 @@ class GrassmannMetric:
         # Squeeze to (L, D)
         matrix = z.squeeze(0)
         
-        # SVD
-        # U, S, V = torch.svd(matrix)
-        # U is (L, L), V is (D, D)
-        # We want the subspace in the Embedding dimension? Or the Sequence dimension?
-        # Usually checking how the 'embedding space' is utilized.
-        # Let's take V (right singular vectors), shape (D, D).
-        # Top k components define the subspace.
-        
-        U, S, V = torch.linalg.svd(matrix, full_matrices=False)
-        # Vh is (min(L,D), D). We want V which is tranpose?
-        # torch.linalg.svd returns U, S, Vh
-        # Vh is (K, D) where K = min(L, D). The rows of Vh are the singular vectors.
+        # SVD on CPU to avoid MPS 'aten::_linalg_svd.U' NotImplementedError
+        # The matrix is (L, D), typically (393, 320) or similar.
+        # This is small enough that CPU compute is negligible.
+        cpu_matrix = matrix.detach().cpu()
+        U, S, Vh = torch.linalg.svd(cpu_matrix, full_matrices=False)
+        # Vh is (min(L,D), D). The rows are the singular vectors.
+        # Move back to original device if needed, or keep on CPU for now.
+        # Grassmann distance logic works on whatever device the subspaces are on.
         
         # Let's take top 10 principal components
         k = 10
-        if V.shape[0] < k:
-            k = V.shape[0]
+        if Vh.shape[0] < k:
+            k = Vh.shape[0]
             
-        subspace = V[:k, :] # (k, D)
+        subspace = Vh[:k, :].to(matrix.device) # (k, D)
         # Orthonormalize just in case (SVD gives orthonormal usually)
         return subspace
 
@@ -85,7 +81,8 @@ class GrassmannMetric:
         
         # Singular values of interaction matrix are the cosines of principal angles
         # range [0, 1]
-        s_vals = torch.linalg.svdvals(interaction)
+        # Move to CPU for SVD because 'aten::_linalg_svd.U' is not implemented on MPS
+        s_vals = torch.linalg.svdvals(interaction.cpu())
         
         # Clamp for numerical safety
         s_vals = torch.clamp(s_vals, -1.0, 1.0)

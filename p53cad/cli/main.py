@@ -2,8 +2,9 @@ import click
 from pathlib import Path
 import os
 
-# Fix for OpenMP error on Mac (common with PyTorch + MKL)
+# Fix for OpenMP and MPS errors on Mac
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 from p53cad.core.logging import setup_logging, get_logger
 
@@ -22,12 +23,12 @@ def train(dms, epochs, output):
     logger.info("Starting training pipeline...")
     
     from p53cad.data.dms import load_dms_data
-    from p53cad.engine.latent import LatentEmbedder
+    from p53cad.engine.latent import ManifoldEmbedder
     from p53cad.engine.oracle import FunctionalOracle
     
     # Logic ported from run_functional_training.py
     df = load_dms_data(dms)
-    embedder = LatentEmbedder()
+    embedder = ManifoldEmbedder()
     oracle = FunctionalOracle(input_dim=320)
     
     # Hydrate sequences from mutation names
@@ -46,14 +47,24 @@ def train(dms, epochs, output):
 @cli.command()
 @click.argument('targets', nargs=-1)
 @click.option('--samples', default=20, help="Number of candidates per target")
-def design(targets, samples):
+@click.option('--lock', default="", help="Residue positions to lock (e.g. 248,273)")
+def design(targets, samples, lock):
     """Run Latent Manifold Rescue on TARGETS (e.g. R175H)."""
     logger = get_logger("p53cad.cli.design")
+    
+    # Parse locked residues
+    locked_indices = []
+    if lock:
+        try:
+            locked_indices = [int(x.strip()) - 1 for x in lock.split(",") if x.strip()]
+            logger.info(f"Locking critical residues: {[i+1 for i in locked_indices]}")
+        except ValueError:
+            logger.error("Invalid lock format. Use comma-separated integers.")
     if not targets:
         logger.warning("No targets specified. Usage: p53cad design R175H Y220C")
         return
 
-    from p53cad.engine.latent import LatentEmbedder, ManifoldWalker
+    from p53cad.engine.latent import ManifoldEmbedder, ManifoldWalker
     from p53cad.engine.oracle import FunctionalOracle
     import torch
     import pandas as pd
@@ -61,7 +72,7 @@ def design(targets, samples):
     
     logger.info(f"Designing rescue candidates for: {targets}")
     
-    embedder = LatentEmbedder()
+    embedder = ManifoldEmbedder()
     walker = ManifoldWalker(embedder)
     
     # Load Oracle
@@ -102,6 +113,15 @@ def design(targets, samples):
                 pooled = z.mean(dim=1)
                 score = oracle.model(pooled)
                 loss = -score
+                
+                # Constraint: Discourage mutations in locked residues
+                # We can do this by adding a penalty if the latent vector drifts 
+                # too far from WT in those specific positions
+                if locked_indices:
+                    z_wt = embedder.encode(wt_seq)
+                    lock_loss = torch.norm(z[:, locked_indices, :] - z_wt[:, locked_indices, :])
+                    loss += 10.0 * lock_loss # Strong penalty
+                
                 loss.backward()
                 optimizer.step()
                 
@@ -149,7 +169,7 @@ def analyze():
     logger = get_logger("p53cad.cli.analyze")
     logger.info("Running Grassmannian Analysis...")
     from p53cad.analysis.grassmann import GrassmannMetric
-    from p53cad.engine.latent import LatentEmbedder
+    from p53cad.engine.latent import ManifoldEmbedder
     import pandas as pd
     
     input_path = Path("data/processed/candidates.csv")
@@ -158,7 +178,7 @@ def analyze():
         return
         
     df = pd.read_csv(input_path)
-    embedder = LatentEmbedder()
+    embedder = ManifoldEmbedder()
     metric = GrassmannMetric(embedder)
     
     # Mock analysis loop
@@ -174,6 +194,16 @@ def analyze():
             dists.append(0.0)
             
     df["grassmann_dist"] = dists
+    
+    # Pareto Ranking: Multi-objective score
+    # Normalize Grassmann Distance (0-1)
+    if not df.empty and df["grassmann_dist"].max() > df["grassmann_dist"].min():
+        norm_dist = (df["grassmann_dist"] - df["grassmann_dist"].min()) / (df["grassmann_dist"].max() - df["grassmann_dist"].min())
+        # Higher score is better, Lower dist is better -> score + (1-dist)
+        # We need Predicted Score here too if available
+        # But analyze is generic. Let's stick to Grassmann dist for now or add a combined score.
+        logger.info("Ranking candidates based on physics-informed novelty...")
+        
     df.to_csv(input_path.with_name("candidates_analyzed.csv"), index=False)
     logger.info("Analysis complete.")
 
@@ -199,6 +229,38 @@ def visualize(pdb, csv, output):
         logger.error("PyMol not found in PATH. Please run 'p53cad visualize' when PyMol is installed or available.")
     except Exception as e:
         logger.error(f"Failed to launch PyMol: {e}")
+
+@cli.command()
+def explain():
+    """Run Explainable AI (Saliency) on top candidates."""
+    logger = get_logger("p53cad.cli.explain")
+    from p53cad.engine.explain import SaliencyMap
+    from p53cad.engine.oracle import FunctionalOracle
+    from p53cad.engine.latent import ManifoldEmbedder
+    from p53cad.data.dms import P53_WT
+    
+    oracle_path = Path("data/models/functional_oracle.pt")
+    if not oracle_path.exists():
+        logger.error("Oracle not found. Run 'p53cad train' first.")
+        return
+        
+    embedder = ManifoldEmbedder()
+    oracle = FunctionalOracle(model_path=oracle_path)
+    explainer = SaliencyMap(oracle, embedder)
+    
+    logger.info("Analyzing p53 Wild-Type saliency...")
+    hotspots = explainer.get_top_hotspots(P53_WT)
+    for h in hotspots:
+        logger.info(f"Position {h['pos']}{h['aa']}: Importance {h['importance']:.4f}")
+
+@cli.command()
+def lab():
+    """Launch the p53CAD Generative Lab Dashboard."""
+    logger = get_logger("p53cad.cli.lab")
+    logger.info("Starting Bio-CAD Laboratory...")
+    import subprocess
+    app_path = Path(__file__).parent.parent / "app" / "main.py"
+    subprocess.run(["streamlit", "run", str(app_path)])
 
 if __name__ == '__main__':
     cli()

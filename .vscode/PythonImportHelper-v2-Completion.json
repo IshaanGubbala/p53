@@ -914,6 +914,30 @@
         "documentation": {}
     },
     {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
         "label": "numpy",
         "kind": 6,
         "isExtraImport": true,
@@ -2719,6 +2743,22 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -3527,6 +3567,14 @@
         "description": "concurrent.futures",
         "isExtraImport": true,
         "detail": "concurrent.futures",
+        "documentation": {}
+    },
+    {
+        "label": "tqdm",
+        "importPath": "tqdm",
+        "description": "tqdm",
+        "isExtraImport": true,
+        "detail": "tqdm",
         "documentation": {}
     },
     {
@@ -5755,6 +5803,14 @@
         "documentation": {}
     },
     {
+        "label": "product",
+        "importPath": "itertools",
+        "description": "itertools",
+        "isExtraImport": true,
+        "detail": "itertools",
+        "documentation": {}
+    },
+    {
         "label": "pickle",
         "kind": 6,
         "isExtraImport": true,
@@ -6345,7 +6401,39 @@
         "documentation": {}
     },
     {
-        "label": "LatentEmbedder",
+        "label": "ManifoldEmbedder",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldEmbedder",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldWalker",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldEmbedder",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldEmbedder",
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
         "isExtraImport": true,
@@ -6354,6 +6442,22 @@
     },
     {
         "label": "LatentEmbedder",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldWalker",
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldEmbedder",
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
         "isExtraImport": true,
@@ -6414,6 +6518,137 @@
         "description": "p53cad.core.logging",
         "isExtraImport": true,
         "detail": "p53cad.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "streamlit",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "streamlit",
+        "description": "streamlit",
+        "detail": "streamlit",
+        "documentation": {}
+    },
+    {
+        "label": "plotly.express",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "plotly.express",
+        "description": "plotly.express",
+        "detail": "plotly.express",
+        "documentation": {}
+    },
+    {
+        "label": "plotly.graph_objects",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "plotly.graph_objects",
+        "description": "plotly.graph_objects",
+        "detail": "plotly.graph_objects",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalOracle",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalOracle",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalOracle",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "FunctionalOracle",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "SaliencyMap",
+        "importPath": "p53cad.engine.explain",
+        "description": "p53cad.engine.explain",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.explain",
+        "documentation": {}
+    },
+    {
+        "label": "GrassmannMetric",
+        "importPath": "p53cad.analysis.grassmann",
+        "description": "p53cad.analysis.grassmann",
+        "isExtraImport": true,
+        "detail": "p53cad.analysis.grassmann",
+        "documentation": {}
+    },
+    {
+        "label": "P53_WT",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "apply_mutation",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "P53_WT",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "apply_mutation",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "P53_WT",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "apply_mutation",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "PyMolGenerator",
+        "importPath": "p53cad.viz.pymol",
+        "description": "p53cad.viz.pymol",
+        "isExtraImport": true,
+        "detail": "p53cad.viz.pymol",
         "documentation": {}
     },
     {
@@ -12256,12 +12491,93 @@
         "documentation": {}
     },
     {
+        "label": "IMMUNOGENICITY_THRESHOLDS",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "IMMUNOGENICITY_THRESHOLDS = {\n    \"conservative\": 95,  # Minimal risk - suitable for chronic use\n    \"moderate\": 90,      # Low risk - acceptable for most therapies\n    \"aggressive\": 85,    # Moderate risk - requires immunogenicity testing\n    \"experimental\": 80,  # High risk - research only, extensive testing needed\n}\n# 2. P53-SPECIFIC STRUCTURAL REQUIREMENTS\n# ----------------------------------------\n# p53 has distinct domains with different tolerance for mutation:\nP53_DOMAIN_TOLERANCE = {",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "P53_DOMAIN_TOLERANCE",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "P53_DOMAIN_TOLERANCE = {\n    \"N-terminal_TAD\": {\n        \"residues\": \"1-93\",\n        \"function\": \"Transactivation\",\n        \"mutation_tolerance\": \"HIGH\",  # Intrinsically disordered\n        \"min_identity\": 70,\n    },\n    \"DNA_binding_domain\": {\n        \"residues\": \"94-292\", \n        \"function\": \"DNA recognition\",",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "APPROVED_PRECEDENTS",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "APPROVED_PRECEDENTS = {\n    \"Insulin_analogs\": {\n        \"identity_to_human\": 97,  # Lispro, Aspart (1-3 mutations)\n        \"status\": \"Widely approved\",\n    },\n    \"Erythropoietin_analogs\": {\n        \"identity_to_human\": 96,  # Darbepoetin (5 mutations)\n        \"status\": \"Approved\",\n    },\n    \"Factor_VIII_variants\": {",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "P53_THERAPY_CONSTRAINTS",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "P53_THERAPY_CONSTRAINTS = {\n    \"delivery_method\": {\n        \"gene_therapy\": {\n            \"min_identity\": 85,  # Expressed endogenously, lower immunogenicity\n            \"rationale\": \"Intracellular expression reduces immune exposure\"\n        },\n        \"protein_therapy\": {\n            \"min_identity\": 95,  # Direct injection, higher immunogenicity risk\n            \"rationale\": \"Extracellular exposure requires near-native sequence\"\n        },",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "FUNCTIONAL_REQUIREMENTS",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "FUNCTIONAL_REQUIREMENTS = {\n    \"DNA_binding\": {\n        \"critical_residues\": [120, 175, 245, 248, 273, 282],\n        \"max_mutations_allowed\": 2,  # Can compensate with 1-2 changes\n        \"rationale\": \"Core DNA contact points\"\n    },\n    \"zinc_coordination\": {\n        \"critical_residues\": [176, 179, 238, 242],\n        \"max_mutations_allowed\": 0,  # Absolutely conserved\n        \"rationale\": \"Structural zinc finger\"",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
+        "label": "RECOMMENDED_THRESHOLDS",
+        "kind": 5,
+        "importPath": "docs.therapeutic_viability_analysis",
+        "description": "docs.therapeutic_viability_analysis",
+        "peekOfCode": "RECOMMENDED_THRESHOLDS = {\n    \"ISEF_presentation\": {\n        \"min_identity\": 90,\n        \"max_mutations\": 39,  # 10% of 393 residues\n        \"rationale\": \"Demonstrates therapeutic viability + scientific rigor\",\n        \"risk_level\": \"Low\",\n        \"regulatory_path\": \"Feasible\"\n    },\n    \"research_publication\": {\n        \"min_identity\": 85,",
+        "detail": "docs.therapeutic_viability_analysis",
+        "documentation": {}
+    },
+    {
         "label": "GrassmannMetric",
         "kind": 6,
         "importPath": "p53cad.analysis.grassmann",
         "description": "p53cad.analysis.grassmann",
-        "peekOfCode": "class GrassmannMetric:\n    \"\"\"\n    Analyzes the 'Functional Geometry' of proteins by treating them as subspaces on a Grassmann manifold.\n    The core idea:\n    A protein's function is encoded in how its residues attend to each other.\n    We extract the 'Key' or 'Value' matrices from the Multi-Head Attention layers.\n    These define a subspace in R^D.\n    We compare the subspace of a Mutant vs Wild-Types using Principal Angles.\n    \"\"\"\n    def __init__(self, embedder: LatentEmbedder):",
+        "peekOfCode": "class GrassmannMetric:\n    \"\"\"\n    Analyzes the 'Functional Geometry' of proteins by treating them as subspaces on a Grassmann manifold.\n    The core idea:\n    A protein's function is encoded in how its residues attend to each other.\n    We extract the 'Key' or 'Value' matrices from the Multi-Head Attention layers.\n    These define a subspace in R^D.\n    We compare the subspace of a Mutant vs Wild-Types using Principal Angles.\n    \"\"\"\n    def __init__(self, embedder: ManifoldEmbedder):",
         "detail": "p53cad.analysis.grassmann",
+        "documentation": {}
+    },
+    {
+        "label": "load_models_v8",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def load_models_v8():\n    # Force reload of core engine to bypass stale Streamlit modules\n    import sys\n    if 'p53cad.engine.latent' in sys.modules:\n        del sys.modules['p53cad.engine.latent']\n    if 'p53cad.engine.oracle' in sys.modules:\n        del sys.modules['p53cad.engine.oracle']\n    if 'p53cad.engine.explain' in sys.modules:\n        del sys.modules['p53cad.engine.explain']\n    if 'p53cad.analysis.grassmann' in sys.modules:",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "run_search",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def run_search(target_mut_override=None):\n    current_mut = target_mut_override if target_mut_override else target_mut\n    walker = ManifoldWalker(embedder)\n    # Handle Universal Mode initialization\n    init_mut = HOTSPOT_FLEET[0] if current_mut == \"UNIVERSAL\" else current_mut\n    cancer_seq = apply_mutation(P53_WT, init_mut)\n    if cancer_seq is None:\n        cancer_seq = P53_WT # Fallback to WT if mutation parsing fails\n    if not cancer_seq: return None\n    # Standard Amino Acid Vocabulary IDs for ESM-2",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "HOTSPOT_FLEET",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "HOTSPOT_FLEET = [\"R175H\", \"R248Q\", \"R248W\", \"R273H\", \"R273C\", \"G245S\", \"R249S\", \"R282W\"]\n# --- SIDEBAR CONTROLS ---\nwith st.sidebar:\n    st.image(\"https://img.icons8.com/isometric/100/protein.png\", width=80)\n    st.header(\"⚙️ Design Parameters\")\n    study_mode = st.radio(\"📡 Laboratory Scope\", [\"Individual Target\", \"Fleet Study (Big 8)\", \"Universal Design (Joint Rescue)\"])\n    if study_mode == \"Individual Target\":\n        target_mut = st.text_input(\"🎯 Target Mutation\", value=\"R175H\", help=\"The cancer mutation you want to rescue.\")\n    elif study_mode == \"Fleet Study (Big 8)\":\n        st.info(f\"Targeting: {', '.join(HOTSPOT_FLEET)}\")",
+        "detail": "p53cad.app.main",
         "documentation": {}
     },
     {
@@ -12278,7 +12594,7 @@
         "kind": 2,
         "importPath": "p53cad.cli.main",
         "description": "p53cad.cli.main",
-        "peekOfCode": "def train(dms, epochs, output):\n    \"\"\"Train the Functional Oracle on DMS data.\"\"\"\n    logger = get_logger(\"p53cad.cli.train\")\n    logger.info(\"Starting training pipeline...\")\n    from p53cad.data.dms import load_dms_data\n    from p53cad.engine.latent import LatentEmbedder\n    from p53cad.engine.oracle import FunctionalOracle\n    # Logic ported from run_functional_training.py\n    df = load_dms_data(dms)\n    embedder = LatentEmbedder()",
+        "peekOfCode": "def train(dms, epochs, output):\n    \"\"\"Train the Functional Oracle on DMS data.\"\"\"\n    logger = get_logger(\"p53cad.cli.train\")\n    logger.info(\"Starting training pipeline...\")\n    from p53cad.data.dms import load_dms_data\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.engine.oracle import FunctionalOracle\n    # Logic ported from run_functional_training.py\n    df = load_dms_data(dms)\n    embedder = ManifoldEmbedder()",
         "detail": "p53cad.cli.main",
         "documentation": {}
     },
@@ -12287,7 +12603,7 @@
         "kind": 2,
         "importPath": "p53cad.cli.main",
         "description": "p53cad.cli.main",
-        "peekOfCode": "def design(targets, samples):\n    \"\"\"Run Latent Manifold Rescue on TARGETS (e.g. R175H).\"\"\"\n    logger = get_logger(\"p53cad.cli.design\")\n    if not targets:\n        logger.warning(\"No targets specified. Usage: p53cad design R175H Y220C\")\n        return\n    from p53cad.engine.latent import LatentEmbedder, ManifoldWalker\n    from p53cad.engine.oracle import FunctionalOracle\n    import torch\n    import pandas as pd",
+        "peekOfCode": "def design(targets, samples, lock):\n    \"\"\"Run Latent Manifold Rescue on TARGETS (e.g. R175H).\"\"\"\n    logger = get_logger(\"p53cad.cli.design\")\n    # Parse locked residues\n    locked_indices = []\n    if lock:\n        try:\n            locked_indices = [int(x.strip()) - 1 for x in lock.split(\",\") if x.strip()]\n            logger.info(f\"Locking critical residues: {[i+1 for i in locked_indices]}\")\n        except ValueError:",
         "detail": "p53cad.cli.main",
         "documentation": {}
     },
@@ -12296,7 +12612,7 @@
         "kind": 2,
         "importPath": "p53cad.cli.main",
         "description": "p53cad.cli.main",
-        "peekOfCode": "def analyze():\n    \"\"\"Run Grassmannian Analysis.\"\"\"\n    logger = get_logger(\"p53cad.cli.analyze\")\n    logger.info(\"Running Grassmannian Analysis...\")\n    from p53cad.analysis.grassmann import GrassmannMetric\n    from p53cad.engine.latent import LatentEmbedder\n    import pandas as pd\n    input_path = Path(\"data/processed/candidates.csv\")\n    if not input_path.exists():\n        logger.error(\"No candidates found. Run 'p53cad design' first.\")",
+        "peekOfCode": "def analyze():\n    \"\"\"Run Grassmannian Analysis.\"\"\"\n    logger = get_logger(\"p53cad.cli.analyze\")\n    logger.info(\"Running Grassmannian Analysis...\")\n    from p53cad.analysis.grassmann import GrassmannMetric\n    from p53cad.engine.latent import ManifoldEmbedder\n    import pandas as pd\n    input_path = Path(\"data/processed/candidates.csv\")\n    if not input_path.exists():\n        logger.error(\"No candidates found. Run 'p53cad design' first.\")",
         "detail": "p53cad.cli.main",
         "documentation": {}
     },
@@ -12310,11 +12626,38 @@
         "documentation": {}
     },
     {
+        "label": "explain",
+        "kind": 2,
+        "importPath": "p53cad.cli.main",
+        "description": "p53cad.cli.main",
+        "peekOfCode": "def explain():\n    \"\"\"Run Explainable AI (Saliency) on top candidates.\"\"\"\n    logger = get_logger(\"p53cad.cli.explain\")\n    from p53cad.engine.explain import SaliencyMap\n    from p53cad.engine.oracle import FunctionalOracle\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.data.dms import P53_WT\n    oracle_path = Path(\"data/models/functional_oracle.pt\")\n    if not oracle_path.exists():\n        logger.error(\"Oracle not found. Run 'p53cad train' first.\")",
+        "detail": "p53cad.cli.main",
+        "documentation": {}
+    },
+    {
+        "label": "lab",
+        "kind": 2,
+        "importPath": "p53cad.cli.main",
+        "description": "p53cad.cli.main",
+        "peekOfCode": "def lab():\n    \"\"\"Launch the p53CAD Generative Lab Dashboard.\"\"\"\n    logger = get_logger(\"p53cad.cli.lab\")\n    logger.info(\"Starting Bio-CAD Laboratory...\")\n    import subprocess\n    app_path = Path(__file__).parent.parent / \"app\" / \"main.py\"\n    subprocess.run([\"streamlit\", \"run\", str(app_path)])\nif __name__ == '__main__':\n    cli()",
+        "detail": "p53cad.cli.main",
+        "documentation": {}
+    },
+    {
         "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
         "kind": 5,
         "importPath": "p53cad.cli.main",
         "description": "p53cad.cli.main",
-        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\nfrom p53cad.core.logging import setup_logging, get_logger\n@click.group()\ndef cli():\n    \"\"\"p53CAD: Generative Protein Design Platform\"\"\"\n    setup_logging()\n@cli.command()\n@click.option('--dms', type=click.Path(exists=True), default=\"data/raw/p53_DMS_Giacomelli_2018.csv\", help=\"Path to DMS data\")\n@click.option('--epochs', default=5, help=\"Training epochs\")\n@click.option('--output', type=click.Path(), default=\"data/models\", help=\"Output directory\")",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\nos.environ[\"PYTORCH_ENABLE_MPS_FALLBACK\"] = \"1\"\nfrom p53cad.core.logging import setup_logging, get_logger\n@click.group()\ndef cli():\n    \"\"\"p53CAD: Generative Protein Design Platform\"\"\"\n    setup_logging()\n@cli.command()\n@click.option('--dms', type=click.Path(exists=True), default=\"data/raw/p53_DMS_Giacomelli_2018.csv\", help=\"Path to DMS data\")\n@click.option('--epochs', default=5, help=\"Training epochs\")",
+        "detail": "p53cad.cli.main",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"PYTORCH_ENABLE_MPS_FALLBACK\"]",
+        "kind": 5,
+        "importPath": "p53cad.cli.main",
+        "description": "p53cad.cli.main",
+        "peekOfCode": "os.environ[\"PYTORCH_ENABLE_MPS_FALLBACK\"] = \"1\"\nfrom p53cad.core.logging import setup_logging, get_logger\n@click.group()\ndef cli():\n    \"\"\"p53CAD: Generative Protein Design Platform\"\"\"\n    setup_logging()\n@cli.command()\n@click.option('--dms', type=click.Path(exists=True), default=\"data/raw/p53_DMS_Giacomelli_2018.csv\", help=\"Path to DMS data\")\n@click.option('--epochs', default=5, help=\"Training epochs\")\n@click.option('--output', type=click.Path(), default=\"data/models\", help=\"Output directory\")",
         "detail": "p53cad.cli.main",
         "documentation": {}
     },
@@ -12391,11 +12734,20 @@
         "documentation": {}
     },
     {
-        "label": "LatentEmbedder",
+        "label": "SaliencyMap",
+        "kind": 6,
+        "importPath": "p53cad.engine.explain",
+        "description": "p53cad.engine.explain",
+        "peekOfCode": "class SaliencyMap:\n    def __init__(self, oracle: FunctionalOracle, embedder: ManifoldEmbedder):\n        self.oracle = oracle\n        self.embedder = embedder\n        self.device = oracle.device\n    def attribute_residues(self, sequence: str) -> np.ndarray:\n        \"\"\"\n        Calculate importance score using Residue Occlusion.\n        Impact = |Score(Original) - Score(Occluded)|\n        \"\"\"",
+        "detail": "p53cad.engine.explain",
+        "documentation": {}
+    },
+    {
+        "label": "ManifoldEmbedder",
         "kind": 6,
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
-        "peekOfCode": "class LatentEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t6_8M_UR50D\", device: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        if device is None:\n            if torch.backends.mps.is_available():",
+        "peekOfCode": "class ManifoldEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t6_8M_UR50D\", device: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        if device is None:\n            if torch.backends.mps.is_available():",
         "detail": "p53cad.engine.latent",
         "documentation": {}
     },
@@ -12404,7 +12756,7 @@
         "kind": 6,
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
-        "peekOfCode": "class ManifoldWalker:\n    \"\"\"\n    Performs vector arithmetic and interpolation in the latent space.\n    \"\"\"\n    def __init__(self, embedder: LatentEmbedder):\n        self.embedder = embedder\n        self.logger = get_logger(__name__)\n    def interpolate(self, seq_start: str, seq_end: str, steps: int = 10) -> List[str]:\n        \"\"\"\n        Linearly interpolates between two sequences in latent space.",
+        "peekOfCode": "class ManifoldWalker:\n    \"\"\"\n    Performs vector arithmetic and interpolation in the latent space.\n    \"\"\"\n    def __init__(self, embedder: ManifoldEmbedder):\n        self.embedder = embedder\n        self.logger = get_logger(__name__)\n    def interpolate(self, seq_start: str, seq_end: str, steps: int = 10) -> List[str]:\n        \"\"\"\n        Linearly interpolates between two sequences in latent space.",
         "detail": "p53cad.engine.latent",
         "documentation": {}
     },
@@ -12413,7 +12765,7 @@
         "kind": 6,
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
-        "peekOfCode": "class DMSDataset(Dataset):\n    def __init__(self, sequences: List[str], scores: List[float], embedder: LatentEmbedder):\n        self.sequences = sequences\n        self.scores = torch.tensor(scores, dtype=torch.float32)\n        self.embedder = embedder\n        self.cache = {}\n    def __len__(self):\n        return len(self.sequences)\n    def __getitem__(self, idx):\n        seq = self.sequences[idx]",
+        "peekOfCode": "class DMSDataset(Dataset):\n    def __init__(self, sequences: List[str], scores: List[float], embedder: ManifoldEmbedder):\n        self.sequences = sequences\n        self.scores = torch.tensor(scores, dtype=torch.float32)\n        self.embedder = embedder\n        self.cache = {}\n    def __len__(self):\n        return len(self.sequences)\n    def __getitem__(self, idx):\n        seq = self.sequences[idx]",
         "detail": "p53cad.engine.oracle",
         "documentation": {}
     },
@@ -12431,7 +12783,7 @@
         "kind": 6,
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
-        "peekOfCode": "class FunctionalOracle:\n    def __init__(self, model_path: Path | str = None, input_dim: int = 320): # 320 for esm2_t6\n        self.logger = get_logger(__name__)\n        self.device = torch.device(\"mps\" if torch.backends.mps.is_available() else \"cpu\")\n        self.model = FunctionalNet(input_dim=input_dim).to(self.device)\n        if model_path and Path(model_path).exists():\n            self.logger.info(f\"Loading oracle from {model_path}\")\n            self.model.load_state_dict(torch.load(model_path, map_location=self.device))\n        self.model.eval()\n    def train(self, dms_data, embedder: LatentEmbedder, epochs: int = 10, save_path: Path = None):",
+        "peekOfCode": "class FunctionalOracle:\n    def __init__(self, model_path: Path | str = None, input_dim: int = 320): # 320 for esm2_t6\n        self.logger = get_logger(__name__)\n        self.device = torch.device(\"mps\" if torch.backends.mps.is_available() else \"cpu\")\n        self.model = FunctionalNet(input_dim=input_dim).to(self.device)\n        if model_path and Path(model_path).exists():\n            self.logger.info(f\"Loading oracle from {model_path}\")\n            self.model.load_state_dict(torch.load(model_path, map_location=self.device))\n        self.model.eval()\n    def train(self, dms_data, embedder: ManifoldEmbedder, epochs: int = 10, save_path: Path = None):",
         "detail": "p53cad.engine.oracle",
         "documentation": {}
     },
@@ -12451,6 +12803,78 @@
         "description": "p53cad.viz.pymol",
         "peekOfCode": "logger = get_logger(__name__)\nclass PyMolGenerator:\n    \"\"\"\n    Generates PyMol scripts (.pml) to visualize p53 design candidates.\n    Since we don't have PDBs for every mutant, we visualize the mutations \n    mapped onto the Wild-Type structure (P04637).\n    \"\"\"\n    def __init__(self, pdb_path: str = \"data/raw/p53_wt.pdb\"):\n        self.pdb_path = pdb_path\n        from p53cad.data.dms import P53_WT",
         "detail": "p53cad.viz.pymol",
+        "documentation": {}
+    },
+    {
+        "label": "run_blind_validation",
+        "kind": 2,
+        "importPath": "scripts.blind_validation",
+        "description": "scripts.blind_validation",
+        "peekOfCode": "def run_blind_validation():\n    \"\"\"\n    Simulates a 'Blind Validation' check on mutations not in the Giacomelli training set.\n    \"\"\"\n    print(\"🚀 Running p53CAD Blind Validation Engine...\")\n    # Load Models\n    embedder = LatentEmbedder()\n    walker = ManifoldWalker(embedder)\n    oracle_path = Path(\"data/models/functional_oracle.pt\")\n    if not oracle_path.exists():",
+        "detail": "scripts.blind_validation",
+        "documentation": {}
+    },
+    {
+        "label": "run_optimization",
+        "kind": 2,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "def run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)\n    # Run optimization\n    for step in range(TEST_STEPS):",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "def main():\n    print(\"🔬 Starting Grid Search for Optimal Loss Weights\")\n    print(f\"Testing {len(IDENTITY_WEIGHTS)} identity settings × {len(STABILITY_COEFFS)} stability settings\")\n    print(f\"Total combinations: {len(IDENTITY_WEIGHTS) * len(STABILITY_COEFFS)}\")\n    print(f\"Test mutation: {TEST_MUTATION}, Steps: {TEST_STEPS}\\n\")\n    # Load models\n    print(\"Loading models...\")\n    embedder = ManifoldEmbedder()\n    oracle_path = Path(\"data/models/functional_oracle.pt\")\n    if not oracle_path.exists():",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "IDENTITY_WEIGHTS",
+        "kind": 5,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "IDENTITY_WEIGHTS = [\n    (10, 30),   # Original\n    (25, 75),   # Moderate\n    (50, 150),  # Strong\n    (75, 225),  # Very Strong\n    (100, 300), # Maximum\n]\nSTABILITY_COEFFS = [\n    3.0,   # Low\n    6.0,   # Original",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "STABILITY_COEFFS",
+        "kind": 5,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "STABILITY_COEFFS = [\n    3.0,   # Low\n    6.0,   # Original\n    9.0,   # Moderate\n    12.0,  # High\n    15.0,  # Very High\n]\n# Test configuration\nTEST_MUTATION = \"R175H\"\nTEST_STEPS = 100  # Shorter for grid search",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "TEST_MUTATION",
+        "kind": 5,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "TEST_MUTATION = \"R175H\"\nTEST_STEPS = 100  # Shorter for grid search\nLEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "TEST_STEPS",
+        "kind": 5,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "TEST_STEPS = 100  # Shorter for grid search\nLEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)",
+        "detail": "scripts.grid_search_weights",
+        "documentation": {}
+    },
+    {
+        "label": "LEARNING_RATE",
+        "kind": 5,
+        "importPath": "scripts.grid_search_weights",
+        "description": "scripts.grid_search_weights",
+        "peekOfCode": "LEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)\n    # Run optimization",
+        "detail": "scripts.grid_search_weights",
         "documentation": {}
     }
 ]

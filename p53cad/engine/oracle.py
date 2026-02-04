@@ -10,10 +10,10 @@ from typing import List, Tuple
 from tqdm import tqdm
 
 from p53cad.core.logging import get_logger
-from p53cad.engine.latent import LatentEmbedder
+from p53cad.engine.latent import ManifoldEmbedder
 
 class DMSDataset(Dataset):
-    def __init__(self, sequences: List[str], scores: List[float], embedder: LatentEmbedder):
+    def __init__(self, sequences: List[str], scores: List[float], embedder: ManifoldEmbedder):
         self.sequences = sequences
         self.scores = torch.tensor(scores, dtype=torch.float32)
         self.embedder = embedder
@@ -79,7 +79,7 @@ class FunctionalOracle:
             self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.eval()
 
-    def train(self, dms_data, embedder: LatentEmbedder, epochs: int = 10, save_path: Path = None):
+    def train(self, dms_data, embedder: ManifoldEmbedder, epochs: int = 10, save_path: Path = None):
         self.logger.info(f"Training FunctionalOracle on {len(dms_data)} sequences...")
         self.model.train()
         
