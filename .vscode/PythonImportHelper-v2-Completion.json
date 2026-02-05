@@ -12599,6 +12599,24 @@
         "documentation": {}
     },
     {
+        "label": "run_generative_design_live",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def run_generative_design_live(constraints: dict, n_candidates: int = 6,\n                                progress_callback=None, structure_callback=None):\n    \"\"\"\n    Generative Design Mode with LIVE VISUALIZATION.\n    Like watching mechanical CAD topology optimization in real-time.\n    Yields intermediate states for real-time UI updates.\n    \"\"\"\n    target_mut = constraints.get('target_mutation', 'R175H')\n    cancer_seq = apply_mutation(P53_WT, target_mut)\n    if cancer_seq is None:",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "run_generative_design",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def run_generative_design(constraints: dict, n_candidates: int = 6):\n    \"\"\"\n    Generative Design Mode: Like mechanical CAD topology optimization.\n    User specifies CONSTRAINTS (not solutions):\n    - Physics: min stability, binding thresholds\n    - Geometry: locked residues, protected regions\n    - Material: identity level (how \"human-like\")\n    - Manufacturing: delivery method constraints\n    AI generates MULTIPLE diverse solutions exploring the constraint space.\n    \"\"\"",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
         "label": "HOTSPOT_FLEET",
         "kind": 5,
         "importPath": "p53cad.app.main",

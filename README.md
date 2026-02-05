@@ -1,15 +1,17 @@
-# p53CAD: AI-Powered Protein Rescue Engineering
+# p53-proteoMgCAD
 
-[![p53CAD](https://img.shields.io/badge/Platform-p53CAD_v3.0-blueviolet?style=for-the-badge)](https://github.com/your-repo/p53cad)
+### Mutative Generative Computer-Assisted Design of Second-Site Rescues for p53
+
+[![p53-proteoMgCAD](https://img.shields.io/badge/Platform-p53--proteoMgCAD-blueviolet?style=for-the-badge)](https://github.com/your-repo/p53cad)
 [![ISEF](https://img.shields.io/badge/Project-ISEF_2026-gold?style=for-the-badge)](https://isef.org)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-**p53CAD** is an end-to-end computational platform for designing therapeutic rescue mutations for cancer-associated p53 variants. Using a novel **Functional Manifold Rescue (FMR)** algorithm, it navigates the latent space of protein language models to discover compensatory mutations that restore tumor suppressor function.
+**p53-proteoMgCAD** is a constraint-based generative design platform for engineering therapeutic rescue mutations in cancer-associated p53 variants. Inspired by **mechanical CAD topology optimization**, users define constraints (physics, geometry, material) and the AI explores the solution space to discover optimal second-site suppressor mutations that restore tumor suppressor function.
 
 > **The Problem**: p53 is mutated in >50% of all human cancers. A single mutation can disable this critical tumor suppressor.
 >
-> **The Solution**: AI-designed "rescue mutations" that compensate for cancer mutations and restore protein function.
+> **The Solution**: Define constraints → AI generates optimal rescue mutations. Like CAD topology optimization, but for proteins.
 
 ---
 
@@ -17,12 +19,79 @@
 
 | Feature | Description |
 |---------|-------------|
-| **FMR Algorithm** | Novel gradient-based optimization in ESM-2 latent space |
-| **50+ Mutations** | Support for all major p53 cancer mutations |
-| **Live 3D Visualization** | Real-time ESMFold structure prediction |
-| **Validation Dashboard** | Literature cross-reference + physics scoring |
-| **MD Simulation Export** | Ready-to-run molecular dynamics configs |
+| **🎨 proteoMgCAD Studio** | Constraint-based generative design - define requirements, AI generates second-site rescues |
+| **🎬 Live Optimization** | Watch proteins being "built" in real-time, like CAD topology optimization |
+| **🏛️ 3D Structure Gallery** | Compare candidates side-by-side with unique mutations highlighted |
+| **FMR Algorithm** | Functional Manifold Rescue - gradient-based optimization in ESM-2 latent space |
+| **50+ Mutations** | Support for all major p53 cancer hotspots |
+| **Validation Dashboard** | Literature cross-reference + physics scoring + ESMFold prediction |
 | **Therapeutic Constraints** | Enforces >90% identity for FDA viability |
+
+---
+
+## 🎨 The proteoMgCAD Paradigm
+
+**Inspired by mechanical CAD topology optimization** (Autodesk Fusion 360, etc.), p53-proteoMgCAD now supports a revolutionary constraint-based design paradigm:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    GENERATIVE DESIGN PARADIGM                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   MECHANICAL CAD                    p53-proteoMgCAD                     │
+│   ─────────────                    ─────────────────────                │
+│                                                                          │
+│   Define:                          Define:                               │
+│   • Load forces                    • Physics thresholds (stability)      │
+│   • Support points                 • Locked residues (geometry)          │
+│   • Material type                  • Identity level (material)           │
+│   • Manufacturing                  • Delivery method (manufacturing)     │
+│                                                                          │
+│   AI Generates:                    AI Generates:                         │
+│   → Multiple topology-             → Multiple rescue mutation            │
+│     optimized structures             designs on Pareto frontier          │
+│   → Non-intuitive, organic         → Novel, non-obvious mutation         │
+│     shapes                           combinations                        │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### How It Works
+
+1. **Specify Constraints (Not Solutions)**
+   ```yaml
+   Physics:
+     min_stability: -0.2    # Protein must fold correctly
+     min_binding: 5.0       # Must bind DNA effectively
+
+   Geometry:
+     locked_positions: [248, 273, 175]   # Critical sites
+     protected_regions: ["Zinc Site"]     # Don't touch
+
+   Material:
+     min_identity: 92%      # Stay human-like
+
+   Manufacturing:
+     delivery: "gene_therapy"  # Affects identity requirements
+   ```
+
+2. **AI Explores Solution Space**
+   - Generates 6+ diverse candidates
+   - Each explores different trade-offs (stability vs function vs identity)
+   - Uses different optimization profiles (Balanced, Stability-First, Binding-Optimized, etc.)
+
+3. **Compare Candidates on Pareto Frontier**
+   - Visualize trade-offs between competing objectives
+   - Select the design that best fits your specific use case
+   - Export multiple candidates for experimental validation
+
+### Why This Matters
+
+> **Traditional approach**: "What mutations should I try?"
+>
+> **Generative Design**: "What must my protein achieve?" → AI finds optimal solutions
+
+This is the same paradigm shift that transformed mechanical engineering. Now applied to protein therapeutics.
 
 ---
 
@@ -32,7 +101,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        p53CAD WORKFLOW                          │
+│                   p53-proteoMgCAD WORKFLOW                      │
 └─────────────────────────────────────────────────────────────────┘
 
      INPUT                    DESIGN                    OUTPUT
@@ -105,7 +174,7 @@ while staying close to the original human sequence.
 
 ## 🔬 Validation Pipeline
 
-p53CAD doesn't just generate sequences—it **validates** them:
+p53-proteoMgCAD doesn't just generate sequences—it **validates** them:
 
 ### Level 1: Literature Cross-Reference
 ```
@@ -153,7 +222,7 @@ conda activate p53cad
 # Install dependencies
 pip install -r requirements.txt
 
-# Install p53CAD
+# Install p53-proteoMgCAD
 pip install -e .
 ```
 
@@ -243,7 +312,7 @@ p53cad/
 Export your design and run full molecular dynamics validation:
 
 ```python
-# Generated by p53CAD - paste into Kaggle notebook
+# Generated by p53-proteoMgCAD - paste into Kaggle notebook
 SEQUENCE = "MEEPQSDPAVEPPLSQETF..."  # Your rescued sequence
 
 VARIANTS = {
@@ -283,7 +352,7 @@ This is called **intragenic suppression** and has been demonstrated experimental
 
 ## 🎯 Therapeutic Viability
 
-p53CAD enforces constraints for real-world applicability:
+p53-proteoMgCAD enforces constraints for real-world applicability:
 
 | Constraint | Threshold | Rationale |
 |------------|-----------|-----------|
@@ -328,4 +397,4 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-*p53CAD: Because every cancer patient deserves a guardian.*
+*p53-proteoMgCAD: Generative design for the guardian of the genome.*

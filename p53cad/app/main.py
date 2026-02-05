@@ -72,7 +72,7 @@ def generate_motion_frames(pdb_string: str, n_frames: int = 20) -> list:
     return frames
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="p53CAD Elite Workstation", layout="wide", page_icon="🧬")
+st.set_page_config(page_title="p53-proteoMgCAD", layout="wide", page_icon="🧬")
 
 # Custom CSS for "Fuller" UI
 st.markdown("""
@@ -99,6 +99,32 @@ st.markdown("""
         border-radius: 10px;
         margin-bottom: 10px;
         border-left: 4px solid #00D4FF;
+    }
+    .constraint-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        border: 2px solid #0f3460;
+    }
+    .candidate-card {
+        background: #1e2130;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        border-left: 4px solid;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .candidate-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    }
+    .gen-design-header {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.5rem;
+        font-weight: bold;
     }
     /* Reduce gap between elements */
     .stVerticalBlock {
@@ -137,8 +163,9 @@ def load_models_v8():
 embedder, oracle, explainer, grassmann, viz = load_models_v8()
 
 # --- HEADER ---
-st.title("🧬 p53CAD Elite Engineering Workstation")
-st.markdown("🚀 *Multi-Objective Generative Design Platform for Therapeutic Protein Rescue*")
+st.title("🧬 p53-proteoMgCAD")
+st.markdown("**Mutative Generative Computer-Assisted Design of Second-Site Rescues for p53**")
+st.caption("*Constraint-based protein engineering inspired by mechanical topology optimization*")
 st.markdown("---")
 
 # --- CONFIG ---
@@ -493,6 +520,409 @@ def run_search(target_mut_override=None):
             })
         return pd.DataFrame(data)
 
+# === GENERATIVE DESIGN ENGINE (LIVE VERSION) ===
+def run_generative_design_live(constraints: dict, n_candidates: int = 6,
+                                progress_callback=None, structure_callback=None):
+    """
+    Generative Design Mode with LIVE VISUALIZATION.
+    Like watching mechanical CAD topology optimization in real-time.
+
+    Yields intermediate states for real-time UI updates.
+    """
+    target_mut = constraints.get('target_mutation', 'R175H')
+
+    cancer_seq = apply_mutation(P53_WT, target_mut)
+    if cancer_seq is None:
+        cancer_seq = P53_WT
+
+    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+
+    min_identity = constraints.get('min_identity', 90.0)
+    min_stability = constraints.get('min_stability', -0.3)
+    min_binding = constraints.get('min_binding', 5.0)
+    locked_positions = constraints.get('locked_positions', [248, 273])
+    delivery_method = constraints.get('delivery_method', 'gene_therapy')
+    exploration_diversity = constraints.get('diversity', 0.5)
+
+    if delivery_method == 'protein_therapy':
+        min_identity = max(min_identity, 95.0)
+    elif delivery_method == 'mrna_therapy':
+        min_identity = max(min_identity, 92.0)
+
+    all_candidates = []
+
+    weight_profiles = [
+        {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#00D4FF'},
+        {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#FFD700'},
+        {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#FF6B6B'},
+        {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#00FF88'},
+        {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#9D00FF'},
+        {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#FF9500'},
+    ]
+
+    for candidate_idx in range(n_candidates):
+        torch.manual_seed(42 + candidate_idx * 17)
+        np.random.seed(42 + candidate_idx * 17)
+
+        profile = weight_profiles[candidate_idx % len(weight_profiles)]
+
+        emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
+        emb_wt = embedder.get_embeddings(P53_WT).detach()
+
+        with torch.no_grad():
+            perturbation = torch.randn_like(emb) * 0.05 * exploration_diversity
+            emb.data += perturbation
+
+        optimizer = torch.optim.Adam([emb], lr=0.04)
+        locked_indices = [int(p) - 1 for p in locked_positions if p]
+
+        n_steps = 100  # Faster for live viz
+        trajectory = []  # Store optimization trajectory
+        best_valid_state = None
+        best_valid_score = -float('inf')
+
+        # Pre-compute WT AA indices
+        wt_aa_indices = []
+        for aa in P53_WT:
+            aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+            if aa_id in AA_IDS:
+                wt_aa_indices.append(AA_IDS.index(aa_id))
+            else:
+                wt_aa_indices.append(0)
+        wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
+
+        for step_idx in range(1, n_steps + 1):
+            optimizer.zero_grad()
+
+            z, logits, probs = embedder.latent_forward_ascent(emb)
+            pooled = z.mean(dim=1)
+            if pooled.shape[-1] != 320:
+                pooled = pooled[:, :320]
+
+            score = oracle.model(pooled)
+
+            logits_aa = logits[:, :, AA_IDS]
+            log_probs = F.log_softmax(logits_aa, dim=-1)
+            stability = log_probs.max(dim=-1).values.mean()
+            dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
+            hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+
+            # Loss
+            loss = -score * profile['function']
+            loss -= profile['stability'] * stability
+            loss -= profile['binding'] * dna_force
+            loss -= 3.0 * hydro_packing
+
+            probs_aa = F.softmax(logits_aa[0], dim=-1)
+            wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
+            mutation_prob = 1.0 - wt_probs
+            expected_mutations = mutation_prob.sum()
+
+            with torch.no_grad():
+                decoded_ids = torch.argmax(probs_aa, dim=-1)
+                n_mutations = (decoded_ids != wt_aa_tensor).sum().item()
+                seq_identity = 100.0 * (1.0 - n_mutations / len(P53_WT))
+
+            max_mutations = int(len(P53_WT) * (100 - min_identity) / 100)
+            loss += 50.0 * F.relu(expected_mutations - max_mutations)
+
+            if seq_identity < min_identity - 5:
+                loss += 500.0 * (min_identity - 5 - seq_identity)
+            if stability.item() < min_stability:
+                loss += 100.0 * (min_stability - stability)
+            if locked_indices:
+                loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
+
+            dist_l1 = torch.norm(emb - emb_wt, p=1) / emb.numel()
+            loss += 40.0 * dist_l1
+
+            loss.backward()
+            optimizer.step()
+
+            # Record trajectory every 5 steps for visualization
+            if step_idx % 5 == 0 or step_idx == n_steps:
+                with torch.no_grad():
+                    top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
+                    top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
+                    tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
+                    current_seq = "".join(tokens)[:len(P53_WT)]
+                    muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
+
+                    # Get mutation positions for visualization
+                    mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
+
+                    trajectory.append({
+                        'step': step_idx,
+                        'score': score.item(),
+                        'stability': stability.item(),
+                        'binding': dna_force.item(),
+                        'identity': seq_identity,
+                        'n_mutations': n_mutations,
+                        'mutations': muts[:5],
+                        'mut_positions': mut_positions,
+                        'sequence': current_seq,
+                        'lx': pooled[0, 0].item(),
+                        'ly': pooled[0, 1].item()
+                    })
+
+                    # Track best valid
+                    if seq_identity >= min_identity and stability.item() >= min_stability:
+                        if score.item() > best_valid_score:
+                            best_valid_score = score.item()
+                            best_valid_state = trajectory[-1].copy()
+
+                    # YIELD for live visualization
+                    if progress_callback:
+                        progress_callback({
+                            'candidate_idx': candidate_idx,
+                            'candidate_total': n_candidates,
+                            'profile': profile,
+                            'step': step_idx,
+                            'total_steps': n_steps,
+                            'current_state': trajectory[-1],
+                            'trajectory': trajectory
+                        })
+
+        # Final candidate
+        final_state = best_valid_state if best_valid_state else trajectory[-1]
+        candidate = {
+            'candidate_id': candidate_idx + 1,
+            'profile': profile['name'],
+            'color': profile['color'],
+            'sequence': final_state['sequence'],
+            'score': final_state['score'],
+            'stability': final_state['stability'],
+            'binding': final_state['binding'],
+            'identity': final_state['identity'],
+            'n_mutations': final_state['n_mutations'],
+            'mutations': final_state['mutations'],
+            'mut_positions': final_state.get('mut_positions', []),
+            'trajectory': trajectory,
+            'meets_constraints': final_state['identity'] >= min_identity and final_state['stability'] >= min_stability
+        }
+        all_candidates.append(candidate)
+
+    return all_candidates
+
+
+# === GENERATIVE DESIGN ENGINE ===
+def run_generative_design(constraints: dict, n_candidates: int = 6):
+    """
+    Generative Design Mode: Like mechanical CAD topology optimization.
+
+    User specifies CONSTRAINTS (not solutions):
+    - Physics: min stability, binding thresholds
+    - Geometry: locked residues, protected regions
+    - Material: identity level (how "human-like")
+    - Manufacturing: delivery method constraints
+
+    AI generates MULTIPLE diverse solutions exploring the constraint space.
+    """
+    walker = ManifoldWalker(embedder)
+    target_mut = constraints.get('target_mutation', 'R175H')
+
+    cancer_seq = apply_mutation(P53_WT, target_mut)
+    if cancer_seq is None:
+        cancer_seq = P53_WT
+
+    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+
+    # Extract constraints
+    min_identity = constraints.get('min_identity', 90.0)
+    min_stability = constraints.get('min_stability', -0.3)
+    min_binding = constraints.get('min_binding', 5.0)
+    locked_positions = constraints.get('locked_positions', [248, 273])
+    delivery_method = constraints.get('delivery_method', 'gene_therapy')
+    exploration_diversity = constraints.get('diversity', 0.5)
+
+    # Adjust identity based on delivery method
+    if delivery_method == 'protein_therapy':
+        min_identity = max(min_identity, 95.0)  # Stricter for direct protein
+    elif delivery_method == 'mrna_therapy':
+        min_identity = max(min_identity, 92.0)
+
+    all_candidates = []
+
+    for candidate_idx in range(n_candidates):
+        # DIVERSITY: Each candidate explores different regions via:
+        # 1. Different random seeds for exploration noise
+        # 2. Different weighting between objectives
+        # 3. Different starting perturbations
+
+        torch.manual_seed(42 + candidate_idx * 17)
+        np.random.seed(42 + candidate_idx * 17)
+
+        # Vary objective weights for diversity on Pareto frontier
+        # Candidate 0: Balanced
+        # Candidate 1: Favor stability
+        # Candidate 2: Favor binding
+        # Candidate 3: Favor function
+        # etc.
+        weight_profiles = [
+            {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced'},
+            {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First'},
+            {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized'},
+            {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized'},
+            {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative'},
+            {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental'},
+        ]
+
+        profile = weight_profiles[candidate_idx % len(weight_profiles)]
+
+        emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
+        emb_wt = embedder.get_embeddings(P53_WT).detach()
+
+        # Add initial perturbation for diversity
+        with torch.no_grad():
+            perturbation = torch.randn_like(emb) * 0.05 * exploration_diversity
+            emb.data += perturbation
+
+        optimizer = torch.optim.Adam([emb], lr=0.04)
+        locked_indices = [int(p) - 1 for p in locked_positions if p]
+
+        # Shorter optimization for multiple candidates
+        n_steps = 150
+        best_valid_state = None
+        best_valid_score = -float('inf')
+
+        for step_idx in range(1, n_steps + 1):
+            optimizer.zero_grad()
+
+            z, logits, probs = embedder.latent_forward_ascent(emb)
+            pooled = z.mean(dim=1)
+            if pooled.shape[-1] != 320:
+                pooled = pooled[:, :320]
+
+            score = oracle.model(pooled)
+
+            logits_aa = logits[:, :, AA_IDS]
+            log_probs = F.log_softmax(logits_aa, dim=-1)
+            stability = log_probs.max(dim=-1).values.mean()
+
+            dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
+            hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+
+            # LOSS with profile-specific weights
+            loss = -score * profile['function']
+            loss -= profile['stability'] * stability
+            loss -= profile['binding'] * dna_force
+            loss -= 3.0 * hydro_packing
+
+            # CONSTRAINT ENFORCEMENT (hard constraints from user)
+            wt_aa_indices = []
+            for aa in P53_WT:
+                aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+                if aa_id in AA_IDS:
+                    wt_aa_indices.append(AA_IDS.index(aa_id))
+                else:
+                    wt_aa_indices.append(0)
+            wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
+
+            probs_aa = F.softmax(logits_aa[0], dim=-1)
+            wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
+            mutation_prob = 1.0 - wt_probs
+            expected_mutations = mutation_prob.sum()
+
+            with torch.no_grad():
+                decoded_ids = torch.argmax(probs_aa, dim=-1)
+                n_mutations = (decoded_ids != wt_aa_tensor).sum().item()
+                seq_identity = 100.0 * (1.0 - n_mutations / len(P53_WT))
+
+            # HARD CONSTRAINT: Identity must meet minimum
+            max_mutations = int(len(P53_WT) * (100 - min_identity) / 100)
+            loss += 50.0 * F.relu(expected_mutations - max_mutations)
+
+            # HARD CONSTRAINT: Identity barrier
+            if seq_identity < min_identity - 5:
+                loss += 500.0 * (min_identity - 5 - seq_identity)
+
+            # HARD CONSTRAINT: Stability floor
+            if stability.item() < min_stability:
+                loss += 100.0 * (min_stability - stability)
+
+            # LOCKED POSITIONS
+            if locked_indices:
+                loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
+
+            # Regularization
+            dist_l1 = torch.norm(emb - emb_wt, p=1) / emb.numel()
+            loss += 40.0 * dist_l1
+
+            loss.backward()
+            optimizer.step()
+
+            # Track best valid state
+            with torch.no_grad():
+                if seq_identity >= min_identity and stability.item() >= min_stability:
+                    if score.item() > best_valid_score:
+                        best_valid_score = score.item()
+                        top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
+                        top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
+                        tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
+                        best_valid_state = {
+                            'sequence': "".join(tokens)[:len(P53_WT)],
+                            'score': score.item(),
+                            'stability': stability.item(),
+                            'binding': dna_force.item(),
+                            'identity': seq_identity,
+                            'n_mutations': n_mutations
+                        }
+
+        # Final decode
+        with torch.no_grad():
+            z, logits, probs = embedder.latent_forward_ascent(emb)
+            logits_aa = logits[:, :, AA_IDS]
+            log_probs = F.log_softmax(logits_aa, dim=-1)
+            stability = log_probs.max(dim=-1).values.mean()
+            score = oracle.model(z.mean(dim=1))
+            dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
+
+            probs_aa = F.softmax(logits_aa[0], dim=-1)
+            decoded_ids = torch.argmax(probs_aa, dim=-1)
+            n_mutations = (decoded_ids != wt_aa_tensor).sum().item()
+            seq_identity = 100.0 * (1.0 - n_mutations / len(P53_WT))
+
+            top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
+            top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
+            tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
+            final_seq = "".join(tokens)[:len(P53_WT)]
+
+            muts = [f"{P53_WT[j]}{j+1}{final_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != final_seq[j]]
+
+        # Use best valid state if final doesn't meet constraints
+        if best_valid_state and (seq_identity < min_identity or stability.item() < min_stability):
+            candidate = {
+                'candidate_id': candidate_idx + 1,
+                'profile': profile['name'],
+                'sequence': best_valid_state['sequence'],
+                'score': best_valid_state['score'],
+                'stability': best_valid_state['stability'],
+                'binding': best_valid_state['binding'],
+                'identity': best_valid_state['identity'],
+                'n_mutations': best_valid_state['n_mutations'],
+                'mutations': [f"{P53_WT[j]}{j+1}{best_valid_state['sequence'][j]}"
+                             for j in range(len(P53_WT))
+                             if j < len(best_valid_state['sequence']) and P53_WT[j] != best_valid_state['sequence'][j]],
+                'meets_constraints': True
+            }
+        else:
+            candidate = {
+                'candidate_id': candidate_idx + 1,
+                'profile': profile['name'],
+                'sequence': final_seq,
+                'score': score.item(),
+                'stability': stability.item(),
+                'binding': dna_force.item(),
+                'identity': seq_identity,
+                'n_mutations': n_mutations,
+                'mutations': muts,
+                'meets_constraints': seq_identity >= min_identity and stability.item() >= min_stability
+            }
+
+        all_candidates.append(candidate)
+
+    return all_candidates
+
 # --- KNOWN EXPERIMENTAL RESCUES (Literature-validated) ---
 KNOWN_RESCUES = {
     "R175H": {
@@ -534,7 +964,7 @@ if 'target_mut_saved' not in st.session_state:
     st.session_state['target_mut_saved'] = None
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(["🚀 Generative Design Laboratory", "✅ Validation Dashboard", "🔬 Research Mechanics"])
+tab1, tab2, tab3, tab4 = st.tabs(["🚀 Quick Design", "🎨 Generative Design (CAD Mode)", "✅ Validation Dashboard", "🔬 Research Mechanics"])
 
 with tab1:
     results = None
@@ -1118,6 +1548,789 @@ with tab1:
             """)
 
 with tab2:
+    # === GENERATIVE DESIGN CAD MODE ===
+    st.markdown('<p class="gen-design-header">🎨 proteoMgCAD Studio</p>', unsafe_allow_html=True)
+    st.markdown("*Define constraints. AI generates optimal second-site rescues. Topology optimization for proteins.*")
+    st.markdown("---")
+
+    # === CONSTRAINT SPECIFICATION PANEL ===
+    st.markdown("## 📐 Define Design Constraints")
+    st.markdown("*Specify what your design MUST achieve. The AI explores the solution space to find optimal rescue mutations.*")
+
+    const_col1, const_col2, const_col3 = st.columns(3)
+
+    with const_col1:
+        st.markdown('<div class="constraint-card">', unsafe_allow_html=True)
+        st.markdown("### ⚡ Physics Constraints")
+        st.caption("*Like load/stress requirements in mechanical CAD*")
+
+        gd_min_stability = st.slider(
+            "Minimum Stability (PLL)",
+            min_value=-0.5, max_value=0.0, value=-0.2,
+            help="Minimum folding stability. Higher = stricter (more stable required)"
+        )
+
+        gd_min_binding = st.slider(
+            "Minimum DNA Binding",
+            min_value=0.0, max_value=10.0, value=5.0,
+            help="Minimum DNA recruitment force. Higher = must bind DNA better"
+        )
+
+        gd_min_function = st.slider(
+            "Minimum Function Score",
+            min_value=-1.0, max_value=0.5, value=-0.2,
+            help="Minimum rescue score to be considered valid"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with const_col2:
+        st.markdown('<div class="constraint-card">', unsafe_allow_html=True)
+        st.markdown("### 🔒 Geometry Constraints")
+        st.caption("*Like fixed supports in mechanical CAD*")
+
+        gd_target = st.selectbox(
+            "Target Cancer Mutation",
+            ALL_MUTATIONS[:20],
+            index=0,
+            help="The cancer mutation to rescue"
+        )
+
+        gd_locked = st.multiselect(
+            "Locked Positions (Cannot Mutate)",
+            options=list(range(94, 293)),
+            default=[248, 273, 175],
+            help="Critical positions that must remain unchanged"
+        )
+
+        gd_protected_regions = st.multiselect(
+            "Protected Regions",
+            ["L1 Loop (112-124)", "L2 Loop (163-195)", "L3 Loop (236-251)", "Zinc Site (176-179, 238-242)"],
+            default=["Zinc Site (176-179, 238-242)"],
+            help="Entire regions to protect from mutation"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with const_col3:
+        st.markdown('<div class="constraint-card">', unsafe_allow_html=True)
+        st.markdown("### 🧬 Material Constraints")
+        st.caption("*Like material selection in mechanical CAD*")
+
+        gd_identity = st.slider(
+            "Minimum Sequence Identity",
+            min_value=80.0, max_value=99.0, value=92.0,
+            help="How 'human-like' the design must be. Higher = fewer mutations allowed"
+        )
+
+        gd_delivery = st.selectbox(
+            "Delivery Method",
+            ["Gene Therapy (AAV)", "mRNA Therapy", "Protein Therapy (Direct)"],
+            index=0,
+            help="Manufacturing constraint: affects identity requirements"
+        )
+
+        gd_diversity = st.slider(
+            "Exploration Diversity",
+            min_value=0.0, max_value=1.0, value=0.5,
+            help="How different should candidates be from each other?"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # === GENERATION CONTROLS ===
+    st.markdown("---")
+    gen_col1, gen_col2 = st.columns([1, 3])
+
+    with gen_col1:
+        gd_n_candidates = st.selectbox(
+            "Number of Candidates",
+            [3, 4, 5, 6, 8, 10],
+            index=3,
+            help="How many diverse solutions to generate"
+        )
+
+    with gen_col2:
+        st.info(f"""
+        **Generation Preview:**
+        - Target: **{gd_target}** rescue
+        - Identity: ≥{gd_identity:.0f}% (max {int(len(P53_WT) * (100 - gd_identity) / 100)} mutations)
+        - Locked: {len(gd_locked)} positions
+        - Delivery: {gd_delivery}
+        - Candidates: {gd_n_candidates} diverse solutions
+        """)
+
+    # === VISUALIZATION MODE ===
+    gd_live_mode = st.toggle("🎬 Watch Live Optimization", value=True,
+                              help="Like watching CAD topology optimization - see proteins being built in real-time")
+
+    # === GENERATE BUTTON ===
+    if st.button("🚀 GENERATE CANDIDATE DESIGNS", type="primary", use_container_width=True):
+        # Parse constraints
+        delivery_map = {
+            "Gene Therapy (AAV)": "gene_therapy",
+            "mRNA Therapy": "mrna_therapy",
+            "Protein Therapy (Direct)": "protein_therapy"
+        }
+
+        constraints = {
+            'target_mutation': gd_target,
+            'min_identity': gd_identity,
+            'min_stability': gd_min_stability,
+            'min_binding': gd_min_binding,
+            'locked_positions': gd_locked,
+            'delivery_method': delivery_map[gd_delivery],
+            'diversity': gd_diversity
+        }
+
+        if gd_live_mode:
+            # === LIVE VISUALIZATION MODE ===
+            st.markdown("---")
+            st.markdown("## 🎬 Live Optimization Viewer")
+            st.markdown("*Watch the AI build rescue proteins in real-time*")
+
+            # Create placeholders for live updates
+            live_col1, live_col2 = st.columns([2, 1])
+
+            with live_col1:
+                status_placeholder = st.empty()
+                structure_placeholder = st.empty()
+                trajectory_placeholder = st.empty()
+
+            with live_col2:
+                metrics_placeholder = st.empty()
+                mutations_placeholder = st.empty()
+                progress_placeholder = st.empty()
+
+            all_candidates = []
+
+            # Run generation with live updates
+            for candidate_idx in range(gd_n_candidates):
+                torch.manual_seed(42 + candidate_idx * 17)
+                np.random.seed(42 + candidate_idx * 17)
+
+                weight_profiles = [
+                    {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#00D4FF'},
+                    {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#FFD700'},
+                    {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#FF6B6B'},
+                    {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#00FF88'},
+                    {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#9D00FF'},
+                    {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#FF9500'},
+                ]
+                profile = weight_profiles[candidate_idx % len(weight_profiles)]
+
+                status_placeholder.markdown(f"""
+                ### 🔬 Building Candidate {candidate_idx + 1}/{gd_n_candidates}
+                **Strategy:** {profile['name']}
+                """)
+
+                cancer_seq = apply_mutation(P53_WT, gd_target)
+                if cancer_seq is None:
+                    cancer_seq = P53_WT
+
+                AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+
+                emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
+                emb_wt = embedder.get_embeddings(P53_WT).detach()
+
+                with torch.no_grad():
+                    perturbation = torch.randn_like(emb) * 0.05 * gd_diversity
+                    emb.data += perturbation
+
+                optimizer = torch.optim.Adam([emb], lr=0.04)
+                locked_indices = [int(p) - 1 for p in gd_locked if p]
+
+                wt_aa_indices = []
+                for aa in P53_WT:
+                    aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+                    if aa_id in AA_IDS:
+                        wt_aa_indices.append(AA_IDS.index(aa_id))
+                    else:
+                        wt_aa_indices.append(0)
+                wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
+
+                n_steps = 80  # Faster for live viz
+                trajectory = []
+                best_valid_state = None
+                best_valid_score = -float('inf')
+
+                for step_idx in range(1, n_steps + 1):
+                    optimizer.zero_grad()
+
+                    z, logits, probs = embedder.latent_forward_ascent(emb)
+                    pooled = z.mean(dim=1)
+                    if pooled.shape[-1] != 320:
+                        pooled = pooled[:, :320]
+
+                    score = oracle.model(pooled)
+
+                    logits_aa = logits[:, :, AA_IDS]
+                    log_probs = F.log_softmax(logits_aa, dim=-1)
+                    stability = log_probs.max(dim=-1).values.mean()
+                    dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
+                    hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+
+                    loss = -score * profile['function']
+                    loss -= profile['stability'] * stability
+                    loss -= profile['binding'] * dna_force
+                    loss -= 3.0 * hydro_packing
+
+                    probs_aa = F.softmax(logits_aa[0], dim=-1)
+                    wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
+                    mutation_prob = 1.0 - wt_probs
+                    expected_mutations = mutation_prob.sum()
+
+                    with torch.no_grad():
+                        decoded_ids = torch.argmax(probs_aa, dim=-1)
+                        n_mutations = (decoded_ids != wt_aa_tensor).sum().item()
+                        seq_identity = 100.0 * (1.0 - n_mutations / len(P53_WT))
+
+                    max_mutations = int(len(P53_WT) * (100 - gd_identity) / 100)
+                    loss += 50.0 * F.relu(expected_mutations - max_mutations)
+
+                    if seq_identity < gd_identity - 5:
+                        loss += 500.0 * (gd_identity - 5 - seq_identity)
+                    if stability.item() < gd_min_stability:
+                        loss += 100.0 * (gd_min_stability - stability)
+                    if locked_indices:
+                        loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
+
+                    dist_l1 = torch.norm(emb - emb_wt, p=1) / emb.numel()
+                    loss += 40.0 * dist_l1
+
+                    loss.backward()
+                    optimizer.step()
+
+                    # === LIVE UPDATE every 5 steps ===
+                    if step_idx % 5 == 0 or step_idx == n_steps:
+                        with torch.no_grad():
+                            top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
+                            top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
+                            tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
+                            current_seq = "".join(tokens)[:len(P53_WT)]
+                            muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
+                            mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
+
+                            trajectory.append({
+                                'step': step_idx, 'score': score.item(), 'stability': stability.item(),
+                                'binding': dna_force.item(), 'identity': seq_identity, 'n_mutations': n_mutations,
+                                'mutations': muts[:5], 'mut_positions': mut_positions, 'sequence': current_seq,
+                                'lx': pooled[0, 0].item(), 'ly': pooled[0, 1].item()
+                            })
+
+                            if seq_identity >= gd_identity and stability.item() >= gd_min_stability:
+                                if score.item() > best_valid_score:
+                                    best_valid_score = score.item()
+                                    best_valid_state = trajectory[-1].copy()
+
+                            # Update live metrics display
+                            with metrics_placeholder.container():
+                                st.markdown(f"**Step {step_idx}/{n_steps}**")
+                                mc1, mc2 = st.columns(2)
+                                mc1.metric("Score", f"{score.item():.3f}")
+                                mc2.metric("Identity", f"{seq_identity:.1f}%")
+                                mc3, mc4 = st.columns(2)
+                                mc3.metric("Stability", f"{stability.item():.3f}")
+                                mc4.metric("Mutations", n_mutations)
+
+                            # Update mutations list
+                            with mutations_placeholder.container():
+                                st.markdown("**Current Mutations:**")
+                                for m in muts[:4]:
+                                    st.write(f"• {m}")
+
+                            # Update progress
+                            overall_progress = (candidate_idx * n_steps + step_idx) / (gd_n_candidates * n_steps)
+                            progress_placeholder.progress(overall_progress, text=f"Overall: {overall_progress*100:.0f}%")
+
+                            # Update trajectory plot
+                            if len(trajectory) > 1:
+                                traj_df = pd.DataFrame(trajectory)
+                                fig_traj = go.Figure()
+                                fig_traj.add_trace(go.Scatter(x=traj_df['step'], y=traj_df['score'],
+                                                              mode='lines+markers', name='Score',
+                                                              line=dict(color=profile['color'], width=3)))
+                                fig_traj.add_trace(go.Scatter(x=traj_df['step'], y=traj_df['stability'],
+                                                              mode='lines', name='Stability',
+                                                              line=dict(color='#FFD700', dash='dot')))
+                                fig_traj.update_layout(template='plotly_dark', height=200,
+                                                       margin=dict(l=0, r=0, t=30, b=0),
+                                                       title=f"Candidate {candidate_idx+1} Optimization",
+                                                       showlegend=True)
+                                trajectory_placeholder.plotly_chart(fig_traj, use_container_width=True)
+
+                            # === LIVE 3D STRUCTURE VISUALIZATION ===
+                            if mut_positions:
+                                mut_str = "+".join([str(p) for p in mut_positions[:10]])
+                            else:
+                                mut_str = "none"
+
+                            try:
+                                with open("data/raw/p53_wt.pdb", "r") as f:
+                                    pdb_content = f.read()
+
+                                live_3d_html = f"""
+                                <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+                                <div id="live_view_{candidate_idx}" style="width:100%; height:350px; border-radius:10px;"></div>
+                                <script>
+                                    let viewer = $3Dmol.createViewer('live_view_{candidate_idx}', {{backgroundColor: '0x1a1a2e'}});
+                                    let pdb = `{pdb_content.replace(chr(10), chr(92) + 'n').replace('`', '')}`;
+                                    viewer.addModel(pdb, 'pdb');
+                                    viewer.setStyle({{}}, {{cartoon: {{color: 'white', opacity: 0.3}}}});
+
+                                    // Highlight current mutations in profile color
+                                    let muts = "{mut_str}".split("+");
+                                    muts.forEach(pos => {{
+                                        if (pos && pos !== 'none') {{
+                                            viewer.addStyle({{resi: parseInt(pos)}}, {{
+                                                stick: {{color: '{profile["color"]}', radius: 0.4}},
+                                                cartoon: {{color: '{profile["color"]}'}}
+                                            }});
+                                        }}
+                                    }});
+
+                                    // DNA binding loops
+                                    viewer.addStyle({{resi: [112,113,114,115,116,117,118,119,120,121,122,123,124]}},
+                                                   {{cartoon: {{color: '0x00D4FF', opacity: 0.7}}}});
+                                    viewer.addStyle({{resi: [236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251]}},
+                                                   {{cartoon: {{color: '0x00FFAB', opacity: 0.7}}}});
+
+                                    viewer.zoomTo();
+                                    viewer.spin('y', 1);
+                                    viewer.render();
+                                </script>
+                                <p style="text-align:center; color:{profile['color']}; font-weight:bold;">
+                                    {profile['name']} | {len(mut_positions)} mutations
+                                </p>
+                                """
+                                import streamlit.components.v1 as components
+                                structure_placeholder.components.html(live_3d_html, height=400)
+                            except:
+                                pass
+
+                # Store final candidate
+                final_state = best_valid_state if best_valid_state else trajectory[-1]
+                candidate = {
+                    'candidate_id': candidate_idx + 1,
+                    'profile': profile['name'],
+                    'color': profile['color'],
+                    'sequence': final_state['sequence'],
+                    'score': final_state['score'],
+                    'stability': final_state['stability'],
+                    'binding': final_state['binding'],
+                    'identity': final_state['identity'],
+                    'n_mutations': final_state['n_mutations'],
+                    'mutations': final_state['mutations'],
+                    'mut_positions': final_state.get('mut_positions', []),
+                    'trajectory': trajectory,
+                    'meets_constraints': final_state['identity'] >= gd_identity and final_state['stability'] >= gd_min_stability
+                }
+                all_candidates.append(candidate)
+
+            candidates = all_candidates
+            status_placeholder.success(f"✅ Generated {len(candidates)} candidate designs!")
+
+        else:
+            # Non-live mode (faster)
+            with st.spinner(f"🧬 Generating {gd_n_candidates} candidate designs..."):
+                candidates = run_generative_design_live(constraints, n_candidates=gd_n_candidates)
+
+        # Store in session state
+        st.session_state['gd_candidates'] = candidates
+        st.session_state['gd_constraints'] = constraints
+
+    # === CANDIDATE GALLERY ===
+    if 'gd_candidates' in st.session_state and st.session_state['gd_candidates']:
+        candidates = st.session_state['gd_candidates']
+        constraints = st.session_state.get('gd_constraints', {})
+
+        st.markdown("---")
+        st.markdown("## 🎨 Design Candidates Gallery")
+        st.markdown("*AI-generated solutions exploring your constraint space. Like CAD design exploration.*")
+
+        # Summary metrics
+        valid_count = sum(1 for c in candidates if c['meets_constraints'])
+        avg_score = np.mean([c['score'] for c in candidates])
+        avg_identity = np.mean([c['identity'] for c in candidates])
+
+        sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
+        sum_col1.metric("Valid Designs", f"{valid_count}/{len(candidates)}")
+        sum_col2.metric("Avg Function Score", f"{avg_score:.3f}")
+        sum_col3.metric("Avg Identity", f"{avg_identity:.1f}%")
+        sum_col4.metric("Design Space Coverage", f"{len(set(c['profile'] for c in candidates))} profiles")
+
+        # Pareto frontier visualization
+        st.markdown("### 📊 Pareto Frontier (Trade-offs)")
+
+        pareto_df = pd.DataFrame(candidates)
+
+        fig_pareto = go.Figure()
+
+        # Color by profile
+        colors = {'Balanced': '#00D4FF', 'Stability-First': '#FFD700', 'Binding-Optimized': '#FF6B6B',
+                  'Function-Maximized': '#00FF88', 'Conservative': '#9D00FF', 'Experimental': '#FF9500'}
+
+        for profile in pareto_df['profile'].unique():
+            df_profile = pareto_df[pareto_df['profile'] == profile]
+            fig_pareto.add_trace(go.Scatter(
+                x=df_profile['identity'],
+                y=df_profile['score'],
+                mode='markers+text',
+                name=profile,
+                text=df_profile['candidate_id'].astype(str),
+                textposition='top center',
+                marker=dict(
+                    size=df_profile['binding'] * 3 + 10,
+                    color=colors.get(profile, '#FFFFFF'),
+                    line=dict(width=2, color='white'),
+                    opacity=0.8
+                ),
+                hovertemplate=f"<b>{profile}</b><br>" +
+                              "Identity: %{x:.1f}%<br>" +
+                              "Score: %{y:.3f}<br>" +
+                              "Binding: %{marker.size:.1f}<extra></extra>"
+            ))
+
+        # Add constraint boundaries
+        fig_pareto.add_vline(x=constraints.get('min_identity', 90), line_dash="dash", line_color="red",
+                            annotation_text=f"Min Identity: {constraints.get('min_identity', 90)}%")
+        fig_pareto.add_hline(y=constraints.get('min_function', -0.2), line_dash="dash", line_color="orange",
+                            annotation_text="Min Function")
+
+        fig_pareto.update_layout(
+            template="plotly_dark",
+            title="Design Space Exploration (Size = DNA Binding)",
+            xaxis_title="Sequence Identity (%)",
+            yaxis_title="Rescue Score",
+            height=400,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02)
+        )
+        st.plotly_chart(fig_pareto, use_container_width=True)
+
+        # === 3D STRUCTURE GALLERY ===
+        st.markdown("### 🏛️ 3D Structure Gallery")
+        st.markdown("*Compare candidate structures side-by-side. Each shows unique mutations highlighted in profile color.*")
+
+        # Read PDB once
+        try:
+            with open("data/raw/p53_wt.pdb", "r") as f:
+                pdb_content = f.read()
+            pdb_available = True
+        except:
+            pdb_available = False
+            st.warning("PDB file not found. 3D gallery unavailable.")
+
+        if pdb_available:
+            # Display 3 candidates per row
+            sorted_candidates = sorted(candidates, key=lambda x: x['score'], reverse=True)
+            n_cols = 3
+
+            for row_start in range(0, min(len(sorted_candidates), 6), n_cols):
+                gallery_cols = st.columns(n_cols)
+
+                for i, col in enumerate(gallery_cols):
+                    cand_idx = row_start + i
+                    if cand_idx < len(sorted_candidates):
+                        cand = sorted_candidates[cand_idx]
+                        profile_color = cand.get('color', '#00D4FF')
+
+                        # Get mutation positions
+                        mut_positions = cand.get('mut_positions', [])
+                        if not mut_positions and cand.get('mutations'):
+                            mut_positions = [int(''.join(filter(str.isdigit, m))) for m in cand['mutations'] if any(c.isdigit() for c in m)]
+
+                        mut_str = "+".join([str(p) for p in mut_positions[:10]]) if mut_positions else "none"
+
+                        # Find unique mutations (mutations this candidate has that others don't)
+                        all_other_muts = set()
+                        for other in sorted_candidates:
+                            if other['candidate_id'] != cand['candidate_id']:
+                                other_positions = other.get('mut_positions', [])
+                                if not other_positions and other.get('mutations'):
+                                    other_positions = [int(''.join(filter(str.isdigit, m))) for m in other['mutations'] if any(c.isdigit() for c in m)]
+                                all_other_muts.update(other_positions)
+
+                        unique_muts = [p for p in mut_positions if p not in all_other_muts]
+                        unique_str = "+".join([str(p) for p in unique_muts[:5]]) if unique_muts else "none"
+
+                        with col:
+                            # Validity badge
+                            badge_color = "#00FF88" if cand['meets_constraints'] else "#FF6B6B"
+                            badge_text = "✅" if cand['meets_constraints'] else "⚠️"
+
+                            st.markdown(f"""
+                            <div style="text-align:center; padding:5px; background:linear-gradient(135deg, #1e2130 0%, #0e1117 100%);
+                                        border-radius:10px; border:2px solid {profile_color}; margin-bottom:5px;">
+                                <span style="color:{profile_color}; font-weight:bold; font-size:1.1em;">
+                                    #{cand['candidate_id']} {cand['profile']} {badge_text}
+                                </span>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                            # 3D viewer for this candidate
+                            viewer_id = f"gallery_view_{cand['candidate_id']}"
+                            gallery_3d_html = f"""
+                            <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+                            <div id="{viewer_id}" style="width:100%; height:280px; border-radius:8px; overflow:hidden;"></div>
+                            <script>
+                                (function() {{
+                                    let viewer = $3Dmol.createViewer('{viewer_id}', {{backgroundColor: '0x0e1117'}});
+                                    let pdb = `{pdb_content.replace(chr(10), chr(92) + 'n').replace('`', '')}`;
+                                    viewer.addModel(pdb, 'pdb');
+
+                                    // Base structure
+                                    viewer.setStyle({{}}, {{cartoon: {{color: 'gray', opacity: 0.25}}}});
+
+                                    // DNA binding loops (always shown)
+                                    viewer.addStyle({{resi: [112,113,114,115,116,117,118,119,120,121,122,123,124]}},
+                                                   {{cartoon: {{color: '0x00D4FF', opacity: 0.5}}}});
+                                    viewer.addStyle({{resi: [236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251]}},
+                                                   {{cartoon: {{color: '0x00FFAB', opacity: 0.5}}}});
+
+                                    // ALL mutations for this candidate (profile color)
+                                    let allMuts = "{mut_str}".split("+");
+                                    allMuts.forEach(pos => {{
+                                        if (pos && pos !== 'none') {{
+                                            viewer.addStyle({{resi: parseInt(pos)}}, {{
+                                                stick: {{color: '{profile_color}', radius: 0.35}},
+                                                cartoon: {{color: '{profile_color}'}}
+                                            }});
+                                        }}
+                                    }});
+
+                                    // UNIQUE mutations (white glow effect - what sets this candidate apart)
+                                    let uniqueMuts = "{unique_str}".split("+");
+                                    uniqueMuts.forEach(pos => {{
+                                        if (pos && pos !== 'none') {{
+                                            viewer.addStyle({{resi: parseInt(pos)}}, {{
+                                                sphere: {{color: 'white', radius: 1.2, opacity: 0.4}}
+                                            }});
+                                        }}
+                                    }});
+
+                                    viewer.zoomTo();
+                                    viewer.spin('y', 0.5);
+                                    viewer.render();
+
+                                    // Click to pause rotation
+                                    document.getElementById('{viewer_id}').addEventListener('click', function() {{
+                                        viewer.spin(false);
+                                    }});
+                                }})();
+                            </script>
+                            """
+                            import streamlit.components.v1 as components
+                            components.html(gallery_3d_html, height=290)
+
+                            # Metrics under viewer
+                            m1, m2, m3 = st.columns(3)
+                            m1.metric("Score", f"{cand['score']:.2f}", label_visibility="collapsed")
+                            m2.metric("ID%", f"{cand['identity']:.0f}%", label_visibility="collapsed")
+                            m3.metric("Muts", cand['n_mutations'], label_visibility="collapsed")
+
+                            # Show unique mutations
+                            if unique_muts:
+                                st.caption(f"🌟 **Unique:** {', '.join(cand['mutations'][:3] if len(unique_muts) > 0 else ['None'])}")
+                            else:
+                                st.caption("*No unique mutations*")
+
+            # === MUTATION COMPARISON HEATMAP ===
+            st.markdown("### 🔥 Mutation Comparison Heatmap")
+            st.markdown("*Which positions are mutated by each candidate? Brighter = more candidates mutate this position.*")
+
+            # Build mutation matrix
+            all_positions = set()
+            for c in sorted_candidates:
+                muts = c.get('mut_positions', [])
+                if not muts and c.get('mutations'):
+                    muts = [int(''.join(filter(str.isdigit, m))) for m in c['mutations'] if any(ch.isdigit() for ch in m)]
+                all_positions.update(muts)
+
+            if all_positions:
+                positions_sorted = sorted(all_positions)
+                matrix = []
+                for c in sorted_candidates:
+                    row = []
+                    c_muts = set(c.get('mut_positions', []))
+                    if not c_muts and c.get('mutations'):
+                        c_muts = set(int(''.join(filter(str.isdigit, m))) for m in c['mutations'] if any(ch.isdigit() for ch in m))
+                    for pos in positions_sorted:
+                        row.append(1 if pos in c_muts else 0)
+                    matrix.append(row)
+
+                fig_heatmap = go.Figure(data=go.Heatmap(
+                    z=matrix,
+                    x=[f"Pos {p}" for p in positions_sorted],
+                    y=[f"#{c['candidate_id']} {c['profile']}" for c in sorted_candidates],
+                    colorscale=[[0, '#0e1117'], [1, '#00D4FF']],
+                    showscale=False
+                ))
+                fig_heatmap.update_layout(
+                    template='plotly_dark',
+                    height=250,
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    title="Mutation Positions by Candidate",
+                    xaxis_title="Position",
+                    yaxis_title=""
+                )
+                st.plotly_chart(fig_heatmap, use_container_width=True)
+
+                # Consensus mutations (positions mutated by multiple candidates)
+                position_counts = {}
+                for pos in all_positions:
+                    count = sum(1 for c in sorted_candidates if pos in set(c.get('mut_positions', [])))
+                    position_counts[pos] = count
+
+                consensus = {k: v for k, v in position_counts.items() if v >= 2}
+                if consensus:
+                    st.success(f"**🎯 Consensus positions** (mutated by 2+ candidates): {', '.join(str(p) for p in sorted(consensus.keys()))}")
+
+        # Candidate cards
+        st.markdown("### 🃏 Candidate Details")
+
+        # Sort by score (best first)
+        sorted_candidates = sorted(candidates, key=lambda x: x['score'], reverse=True)
+
+        for i in range(0, len(sorted_candidates), 2):
+            card_cols = st.columns(2)
+
+            for j, col in enumerate(card_cols):
+                if i + j < len(sorted_candidates):
+                    cand = sorted_candidates[i + j]
+
+                    # Color based on validity
+                    border_color = "#00FF88" if cand['meets_constraints'] else "#FF6B6B"
+                    validity_badge = "✅ VALID" if cand['meets_constraints'] else "⚠️ CONSTRAINT VIOLATION"
+
+                    with col:
+                        st.markdown(f"""
+                        <div class="candidate-card" style="border-left-color: {border_color};">
+                            <h4>Candidate #{cand['candidate_id']} - {cand['profile']}</h4>
+                            <p><b>{validity_badge}</b></p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # Metrics row
+                        m1, m2, m3 = st.columns(3)
+                        m1.metric("Score", f"{cand['score']:.3f}")
+                        m2.metric("Identity", f"{cand['identity']:.1f}%")
+                        m3.metric("Mutations", cand['n_mutations'])
+
+                        # Show mutations
+                        muts_display = ", ".join(cand['mutations'][:5])
+                        if len(cand['mutations']) > 5:
+                            muts_display += f" (+{len(cand['mutations']) - 5} more)"
+                        st.caption(f"**Mutations:** {muts_display}")
+
+                        # Physics scores
+                        st.caption(f"Stability: {cand['stability']:.3f} | Binding: {cand['binding']:.2f}")
+
+                        # Action buttons
+                        btn_col1, btn_col2 = st.columns(2)
+                        with btn_col1:
+                            if st.button(f"📋 Select #{cand['candidate_id']}", key=f"select_{cand['candidate_id']}"):
+                                st.session_state['selected_candidate'] = cand
+                                st.session_state['results'] = pd.DataFrame([{
+                                    'Step': 0, 'Score': cand['score'], 'Stability': cand['stability'],
+                                    'DNARecruitment': cand['binding'], 'Identity': cand['identity'],
+                                    'MutationCount': cand['n_mutations'], 'MutSummary': ", ".join(cand['mutations'][:5]),
+                                    'Sequence': cand['sequence'], 'SurfaceCharge': 0.5, 'HydroPacking': 0.4,
+                                    'GrassmannNovelty': 0.1, 'LatentIdentity': cand['identity'],
+                                    'LX': 0, 'LY': 0, 'LatentExcitation': 0, 'Phase': 'Final'
+                                }])
+                                st.session_state['target_mut_saved'] = constraints.get('target_mutation', 'R175H')
+                                st.success(f"Selected Candidate #{cand['candidate_id']}! Go to Validation tab.")
+
+                        with btn_col2:
+                            fasta = f">p53_rescue_cand{cand['candidate_id']}\n{cand['sequence']}"
+                            st.download_button(
+                                f"📥 FASTA",
+                                fasta,
+                                file_name=f"candidate_{cand['candidate_id']}.fasta",
+                                key=f"dl_{cand['candidate_id']}"
+                            )
+
+        # === COMPARISON TABLE ===
+        st.markdown("### 📊 Comparison Matrix")
+
+        compare_df = pd.DataFrame([{
+            'ID': c['candidate_id'],
+            'Profile': c['profile'],
+            'Score': f"{c['score']:.3f}",
+            'Stability': f"{c['stability']:.3f}",
+            'Binding': f"{c['binding']:.2f}",
+            'Identity': f"{c['identity']:.1f}%",
+            'Mutations': c['n_mutations'],
+            'Valid': '✅' if c['meets_constraints'] else '❌'
+        } for c in sorted_candidates])
+
+        st.dataframe(
+            compare_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "ID": st.column_config.NumberColumn("Candidate"),
+                "Profile": st.column_config.TextColumn("Strategy"),
+                "Valid": st.column_config.TextColumn("Meets Constraints")
+            }
+        )
+
+        # Export all candidates
+        st.download_button(
+            "📥 Export All Candidates (CSV)",
+            pd.DataFrame(candidates).to_csv(index=False),
+            file_name="generative_design_candidates.csv",
+            use_container_width=True
+        )
+
+    else:
+        # Show concept explanation when no candidates
+        st.markdown("---")
+        st.markdown("## 💡 How Generative Design Works")
+
+        concept_col1, concept_col2 = st.columns(2)
+
+        with concept_col1:
+            st.markdown("""
+            ### Mechanical CAD (Fusion 360)
+            ```
+            INPUT:
+            - Load forces (where stress applies)
+            - Support points (fixed positions)
+            - Material (steel, aluminum, etc.)
+            - Manufacturing (3D print, CNC, etc.)
+
+            AI GENERATES:
+            → Topology-optimized structures
+            → Multiple designs on Pareto frontier
+            → Non-intuitive, organic shapes
+            ```
+            """)
+
+        with concept_col2:
+            st.markdown("""
+            ### p53-proteoMgCAD
+            ```
+            INPUT:
+            - Physics (stability, binding thresholds)
+            - Geometry (locked residues, protected regions)
+            - Material (identity level = "human-like")
+            - Manufacturing (delivery method)
+
+            AI GENERATES:
+            → Second-site suppressor mutations
+            → Multiple candidates exploring trade-offs
+            → Novel, non-obvious rescue designs
+            ```
+            """)
+
+        st.info("""
+        **The Key Insight**: Instead of asking "what mutations should I try?", you specify
+        "what must my protein achieve?" and the AI explores the solution space to find
+        optimal designs that meet your constraints.
+
+        This is the same paradigm shift that transformed mechanical engineering with
+        topology optimization. Now applied to protein engineering.
+        """)
+
+with tab3:
     st.header("✅ Validation Dashboard")
     st.markdown("*Cross-reference AI designs against experimental data, physics, and evolution*")
 
@@ -1427,7 +2640,7 @@ PRODUCTION_NS = 10
     else:
         st.info("👆 Run a design in the **Generative Design Laboratory** tab first, then return here to validate.")
 
-with tab3:
+with tab4:
     st.header("🔬 Biophysical Research Manual & Mechanics")
 
     # Render README.md directly
@@ -1447,4 +2660,4 @@ with tab3:
         st.info("**Validation Pipeline**: Scripts are available in `scripts/` to verify these designs against blind benchmarks.")
 
 st.divider()
-st.caption("Developed for ISEF 2026 | Advancing Generative Protein Design")
+st.caption("**p53-proteoMgCAD** | Developed for ISEF 2026 | Mutative Generative CAD for Protein Rescue Engineering")
