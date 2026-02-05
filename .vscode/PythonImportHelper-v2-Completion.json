@@ -6548,6 +6548,15 @@
         "documentation": {}
     },
     {
+        "label": "requests",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "requests",
+        "description": "requests",
+        "detail": "requests",
+        "documentation": {}
+    },
+    {
         "label": "FunctionalOracle",
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
@@ -12554,6 +12563,24 @@
         "documentation": {}
     },
     {
+        "label": "predict_structure_esmfold",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def predict_structure_esmfold(sequence: str) -> str:\n    \"\"\"Call ESMFold API to predict structure. Returns PDB string.\"\"\"\n    url = \"https://api.esmatlas.com/foldSequence/v1/pdb/\"\n    try:\n        response = requests.post(url, data=sequence, timeout=120)\n        if response.status_code == 200:\n            return response.text\n        else:\n            return None\n    except Exception as e:",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "generate_motion_frames",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def generate_motion_frames(pdb_string: str, n_frames: int = 20) -> list:\n    \"\"\"Generate pseudo-motion frames by perturbing coordinates (simplified NMA-like motion).\"\"\"\n    import re\n    frames = [pdb_string]\n    # Parse ATOM lines\n    lines = pdb_string.split('\\n')\n    atom_lines = [l for l in lines if l.startswith('ATOM')]\n    other_lines = [l for l in lines if not l.startswith('ATOM')]\n    for frame_idx in range(1, n_frames):\n        # Sinusoidal breathing motion",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
         "label": "load_models_v8",
         "kind": 2,
         "importPath": "p53cad.app.main",
@@ -12576,7 +12603,61 @@
         "kind": 5,
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
-        "peekOfCode": "HOTSPOT_FLEET = [\"R175H\", \"R248Q\", \"R248W\", \"R273H\", \"R273C\", \"G245S\", \"R249S\", \"R282W\"]\n# --- SIDEBAR CONTROLS ---\nwith st.sidebar:\n    st.image(\"https://img.icons8.com/isometric/100/protein.png\", width=80)\n    st.header(\"⚙️ Design Parameters\")\n    study_mode = st.radio(\"📡 Laboratory Scope\", [\"Individual Target\", \"Fleet Study (Big 8)\", \"Universal Design (Joint Rescue)\"])\n    if study_mode == \"Individual Target\":\n        target_mut = st.text_input(\"🎯 Target Mutation\", value=\"R175H\", help=\"The cancer mutation you want to rescue.\")\n    elif study_mode == \"Fleet Study (Big 8)\":\n        st.info(f\"Targeting: {', '.join(HOTSPOT_FLEET)}\")",
+        "peekOfCode": "HOTSPOT_FLEET = [\"R175H\", \"R248Q\", \"R248W\", \"R273H\", \"R273C\", \"G245S\", \"R249S\", \"R282W\"]\n# Extended mutation database (Top 50 most frequent in cancer)\nP53_MUTATIONS = {\n    \"Structural (Zinc Region)\": [\n        \"R175H\", \"R175G\", \"R175L\",  # Zinc coordination\n        \"C176F\", \"C176Y\",           # Zinc ligand\n        \"H179R\", \"H179Y\",           # Zinc ligand\n        \"C242F\", \"C242S\",           # Zinc ligand\n        \"G245S\", \"G245D\", \"G245C\",  # β-sandwich core\n    ],",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "P53_MUTATIONS",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "P53_MUTATIONS = {\n    \"Structural (Zinc Region)\": [\n        \"R175H\", \"R175G\", \"R175L\",  # Zinc coordination\n        \"C176F\", \"C176Y\",           # Zinc ligand\n        \"H179R\", \"H179Y\",           # Zinc ligand\n        \"C242F\", \"C242S\",           # Zinc ligand\n        \"G245S\", \"G245D\", \"G245C\",  # β-sandwich core\n    ],\n    \"DNA Contact\": [\n        \"R248Q\", \"R248W\", \"R248L\",  # Major groove contact",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "ALL_MUTATIONS",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "ALL_MUTATIONS = [m for muts in P53_MUTATIONS.values() for m in muts]\n# --- SIDEBAR CONTROLS ---\nwith st.sidebar:\n    st.image(\"https://img.icons8.com/isometric/100/protein.png\", width=80)\n    st.header(\"⚙️ Design Parameters\")\n    study_mode = st.radio(\"📡 Laboratory Scope\", [\n        \"Individual Target\",\n        \"Fleet Study (Big 8)\",\n        \"Extended Fleet (Top 50)\",\n        \"Universal Design (Joint Rescue)\"",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "KNOWN_RESCUES",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "KNOWN_RESCUES = {\n    \"R175H\": {\n        \"published\": [\"N239Y\", \"N268D\", \"H178Y\"],\n        \"source\": \"## Cell Reports, 2020\",\n        \"notes\": \"Second-site suppressors identified via yeast screening\"\n    },\n    \"Y220C\": {\n        \"published\": [\"PhiKan083\", \"PK7088\"],  # Small molecules, not mutations\n        \"source\": \"Nature, 2008 (Fersht lab)\",\n        \"notes\": \"Small molecule stabilizers bind Y220C cavity\"",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCE",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "SEQUENCE = \"{rescued_seq}\"\nVARIANTS = {{\n    'WT': [],\n    '{target}': ['{target}'],\n    '{target}_rescued': {our_muts},\n}}\n# Run on Kaggle with 2x T4 GPUs\nPRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "VARIANTS",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "VARIANTS = {{\n    'WT': [],\n    '{target}': ['{target}'],\n    '{target}_rescued': {our_muts},\n}}\n# Run on Kaggle with 2x T4 GPUs\nPRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")\n            # AlphaFold submission",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_NS",
+        "kind": 5,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "PRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")\n            # AlphaFold submission\n            st.link_button(\"🔬 Submit to ColabFold\", \"https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb\")\n        # === VALIDATION SUMMARY ===\n        st.divider()\n        st.markdown(\"### 📋 Validation Summary\")\n        if total_confidence >= 80:\n            st.success(f\"\"\"",
         "detail": "p53cad.app.main",
         "documentation": {}
     },
