@@ -3,7 +3,6 @@
 ### Mutative Generative Computer-Assisted Design of Second-Site Rescues for p53
 
 [![p53-proteoMgCAD](https://img.shields.io/badge/Platform-p53--proteoMgCAD-blueviolet?style=for-the-badge)](https://github.com/your-repo/p53cad)
-[![ISEF](https://img.shields.io/badge/Project-ISEF_2026-gold?style=for-the-badge)](https://isef.org)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
@@ -378,7 +377,7 @@ p53-proteoMgCAD enforces constraints for real-world applicability:
 
 ## 👨‍🔬 Author
 
-Developed for **ISEF 2026** | Advancing Generative Protein Design for Precision Oncology
+Developed by **Ishaan Gubbala**
 
 ---
 
