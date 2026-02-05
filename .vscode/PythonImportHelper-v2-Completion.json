@@ -938,6 +938,30 @@
         "documentation": {}
     },
     {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
         "label": "numpy",
         "kind": 6,
         "isExtraImport": true,
@@ -2759,6 +2783,166 @@
         "documentation": {}
     },
     {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -2776,6 +2960,94 @@
     },
     {
         "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Set",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -4908,6 +5180,22 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "gzip",
         "kind": 6,
         "isExtraImport": true,
@@ -5382,6 +5670,102 @@
         "documentation": {}
     },
     {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
         "label": "libtbx.load_env",
         "kind": 6,
         "isExtraImport": true,
@@ -5612,6 +5996,14 @@
         "documentation": {}
     },
     {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
         "label": "openmm.app",
         "kind": 6,
         "isExtraImport": true,
@@ -5621,11 +6013,27 @@
         "documentation": {}
     },
     {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
         "label": "openmm.unit",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "openmm.unit",
         "description": "openmm.unit",
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
         "detail": "openmm.unit",
         "documentation": {}
     },
@@ -6401,6 +6809,30 @@
         "documentation": {}
     },
     {
+        "label": "defaultdict",
+        "importPath": "collections",
+        "description": "collections",
+        "isExtraImport": true,
+        "detail": "collections",
+        "documentation": {}
+    },
+    {
+        "label": "defaultdict",
+        "importPath": "collections",
+        "description": "collections",
+        "isExtraImport": true,
+        "detail": "collections",
+        "documentation": {}
+    },
+    {
+        "label": "defaultdict",
+        "importPath": "collections",
+        "description": "collections",
+        "isExtraImport": true,
+        "detail": "collections",
+        "documentation": {}
+    },
+    {
         "label": "ManifoldEmbedder",
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
@@ -6527,6 +6959,15 @@
         "importPath": "streamlit",
         "description": "streamlit",
         "detail": "streamlit",
+        "documentation": {}
+    },
+    {
+        "label": "streamlit.components.v1",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "streamlit.components.v1",
+        "description": "streamlit.components.v1",
+        "detail": "streamlit.components.v1",
         "documentation": {}
     },
     {
@@ -6667,6 +7108,15 @@
         "importPath": "click",
         "description": "click",
         "detail": "click",
+        "documentation": {}
+    },
+    {
+        "label": "mdtraj",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mdtraj",
+        "description": "mdtraj",
+        "detail": "mdtraj",
         "documentation": {}
     },
     {
@@ -12554,6 +13004,141 @@
         "documentation": {}
     },
     {
+        "label": "PatientPopulation",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class PatientPopulation:\n    \"\"\"Estimated patient population for a specific mutation.\"\"\"\n    mutation: str\n    mutation_frequency: float  # % of p53 mutations\n    total_patients_per_year: int  # US estimate\n    by_cancer_type: Dict[str, int]  # patients per cancer type\n    global_estimate: int  # worldwide estimate (3x US)\n    five_year_cumulative: int\n@dataclass\nclass TherapeuticIndex:",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "TherapeuticIndex",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class TherapeuticIndex:\n    \"\"\"Therapeutic index assessment.\"\"\"\n    sequence_identity: float  # % identity to WT\n    mutation_count: int\n    immunogenicity_score: float  # 0-1 (lower is better)\n    off_target_risk: float  # 0-1\n    therapeutic_window: str  # \"narrow\", \"moderate\", \"wide\"\n    fda_pathway: str  # \"gene_therapy\", \"cell_therapy\", \"protein\"\n    regulatory_complexity: str  # \"low\", \"medium\", \"high\"\n@dataclass",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "DeliveryFeasibility",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class DeliveryFeasibility:\n    \"\"\"Delivery method feasibility assessment.\"\"\"\n    method: str\n    feasibility_score: float  # 0-1\n    advantages: List[str]\n    challenges: List[str]\n    estimated_cost_per_dose: str\n    regulatory_status: str\n    clinical_examples: List[str]\n    identity_requirement: float  # minimum % identity for this method",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "ImmunogenicityAssessment",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class ImmunogenicityAssessment:\n    \"\"\"Immunogenicity risk assessment.\"\"\"\n    overall_risk: str  # \"low\", \"moderate\", \"high\"\n    risk_score: float  # 0-1\n    neoantigens_predicted: int\n    hla_binding_peptides: int\n    risk_factors: List[str]\n    mitigation_strategies: List[str]\n@dataclass\nclass ClinicalImpactReport:",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "ClinicalImpactReport",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class ClinicalImpactReport:\n    \"\"\"Complete clinical impact report.\"\"\"\n    rescue_name: str\n    cancer_mutation: str\n    rescue_mutations: List[str]\n    patient_population: PatientPopulation\n    therapeutic_index: TherapeuticIndex\n    delivery_options: List[DeliveryFeasibility]\n    immunogenicity: ImmunogenicityAssessment\n    overall_clinical_score: float  # 0-100",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "PatientStratifier",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class PatientStratifier:\n    \"\"\"Estimate patient populations for p53 mutations.\"\"\"\n    def __init__(self):\n        self.mutation_data = TCGA_P53_MUTATIONS\n        self.incidence = CANCER_INCIDENCE\n        self.p53_rate = P53_MUTATION_RATE\n    def estimate_population(self, mutation: str) -> PatientPopulation:\n        \"\"\"Estimate patient population for a specific mutation.\"\"\"\n        if mutation not in self.mutation_data:\n            # Unknown mutation - estimate conservatively",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "TherapeuticIndexCalculator",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class TherapeuticIndexCalculator:\n    \"\"\"Calculate therapeutic index metrics.\"\"\"\n    def __init__(self):\n        self.fda_identity_thresholds = {\n            \"gene_therapy\": 90,  # Lower threshold acceptable\n            \"mrna_therapy\": 92,\n            \"protein_therapy\": 95,  # Highest requirement\n            \"cell_therapy\": 90,\n        }\n    def calculate(self, wt_sequence: str, rescue_sequence: str,",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "DeliveryFeasibilityAssessor",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class DeliveryFeasibilityAssessor:\n    \"\"\"Assess feasibility of different delivery methods.\"\"\"\n    def __init__(self):\n        self.delivery_methods = self._define_delivery_methods()\n    def _define_delivery_methods(self) -> List[Dict]:\n        \"\"\"Define available delivery methods.\"\"\"\n        return [\n            {\n                \"method\": \"AAV Gene Therapy\",\n                \"description\": \"Adeno-associated virus delivery of p53 gene\",",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "ImmunogenicityAssessor",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class ImmunogenicityAssessor:\n    \"\"\"Assess immunogenicity risk of rescue designs.\"\"\"\n    def __init__(self):\n        # Common HLA alleles for neoantigen prediction (simplified)\n        self.common_hlas = [\"A*02:01\", \"A*01:01\", \"B*07:02\", \"B*08:01\"]\n    def assess(self, wt_sequence: str, rescue_sequence: str,\n              mutations: List[str]) -> ImmunogenicityAssessment:\n        \"\"\"Assess immunogenicity risk.\"\"\"\n        # Count predicted neoantigens\n        neoantigens = self._predict_neoantigens(mutations, rescue_sequence)",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "ClinicalImpactEngine",
+        "kind": 6,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "class ClinicalImpactEngine:\n    \"\"\"\n    Main engine for clinical impact assessment.\n    \"\"\"\n    def __init__(self):\n        self.patient_stratifier = PatientStratifier()\n        self.ti_calculator = TherapeuticIndexCalculator()\n        self.delivery_assessor = DeliveryFeasibilityAssessor()\n        self.immuno_assessor = ImmunogenicityAssessor()\n    def generate_report(self, name: str, wt_sequence: str,",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "export_clinical_report",
+        "kind": 2,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "def export_clinical_report(report: ClinicalImpactReport, output_path: str) -> str:\n    \"\"\"Export clinical impact report to markdown.\"\"\"\n    lines = []\n    lines.append(f\"# Clinical Impact Report: {report.rescue_name}\")\n    lines.append(f\"\\nGenerated for ISEF 2026\")\n    lines.append(f\"\\n## Summary\")\n    lines.append(f\"- **Cancer Mutation:** {report.cancer_mutation}\")\n    lines.append(f\"- **Rescue Mutations:** {', '.join(report.rescue_mutations)}\")\n    lines.append(f\"- **Clinical Viability:** {report.clinical_viability.upper()}\")\n    lines.append(f\"- **Overall Score:** {report.overall_clinical_score:.0f}/100\")",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for clinical impact assessment.\"\"\"\n    import argparse\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD Clinical Impact\")\n    parser.add_argument(\"--cancer\", type=str, required=True,\n                       help=\"Cancer mutation (e.g., R175H)\")\n    parser.add_argument(\"--rescue\", type=str, nargs='+', required=True,\n                       help=\"Rescue mutations (e.g., N268D T125R)\")\n    parser.add_argument(\"--output\", type=str, default=\"clinical_impact_report.md\",\n                       help=\"Output file path\")",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "TCGA_P53_MUTATIONS",
+        "kind": 5,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "TCGA_P53_MUTATIONS = {\n    # Hotspot mutations (% of all p53 mutations)\n    \"R175H\": {\"frequency\": 5.6, \"cancer_types\": [\"breast\", \"colon\", \"ovarian\", \"lung\", \"pancreatic\"]},\n    \"R248Q\": {\"frequency\": 4.4, \"cancer_types\": [\"colon\", \"breast\", \"ovarian\", \"lung\", \"gastric\"]},\n    \"R273H\": {\"frequency\": 4.2, \"cancer_types\": [\"colon\", \"breast\", \"lung\", \"head_neck\", \"bladder\"]},\n    \"R248W\": {\"frequency\": 3.8, \"cancer_types\": [\"colon\", \"breast\", \"ovarian\", \"lung\"]},\n    \"R273C\": {\"frequency\": 2.1, \"cancer_types\": [\"colon\", \"breast\", \"lung\"]},\n    \"Y220C\": {\"frequency\": 1.8, \"cancer_types\": [\"breast\", \"lung\", \"colon\", \"ovarian\"]},\n    \"G245S\": {\"frequency\": 2.4, \"cancer_types\": [\"breast\", \"colon\", \"lung\", \"ovarian\"]},\n    \"R249S\": {\"frequency\": 2.9, \"cancer_types\": [\"liver\", \"lung\", \"esophageal\"]},  # Aflatoxin-associated",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "CANCER_INCIDENCE",
+        "kind": 5,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "CANCER_INCIDENCE = {\n    \"breast\": 290000,\n    \"lung\": 235000,\n    \"colon\": 150000,\n    \"ovarian\": 20000,\n    \"pancreatic\": 62000,\n    \"gastric\": 27000,\n    \"liver\": 42000,\n    \"bladder\": 83000,\n    \"head_neck\": 66000,",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
+        "label": "P53_MUTATION_RATE",
+        "kind": 5,
+        "importPath": "p53cad.analysis.clinical_impact",
+        "description": "p53cad.analysis.clinical_impact",
+        "peekOfCode": "P53_MUTATION_RATE = {\n    \"ovarian\": 96,  # High-grade serous\n    \"esophageal\": 83,\n    \"lung\": 75,  # NSCLC\n    \"colon\": 60,\n    \"pancreatic\": 70,\n    \"head_neck\": 85,\n    \"gastric\": 50,\n    \"bladder\": 50,\n    \"breast\": 30,  # Higher in triple-negative",
+        "detail": "p53cad.analysis.clinical_impact",
+        "documentation": {}
+    },
+    {
         "label": "GrassmannMetric",
         "kind": 6,
         "importPath": "p53cad.analysis.grassmann",
@@ -12568,6 +13153,15 @@
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
         "peekOfCode": "def predict_structure_esmfold(sequence: str) -> str:\n    \"\"\"Call ESMFold API to predict structure. Returns PDB string.\"\"\"\n    url = \"https://api.esmatlas.com/foldSequence/v1/pdb/\"\n    try:\n        response = requests.post(url, data=sequence, timeout=120)\n        if response.status_code == 200:\n            return response.text\n        else:\n            return None\n    except Exception as e:",
+        "detail": "p53cad.app.main",
+        "documentation": {}
+    },
+    {
+        "label": "morph_pdb_for_mutations",
+        "kind": 2,
+        "importPath": "p53cad.app.main",
+        "description": "p53cad.app.main",
+        "peekOfCode": "def morph_pdb_for_mutations(pdb_string: str, mutation_positions: list, step: int, total_steps: int) -> str:\n    \"\"\"\n    Morph a PDB structure to show conformational changes around mutation sites.\n    This creates a visual effect of the protein structure changing during optimization.\n    \"\"\"\n    if not pdb_string or not mutation_positions:\n        return pdb_string\n    lines = pdb_string.split('\\n')\n    new_lines = []\n    # Calculate morph intensity based on optimization progress",
         "detail": "p53cad.app.main",
         "documentation": {}
     },
@@ -12639,7 +13233,7 @@
         "kind": 5,
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
-        "peekOfCode": "ALL_MUTATIONS = [m for muts in P53_MUTATIONS.values() for m in muts]\n# --- SIDEBAR CONTROLS ---\nwith st.sidebar:\n    st.image(\"https://img.icons8.com/isometric/100/protein.png\", width=80)\n    st.header(\"⚙️ Design Parameters\")\n    study_mode = st.radio(\"📡 Laboratory Scope\", [\n        \"Individual Target\",\n        \"Fleet Study (Big 8)\",\n        \"Extended Fleet (Top 50)\",\n        \"Universal Design (Joint Rescue)\"",
+        "peekOfCode": "ALL_MUTATIONS = [m for muts in P53_MUTATIONS.values() for m in muts]\n# --- SIDEBAR CONTROLS ---\nwith st.sidebar:\n    st.markdown(\"\"\"\n    <div style=\"padding: 1.5rem 0; border-bottom: 1px solid #E5E7EB; margin-bottom: 1.5rem;\">\n        <h2 style=\"font-size: 1.1rem; font-weight: 600; color: #1A1A1A; margin: 0;\">Design Parameters</h2>\n        <p style=\"font-size: 0.8rem; color: #6B7280; margin: 0.25rem 0 0 0;\">Configure your rescue design</p>\n    </div>\n    \"\"\", unsafe_allow_html=True)\n    st.markdown('<p class=\"section-header\">Target Selection</p>', unsafe_allow_html=True)",
         "detail": "p53cad.app.main",
         "documentation": {}
     },
@@ -12649,33 +13243,6 @@
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
         "peekOfCode": "KNOWN_RESCUES = {\n    \"R175H\": {\n        \"published\": [\"N239Y\", \"N268D\", \"H178Y\"],\n        \"source\": \"## Cell Reports, 2020\",\n        \"notes\": \"Second-site suppressors identified via yeast screening\"\n    },\n    \"Y220C\": {\n        \"published\": [\"PhiKan083\", \"PK7088\"],  # Small molecules, not mutations\n        \"source\": \"Nature, 2008 (Fersht lab)\",\n        \"notes\": \"Small molecule stabilizers bind Y220C cavity\"",
-        "detail": "p53cad.app.main",
-        "documentation": {}
-    },
-    {
-        "label": "SEQUENCE",
-        "kind": 5,
-        "importPath": "p53cad.app.main",
-        "description": "p53cad.app.main",
-        "peekOfCode": "SEQUENCE = \"{rescued_seq}\"\nVARIANTS = {{\n    'WT': [],\n    '{target}': ['{target}'],\n    '{target}_rescued': {our_muts},\n}}\n# Run on Kaggle with 2x T4 GPUs\nPRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")",
-        "detail": "p53cad.app.main",
-        "documentation": {}
-    },
-    {
-        "label": "VARIANTS",
-        "kind": 5,
-        "importPath": "p53cad.app.main",
-        "description": "p53cad.app.main",
-        "peekOfCode": "VARIANTS = {{\n    'WT': [],\n    '{target}': ['{target}'],\n    '{target}_rescued': {our_muts},\n}}\n# Run on Kaggle with 2x T4 GPUs\nPRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")\n            # AlphaFold submission",
-        "detail": "p53cad.app.main",
-        "documentation": {}
-    },
-    {
-        "label": "PRODUCTION_NS",
-        "kind": 5,
-        "importPath": "p53cad.app.main",
-        "description": "p53cad.app.main",
-        "peekOfCode": "PRODUCTION_NS = 10\n\"\"\"\n            st.download_button(\"📥 Download MD Config\", md_config, file_name=\"md_config.py\")\n            # AlphaFold submission\n            st.link_button(\"🔬 Submit to ColabFold\", \"https://colab.research.google.com/github/sokrypton/ColabFold/blob/main/AlphaFold2.ipynb\")\n        # === VALIDATION SUMMARY ===\n        st.divider()\n        st.markdown(\"### 📋 Validation Summary\")\n        if total_confidence >= 80:\n            st.success(f\"\"\"",
         "detail": "p53cad.app.main",
         "documentation": {}
     },
@@ -12833,12 +13400,390 @@
         "documentation": {}
     },
     {
+        "label": "DrugCandidate",
+        "kind": 6,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "class DrugCandidate:\n    \"\"\"Represents a generated drug molecule candidate.\"\"\"\n    smiles: str\n    name: str\n    binding_affinity: float  # kcal/mol (negative = better)\n    drug_likeness: float  # 0-1 score\n    synthetic_accessibility: float  # 1-10 (lower = easier)\n    target_pocket: str  # \"Y220C\", \"core_stabilizer\", etc.\n    mechanism: str  # \"cavity_filler\", \"surface_binder\", \"allosteric\"\n    molecular_weight: float",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "BindingPocket",
+        "kind": 6,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "class BindingPocket:\n    \"\"\"Defines a druggable binding pocket on p53.\"\"\"\n    name: str\n    center: Tuple[float, float, float]  # (x, y, z) coordinates\n    size: Tuple[float, float, float]  # box dimensions\n    residues: List[int]  # key residue numbers\n    druggability_score: float  # 0-1\n    pocket_type: str  # \"cavity\", \"surface\", \"interface\"\n    known_binders: List[str]  # reference compounds (SMILES)\n    description: str",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "MolecularPropertyCalculator",
+        "kind": 6,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "class MolecularPropertyCalculator:\n    \"\"\"Calculate drug-like properties for molecules.\"\"\"\n    def __init__(self):\n        self.rdkit_available = RDKIT_AVAILABLE\n    def calculate_properties(self, smiles: str) -> Dict[str, float]:\n        \"\"\"Calculate all relevant molecular properties.\"\"\"\n        if not self.rdkit_available:\n            return self._estimate_properties(smiles)\n        mol = Chem.MolFromSmiles(smiles)\n        if mol is None:",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "BindingAffinityPredictor",
+        "kind": 6,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "class BindingAffinityPredictor:\n    \"\"\"Predict binding affinity of molecules to p53 pockets.\"\"\"\n    def __init__(self):\n        self.prop_calc = MolecularPropertyCalculator()\n    def predict(self, smiles: str, pocket: BindingPocket) -> Tuple[float, float]:\n        \"\"\"\n        Predict binding affinity and confidence.\n        Returns:\n            (affinity_kcal_mol, confidence)\n        \"\"\"",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "DrugGeneratorEngine",
+        "kind": 6,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "class DrugGeneratorEngine:\n    \"\"\"\n    Main engine for generating drug candidates for p53.\n    Supports three generation modes:\n    1. Template-based: Modify known active scaffolds\n    2. De novo: Generate from SMILES LSTM\n    3. REINFORCE: Optimize for binding affinity\n    \"\"\"\n    def __init__(self, device: str = 'cpu'):\n        self.device = device",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "visualize_drug_candidate",
+        "kind": 2,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "def visualize_drug_candidate(candidate: DrugCandidate, output_path: Optional[str] = None):\n    \"\"\"Generate 2D visualization of a drug candidate.\"\"\"\n    if not RDKIT_AVAILABLE:\n        print(f\"RDKit required for visualization. SMILES: {candidate.smiles}\")\n        return None\n    mol = Chem.MolFromSmiles(candidate.smiles)\n    if mol is None:\n        return None\n    # Generate 2D coordinates\n    AllChem.Compute2DCoords(mol)",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "export_candidates_sdf",
+        "kind": 2,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "def export_candidates_sdf(candidates: List[DrugCandidate], output_path: str):\n    \"\"\"Export drug candidates to SDF file for docking.\"\"\"\n    if not RDKIT_AVAILABLE:\n        raise ImportError(\"RDKit required for SDF export\")\n    writer = Chem.SDWriter(output_path)\n    for candidate in candidates:\n        mol = Chem.MolFromSmiles(candidate.smiles)\n        if mol:\n            mol.SetProp(\"_Name\", candidate.name)\n            mol.SetProp(\"BindingAffinity\", f\"{candidate.binding_affinity:.2f}\")",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for drug generation.\"\"\"\n    import argparse\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD Drug Generator\")\n    parser.add_argument(\"--pocket\", type=str, default=\"Y220C_cavity\",\n                       choices=list(P53_BINDING_POCKETS.keys()),\n                       help=\"Target binding pocket\")\n    parser.add_argument(\"--n-candidates\", type=int, default=20,\n                       help=\"Number of candidates to generate\")\n    parser.add_argument(\"--method\", type=str, default=\"template\",",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "P53_BINDING_POCKETS",
+        "kind": 5,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "P53_BINDING_POCKETS = {\n    \"Y220C_cavity\": BindingPocket(\n        name=\"Y220C Crevice\",\n        center=(12.5, 45.2, 33.1),\n        size=(15.0, 15.0, 15.0),\n        residues=[145, 146, 147, 148, 149, 150, 151, 220, 221, 222, 223, 228, 229, 230],\n        druggability_score=0.85,\n        pocket_type=\"cavity\",\n        known_binders=[\n            \"CC1=CC=C(C=C1)C2=CC(=NO2)C3=CC=C(C=C3)Cl\",  # PhiKan083",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "SMILES_VOCAB",
+        "kind": 5,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "SMILES_VOCAB = [\n    'C', 'N', 'O', 'S', 'F', 'Cl', 'Br', 'I', 'P',\n    'c', 'n', 'o', 's',\n    '1', '2', '3', '4', '5', '6', '7', '8', '9',\n    '(', ')', '[', ']', '=', '#', '+', '-', '\\\\', '/', '@', '.',\n    '<BOS>', '<EOS>', '<PAD>'\n]\nVOCAB_TO_IDX = {c: i for i, c in enumerate(SMILES_VOCAB)}\nIDX_TO_VOCAB = {i: c for c, i in VOCAB_TO_IDX.items()}\n# ============================================================================",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "VOCAB_TO_IDX",
+        "kind": 5,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "VOCAB_TO_IDX = {c: i for i, c in enumerate(SMILES_VOCAB)}\nIDX_TO_VOCAB = {i: c for c, i in VOCAB_TO_IDX.items()}\n# ============================================================================\n# MOLECULAR PROPERTY CALCULATOR\n# ============================================================================\nclass MolecularPropertyCalculator:\n    \"\"\"Calculate drug-like properties for molecules.\"\"\"\n    def __init__(self):\n        self.rdkit_available = RDKIT_AVAILABLE\n    def calculate_properties(self, smiles: str) -> Dict[str, float]:",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "IDX_TO_VOCAB",
+        "kind": 5,
+        "importPath": "p53cad.engine.drug_generator",
+        "description": "p53cad.engine.drug_generator",
+        "peekOfCode": "IDX_TO_VOCAB = {i: c for c, i in VOCAB_TO_IDX.items()}\n# ============================================================================\n# MOLECULAR PROPERTY CALCULATOR\n# ============================================================================\nclass MolecularPropertyCalculator:\n    \"\"\"Calculate drug-like properties for molecules.\"\"\"\n    def __init__(self):\n        self.rdkit_available = RDKIT_AVAILABLE\n    def calculate_properties(self, smiles: str) -> Dict[str, float]:\n        \"\"\"Calculate all relevant molecular properties.\"\"\"",
+        "detail": "p53cad.engine.drug_generator",
+        "documentation": {}
+    },
+    {
+        "label": "YeastDisplayProtocol",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class YeastDisplayProtocol:\n    \"\"\"Yeast surface display screening protocol.\"\"\"\n    title: str\n    target_mutations: List[str]\n    rescue_mutations: List[str]\n    # Plasmid construction\n    vector: str\n    promoter: str\n    fusion_partner: str  # Aga2p typically\n    linker_sequence: str",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "PrimeEditingGuide",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class PrimeEditingGuide:\n    \"\"\"CRISPR Prime Editing guide RNA design.\"\"\"\n    target_mutation: str\n    edit_type: str  # \"rescue_introduction\" or \"mutation_reversion\"\n    # pegRNA components\n    spacer_sequence: str  # 20nt guide\n    pam_sequence: str  # NGG\n    pbs_sequence: str  # Primer binding site (13-17nt)\n    rt_template: str  # RT template with edit\n    # Nicking guide (for PE3)",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "GenBankExport",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class GenBankExport:\n    \"\"\"GenBank format export.\"\"\"\n    locus: str\n    definition: str\n    accession: str\n    version: str\n    keywords: str\n    source: str\n    organism: str\n    sequence: str",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "AssayRecommendation",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class AssayRecommendation:\n    \"\"\"Recommended assay for validation.\"\"\"\n    assay_name: str\n    assay_type: str  # \"functional\", \"structural\", \"binding\"\n    priority: int  # 1-5, 1 is highest\n    rationale: str\n    readout: str\n    throughput: str  # \"low\", \"medium\", \"high\"\n    estimated_cost: str\n    timeline: str",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "YeastDisplayGenerator",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class YeastDisplayGenerator:\n    \"\"\"Generate yeast surface display protocols.\"\"\"\n    def __init__(self):\n        self.aga2_sequence = \"ATGCAGTTACTTCGCTGTTTTTCAATATTTTCTGTTATTGCTTCAGTTTTAGCACAGGAACTGACAACTATATGCGAGCAAATCCCCTCACCAACTTTAGAATCGACGCCGTACTCTTTGTCAACGACTACTATTTTGGCCAACGGGAAGGCAATGCAAGGAGTTTTTGAATATTACAAATCAGTAACGTTTGTCAGTAATTGCGGTTCTCACCCCTCAACAACTAGCAAAGGCAGCCCCATAAACACACAGTATGTTTTTAAGGACAATAGCTCGACGATTGAAGGTAGATACCCATACGACGTTCCAGACTACGCTCTGCAGGCTAGTGGTGGT\"\n    def generate_protocol(self, target_mutations: List[str],\n                         rescue_mutations: List[str],\n                         p53_sequence: str) -> YeastDisplayProtocol:\n        \"\"\"Generate complete yeast display protocol.\"\"\"\n        # Design library\n        library_info = self._design_library(target_mutations, rescue_mutations)",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "PrimeEditingDesigner",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class PrimeEditingDesigner:\n    \"\"\"Design CRISPR Prime Editing guides for p53 rescue mutations.\"\"\"\n    def __init__(self):\n        # p53 genomic DNA (exons 4-8 region, simplified)\n        # In real implementation, would fetch from genome\n        self.pbs_length_default = 13  # nt\n        self.rt_extension = 10  # nt after edit\n    def design_guide(self, mutation: str, genomic_context: str,\n                    edit_type: str = \"rescue_introduction\") -> PrimeEditingGuide:\n        \"\"\"",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "GenBankExporter",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class GenBankExporter:\n    \"\"\"Export sequences in GenBank format.\"\"\"\n    def export_rescue_construct(self, name: str, protein_sequence: str,\n                               mutations: List[str],\n                               organism: str = \"human\") -> GenBankExport:\n        \"\"\"Create GenBank entry for rescued p53 construct.\"\"\"\n        # Convert to DNA\n        dna_sequence = protein_to_dna(protein_sequence, organism)\n        # Create features\n        features = []",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "AssayRecommender",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class AssayRecommender:\n    \"\"\"Recommend validation assays based on rescue properties.\"\"\"\n    def __init__(self):\n        self.assay_database = self._build_assay_database()\n    def _build_assay_database(self) -> List[AssayRecommendation]:\n        \"\"\"Build database of available assays.\"\"\"\n        return [\n            AssayRecommendation(\n                assay_name=\"Thermal Shift Assay (DSF)\",\n                assay_type=\"structural\",",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "ExperimentalPipeline",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class ExperimentalPipeline:\n    \"\"\"\n    Main pipeline for generating all experimental validation materials.\n    \"\"\"\n    def __init__(self):\n        self.yeast_generator = YeastDisplayGenerator()\n        self.pe_designer = PrimeEditingDesigner()\n        self.genbank_exporter = GenBankExporter()\n        self.assay_recommender = AssayRecommender()\n    def generate_full_package(self, name: str,",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "protein_to_dna",
+        "kind": 2,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "def protein_to_dna(protein_seq: str, organism: str = \"human\") -> str:\n    \"\"\"Convert protein sequence to DNA using preferred codons.\"\"\"\n    if organism == \"human\":\n        codon_table = HUMAN_PREFERRED_CODONS\n    elif organism == \"ecoli\":\n        codon_table = ECOLI_PREFERRED_CODONS\n    else:\n        codon_table = HUMAN_PREFERRED_CODONS\n    dna = []\n    for aa in protein_seq:",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "reverse_complement",
+        "kind": 2,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "def reverse_complement(dna: str) -> str:\n    \"\"\"Get reverse complement of DNA sequence.\"\"\"\n    complement = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G',\n                  'a': 't', 't': 'a', 'g': 'c', 'c': 'g',\n                  'N': 'N', 'n': 'n'}\n    return ''.join(complement.get(base, 'N') for base in reversed(dna))\ndef gc_content(seq: str) -> float:\n    \"\"\"Calculate GC content of sequence.\"\"\"\n    seq = seq.upper()\n    gc = sum(1 for base in seq if base in 'GC')",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "gc_content",
+        "kind": 2,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "def gc_content(seq: str) -> float:\n    \"\"\"Calculate GC content of sequence.\"\"\"\n    seq = seq.upper()\n    gc = sum(1 for base in seq if base in 'GC')\n    return gc / len(seq) if seq else 0\ndef find_pam_sites(dna: str, pam: str = \"NGG\") -> List[Tuple[int, str]]:\n    \"\"\"Find PAM sites in DNA sequence.\"\"\"\n    sites = []\n    # Forward strand\n    for i in range(len(dna) - len(pam) + 1):",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "find_pam_sites",
+        "kind": 2,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "def find_pam_sites(dna: str, pam: str = \"NGG\") -> List[Tuple[int, str]]:\n    \"\"\"Find PAM sites in DNA sequence.\"\"\"\n    sites = []\n    # Forward strand\n    for i in range(len(dna) - len(pam) + 1):\n        match = True\n        for j, char in enumerate(pam):\n            if char == 'N':\n                continue\n            if dna[i+j].upper() != char:",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for experimental pipeline.\"\"\"\n    import argparse\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD Experimental Pipeline\")\n    parser.add_argument(\"--name\", type=str, required=True,\n                       help=\"Name for the rescue construct\")\n    parser.add_argument(\"--cancer\", type=str, required=True,\n                       help=\"Cancer mutation (e.g., R175H)\")\n    parser.add_argument(\"--rescue\", type=str, nargs='+', required=True,\n                       help=\"Rescue mutations (e.g., N268D T125R)\")",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "CODON_TABLE",
+        "kind": 5,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "CODON_TABLE = {\n    'A': ['GCT', 'GCC', 'GCA', 'GCG'],\n    'C': ['TGT', 'TGC'],\n    'D': ['GAT', 'GAC'],\n    'E': ['GAA', 'GAG'],\n    'F': ['TTT', 'TTC'],\n    'G': ['GGT', 'GGC', 'GGA', 'GGG'],\n    'H': ['CAT', 'CAC'],\n    'I': ['ATT', 'ATC', 'ATA'],\n    'K': ['AAA', 'AAG'],",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "ECOLI_PREFERRED_CODONS",
+        "kind": 5,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "ECOLI_PREFERRED_CODONS = {\n    'A': 'GCG', 'C': 'TGC', 'D': 'GAT', 'E': 'GAA', 'F': 'TTC',\n    'G': 'GGC', 'H': 'CAT', 'I': 'ATC', 'K': 'AAA', 'L': 'CTG',\n    'M': 'ATG', 'N': 'AAC', 'P': 'CCG', 'Q': 'CAG', 'R': 'CGT',\n    'S': 'AGC', 'T': 'ACC', 'V': 'GTG', 'W': 'TGG', 'Y': 'TAC',\n}\n# Preferred codons for human expression\nHUMAN_PREFERRED_CODONS = {\n    'A': 'GCC', 'C': 'TGC', 'D': 'GAC', 'E': 'GAG', 'F': 'TTC',\n    'G': 'GGC', 'H': 'CAC', 'I': 'ATC', 'K': 'AAG', 'L': 'CTG',",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "HUMAN_PREFERRED_CODONS",
+        "kind": 5,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "HUMAN_PREFERRED_CODONS = {\n    'A': 'GCC', 'C': 'TGC', 'D': 'GAC', 'E': 'GAG', 'F': 'TTC',\n    'G': 'GGC', 'H': 'CAC', 'I': 'ATC', 'K': 'AAG', 'L': 'CTG',\n    'M': 'ATG', 'N': 'AAC', 'P': 'CCC', 'Q': 'CAG', 'R': 'CGG',\n    'S': 'AGC', 'T': 'ACC', 'V': 'GTG', 'W': 'TGG', 'Y': 'TAC',\n}\n# ============================================================================\n# UTILITY FUNCTIONS\n# ============================================================================\ndef protein_to_dna(protein_seq: str, organism: str = \"human\") -> str:",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
         "label": "SaliencyMap",
         "kind": 6,
         "importPath": "p53cad.engine.explain",
         "description": "p53cad.engine.explain",
         "peekOfCode": "class SaliencyMap:\n    def __init__(self, oracle: FunctionalOracle, embedder: ManifoldEmbedder):\n        self.oracle = oracle\n        self.embedder = embedder\n        self.device = oracle.device\n    def attribute_residues(self, sequence: str) -> np.ndarray:\n        \"\"\"\n        Calculate importance score using Residue Occlusion.\n        Impact = |Score(Original) - Score(Occluded)|\n        \"\"\"",
         "detail": "p53cad.engine.explain",
+        "documentation": {}
+    },
+    {
+        "label": "ResidueAttribution",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class ResidueAttribution:\n    \"\"\"Attribution score for a single residue.\"\"\"\n    position: int\n    residue: str\n    attention_score: float  # 0-1, how much model attends to this position\n    gradient_score: float   # magnitude of gradient w.r.t. this position\n    occlusion_score: float  # impact when masked\n    integrated_gradient: float  # integrated gradients attribution\n    composite_importance: float  # weighted combination\n    # Interpretation",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "CounterfactualResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class CounterfactualResult:\n    \"\"\"Result of counterfactual analysis.\"\"\"\n    original_mutation: str\n    alternative_mutation: str\n    original_score: float\n    alternative_score: float\n    delta_score: float\n    explanation: str\n    confidence: float\n    structural_impact: Dict[str, float]",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "EnergyDecomposition",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class EnergyDecomposition:\n    \"\"\"Breakdown of energy contributions to rescue.\"\"\"\n    total_ddg: float  # Total ΔΔG\n    # Component contributions\n    electrostatic: float\n    van_der_waals: float\n    hydrogen_bonds: float\n    solvation: float\n    entropy: float\n    # Structural contributions",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "RescueMechanism",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class RescueMechanism:\n    \"\"\"Classification of rescue mechanism.\"\"\"\n    primary_mechanism: str  # \"stability_restoration\", \"binding_enhancement\", \"allosteric\", \"compensatory\"\n    secondary_mechanism: Optional[str]\n    confidence: float\n    evidence: List[str]\n    # Detailed breakdown\n    stability_contribution: float  # -1 to 1\n    binding_contribution: float\n    structural_contribution: float",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "AttentionExtractor",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class AttentionExtractor:\n    \"\"\"Extract and analyze attention patterns from ESM-2.\"\"\"\n    def __init__(self, model=None, tokenizer=None):\n        self.model = model\n        self.tokenizer = tokenizer\n        self._attention_cache = {}\n    def extract_attention(self, sequence: str, layer: int = -1) -> np.ndarray:\n        \"\"\"\n        Extract attention weights from ESM-2 for a sequence.\n        Args:",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "GradientAttributor",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class GradientAttributor:\n    \"\"\"Gradient-based attribution methods.\"\"\"\n    def __init__(self, model=None, oracle=None):\n        self.model = model\n        self.oracle = oracle\n    def compute_gradients(self, embedding: np.ndarray,\n                         target_fn: callable) -> np.ndarray:\n        \"\"\"\n        Compute gradients of target function w.r.t. embedding.\n        Args:",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "OcclusionAttributor",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class OcclusionAttributor:\n    \"\"\"Occlusion-based attribution (mask and measure impact).\"\"\"\n    def __init__(self, oracle=None, embedder=None):\n        self.oracle = oracle\n        self.embedder = embedder\n    def compute_occlusion_importance(self, sequence: str,\n                                     base_score: float = None) -> Dict[int, float]:\n        \"\"\"\n        Compute importance by masking each position and measuring score change.\n        Returns:",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "CounterfactualAnalyzer",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class CounterfactualAnalyzer:\n    \"\"\"Analyze what would happen with alternative mutations.\"\"\"\n    def __init__(self, oracle=None, embedder=None):\n        self.oracle = oracle\n        self.embedder = embedder\n        self.amino_acids = list(\"ACDEFGHIKLMNPQRSTVWY\")\n    def analyze_counterfactual(self, wt_sequence: str,\n                              rescue_mutation: str,\n                              n_alternatives: int = 5) -> List[CounterfactualResult]:\n        \"\"\"",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "EnergyDecomposer",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class EnergyDecomposer:\n    \"\"\"Decompose rescue energy into physical components.\"\"\"\n    def __init__(self):\n        # Reference energy values (from literature, kcal/mol)\n        self.reference_energies = {\n            'hydrogen_bond': -2.0,\n            'salt_bridge': -3.0,\n            'hydrophobic_contact': -0.5,\n            'aromatic_stacking': -1.0,\n            'cavity_penalty': 2.0,",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "RescueMechanismClassifier",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class RescueMechanismClassifier:\n    \"\"\"Classify the mechanism by which a rescue works.\"\"\"\n    def __init__(self):\n        self.energy_decomposer = EnergyDecomposer()\n    def classify(self, wt_sequence: str, mutant_sequence: str,\n                rescue_sequence: str, cancer_mutation: str,\n                rescue_mutations: List[str]) -> RescueMechanism:\n        \"\"\"\n        Classify the rescue mechanism.\n        Returns:",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "ExplainabilityEngine",
+        "kind": 6,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "class ExplainabilityEngine:\n    \"\"\"\n    Main engine for generating explanations of rescue mutations.\n    Combines attention, gradients, counterfactuals, and energy decomposition.\n    \"\"\"\n    def __init__(self, model=None, tokenizer=None, oracle=None, embedder=None):\n        self.attention_extractor = AttentionExtractor(model, tokenizer)\n        self.gradient_attributor = GradientAttributor(model, oracle)\n        self.occlusion_attributor = OcclusionAttributor(oracle, embedder)\n        self.counterfactual_analyzer = CounterfactualAnalyzer(oracle, embedder)",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for explainability.\"\"\"\n    import argparse\n    import json\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD Explainability\")\n    parser.add_argument(\"--cancer\", type=str, required=True,\n                       help=\"Cancer mutation (e.g., R175H)\")\n    parser.add_argument(\"--rescue\", type=str, nargs='+', required=True,\n                       help=\"Rescue mutations (e.g., N268D T125R)\")\n    parser.add_argument(\"--output\", type=str, default=\"explanation.json\",",
+        "detail": "p53cad.engine.explainability",
+        "documentation": {}
+    },
+    {
+        "label": "P53_FUNCTIONAL_SITES",
+        "kind": 5,
+        "importPath": "p53cad.engine.explainability",
+        "description": "p53cad.engine.explainability",
+        "peekOfCode": "P53_FUNCTIONAL_SITES = {\n    # DNA binding residues (direct contact)\n    \"DNA_binding_direct\": [119, 120, 241, 243, 244, 245, 248, 273, 276, 277, 280, 281],\n    # DNA binding residues (indirect/structural support)\n    \"DNA_binding_support\": [174, 175, 176, 179, 239, 240, 242, 282, 283, 284],\n    # Zinc coordination site\n    \"zinc_coordination\": [176, 179, 238, 242],\n    # L1 loop (DNA minor groove contact)\n    \"L1_loop\": list(range(113, 125)),\n    # L2 loop (structural/DNA contact)",
+        "detail": "p53cad.engine.explainability",
         "documentation": {}
     },
     {
@@ -12857,6 +13802,402 @@
         "description": "p53cad.engine.latent",
         "peekOfCode": "class ManifoldWalker:\n    \"\"\"\n    Performs vector arithmetic and interpolation in the latent space.\n    \"\"\"\n    def __init__(self, embedder: ManifoldEmbedder):\n        self.embedder = embedder\n        self.logger = get_logger(__name__)\n    def interpolate(self, seq_start: str, seq_end: str, steps: int = 10) -> List[str]:\n        \"\"\"\n        Linearly interpolates between two sequences in latent space.",
         "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "MDSimulationConfig",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class MDSimulationConfig:\n    \"\"\"Configuration for MD simulation.\"\"\"\n    name: str\n    sequence: str\n    mutations: List[str]\n    # Simulation parameters\n    force_field: str = \"amber14-all\"\n    water_model: str = \"tip3p\"\n    temperature: float = 310.0  # K (body temperature)\n    pressure: float = 1.0  # bar",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "StructurePrediction",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class StructurePrediction:\n    \"\"\"Structure prediction from a model.\"\"\"\n    model: str  # \"ESMFold\", \"AlphaFold2\", \"AlphaFold3\"\n    sequence: str\n    pdb_string: str\n    plddt_scores: List[float]  # Per-residue confidence\n    mean_plddt: float\n    ptm_score: Optional[float] = None  # Predicted TM-score\n    predicted_aligned_error: Optional[np.ndarray] = None\n@dataclass",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "StabilityAnalysis",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class StabilityAnalysis:\n    \"\"\"Stability analysis from MD trajectory.\"\"\"\n    rmsd_mean: float  # Mean RMSD from starting structure (nm)\n    rmsd_std: float\n    rmsf_per_residue: List[float]  # Per-residue fluctuation\n    radius_of_gyration: float\n    secondary_structure_content: Dict[str, float]  # helix, sheet, coil %\n    hydrogen_bonds: int  # Average number\n    salt_bridges: int\n    hydrophobic_contacts: int",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "FreeEnergyResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class FreeEnergyResult:\n    \"\"\"Free energy perturbation result.\"\"\"\n    mutation: str\n    ddg_forward: float  # kcal/mol\n    ddg_backward: float\n    ddg_average: float\n    uncertainty: float\n    convergence_score: float  # 0-1\n@dataclass\nclass MDValidationReport:",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDValidationReport",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class MDValidationReport:\n    \"\"\"Complete MD validation report.\"\"\"\n    name: str\n    sequence: str\n    mutations: List[str]\n    # Structure predictions\n    predictions: Dict[str, StructurePrediction]\n    structure_agreement: float  # Between models\n    # MD analysis\n    stability: Optional[StabilityAnalysis]",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "StructurePredictor",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class StructurePredictor:\n    \"\"\"Interface to structure prediction services.\"\"\"\n    def __init__(self):\n        self.esmfold_url = \"https://api.esmatlas.com/foldSequence/v1/pdb/\"\n    def predict_esmfold(self, sequence: str, name: str = \"protein\") -> StructurePrediction:\n        \"\"\"\n        Predict structure using ESMFold API.\n        Note: This is a real API call when network is available.\n        \"\"\"\n        try:",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDSimulationGenerator",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class MDSimulationGenerator:\n    \"\"\"Generate MD simulation configurations and scripts.\"\"\"\n    def __init__(self):\n        self.templates = {\n            \"openmm\": self._generate_openmm_script,\n            \"gromacs\": self._generate_gromacs_script,\n            \"amber\": self._generate_amber_script,\n        }\n    def generate_config(self, name: str, sequence: str,\n                       mutations: List[str],",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "StabilityAnalyzer",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class StabilityAnalyzer:\n    \"\"\"Analyze MD trajectory for stability metrics.\"\"\"\n    def analyze_trajectory(self, trajectory_path: str,\n                          topology_path: str) -> StabilityAnalysis:\n        \"\"\"\n        Analyze MD trajectory for stability.\n        Note: Requires mdtraj for actual analysis.\n        \"\"\"\n        try:\n            import mdtraj as md",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "FreeEnergyCalculator",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class FreeEnergyCalculator:\n    \"\"\"Calculate free energy perturbation for mutations.\"\"\"\n    def calculate_ddg(self, wt_sequence: str, mut_sequence: str,\n                     mutation: str) -> FreeEnergyResult:\n        \"\"\"\n        Calculate ΔΔG using FEP (placeholder).\n        In production, would run actual FEP simulations.\n        \"\"\"\n        # This is a placeholder - real FEP requires:\n        # 1. Alchemical transformation setup",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "FoldingAtHomeInterface",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class FoldingAtHomeInterface:\n    \"\"\"Interface for Folding@Home distributed computing.\"\"\"\n    def __init__(self):\n        self.base_url = \"https://api.foldingathome.org\"\n    def prepare_work_unit(self, config: MDSimulationConfig,\n                         pdb_string: str) -> Dict:\n        \"\"\"\n        Prepare work unit for Folding@Home submission.\n        Note: F@H submission requires partnership agreement.\n        This generates the necessary files for submission.",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDValidationEngine",
+        "kind": 6,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "class MDValidationEngine:\n    \"\"\"\n    Main engine for MD validation of rescue designs.\n    \"\"\"\n    def __init__(self):\n        self.structure_predictor = StructurePredictor()\n        self.md_generator = MDSimulationGenerator()\n        self.stability_analyzer = StabilityAnalyzer()\n        self.fe_calculator = FreeEnergyCalculator()\n        self.fah_interface = FoldingAtHomeInterface()",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for MD validation.\"\"\"\n    import argparse\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD MD Validation\")\n    parser.add_argument(\"--name\", type=str, required=True, help=\"Design name\")\n    parser.add_argument(\"--mutations\", type=str, nargs='+', required=True,\n                       help=\"Rescue mutations\")\n    parser.add_argument(\"--output\", type=str, default=\"./md_validation\",\n                       help=\"Output directory\")\n    parser.add_argument(\"--run-md\", action=\"store_true\",",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCE",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "SEQUENCE = \"\"\"{config.sequence}\"\"\"\nNAME = \"{config.name}\"\nMUTATIONS = {config.mutations}\n# Simulation parameters\nTEMPERATURE = {config.temperature} * kelvin\nPRESSURE = {config.pressure} * bar\nTIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "NAME",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "NAME = \"{config.name}\"\nMUTATIONS = {config.mutations}\n# Simulation parameters\nTEMPERATURE = {config.temperature} * kelvin\nPRESSURE = {config.pressure} * bar\nTIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MUTATIONS",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "MUTATIONS = {config.mutations}\n# Simulation parameters\nTEMPERATURE = {config.temperature} * kelvin\nPRESSURE = {config.pressure} * bar\nTIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TEMPERATURE",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "TEMPERATURE = {config.temperature} * kelvin\nPRESSURE = {config.pressure} * bar\nTIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PRESSURE",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "PRESSURE = {config.pressure} * bar\nTIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")\nprint(f\"Sequence length: {{len(SEQUENCE)}} residues\")",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TIMESTEP",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "TIMESTEP = {config.timestep} * picoseconds\nEQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")\nprint(f\"Sequence length: {{len(SEQUENCE)}} residues\")\nprint(f\"Mutations: {{MUTATIONS}}\")",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "EQUILIBRATION_STEPS",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "EQUILIBRATION_STEPS = {config.equilibration_steps}\nPRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")\nprint(f\"Sequence length: {{len(SEQUENCE)}} residues\")\nprint(f\"Mutations: {{MUTATIONS}}\")\n# Load structure (from ESMFold prediction or PDB)",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_STEPS",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "PRODUCTION_STEPS = {config.production_steps}\nOUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")\nprint(f\"Sequence length: {{len(SEQUENCE)}} residues\")\nprint(f\"Mutations: {{MUTATIONS}}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "OUTPUT_INTERVAL",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "OUTPUT_INTERVAL = {config.output_interval}\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {{NAME}}\")\nprint(f\"Sequence length: {{len(SEQUENCE)}} residues\")\nprint(f\"Mutations: {{MUTATIONS}}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:\n# pdb = PDBFile('input.pdb')",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "forcefield",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "forcefield = ForceField('{config.force_field}.xml', '{config.water_model}.xml')\n# Create modeller for solvation\nmodeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='{config.water_model}',",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "modeller",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "modeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='{config.water_model}',\n    padding={config.box_padding}*nanometers,\n    ionicStrength={config.salt_concentration}*molar",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "system",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "system = forcefield.createSystem(\n    modeller.topology,\n    nonbondedMethod=PME,\n    nonbondedCutoff=1.0*nanometers,\n    constraints=HBonds\n)\n# Add barostat for NPT\nsystem.addForce(MonteCarloBarostat(PRESSURE, TEMPERATURE))\n# Integrator\nintegrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "integrator",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "integrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)\n# Platform selection\nplatform_name = \"{config.platform}\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "platform_name",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "platform_name = \"{config.platform}\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:\n            platform = Platform.getPlatformByName('CPU')\nelse:",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "simulation",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "simulation = Simulation(modeller.topology, system, integrator, platform)\nsimulation.context.setPositions(modeller.positions)\n# ============================================================================\n# MINIMIZATION\n# ============================================================================\nprint(\"Minimizing energy...\")\nsimulation.minimizeEnergy(maxIterations=1000)\n# ============================================================================\n# EQUILIBRATION\n# ============================================================================",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "traj",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "traj = md.load(f'{{NAME}}_trajectory.dcd', top=f'{{NAME}}.pdb')\n# RMSD\nrmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {{rmsd.mean()*10:.2f}} ± {{rmsd.std()*10:.2f}} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {{rmsf.mean()*10:.2f}} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {{rg.mean()*10:.2f}} ± {{rg.std()*10:.2f}} Å\")",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "rmsd",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "rmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {{rmsd.mean()*10:.2f}} ± {{rmsd.std()*10:.2f}} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {{rmsf.mean()*10:.2f}} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {{rg.mean()*10:.2f}} ± {{rg.std()*10:.2f}} Å\")\n# Save analysis\nanalysis = {{",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "rmsf",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "rmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {{rmsf.mean()*10:.2f}} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {{rg.mean()*10:.2f}} ± {{rg.std()*10:.2f}} Å\")\n# Save analysis\nanalysis = {{\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "rg",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "rg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {{rg.mean()*10:.2f}} ± {{rg.std()*10:.2f}} Å\")\n# Save analysis\nanalysis = {{\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "analysis",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "analysis = {{\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),\n    \"rg_std\": float(rg.std()),\n    \"n_frames\": len(traj),\n    \"simulation_time_ns\": len(traj) * TIMESTEP.value_in_unit(picoseconds) * OUTPUT_INTERVAL / 1000",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "mol",
+        "kind": 5,
+        "importPath": "p53cad.engine.md_validation",
+        "description": "p53cad.engine.md_validation",
+        "peekOfCode": "mol = loadpdb ${{NAME}}.pdb\nsolvatebox mol TIP3PBOX {config.box_padding * 10}\naddions mol Na+ 0\naddions mol Cl- 0\nsaveamberparm mol ${{NAME}}.prmtop ${{NAME}}.inpcrd\nquit\nEOF\ntleap -f tleap.in\n# 2. Minimization\ncat << EOF > min.in",
+        "detail": "p53cad.engine.md_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TumorSuppressorProfile",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class TumorSuppressorProfile:\n    \"\"\"Profile of a tumor suppressor gene.\"\"\"\n    gene: str\n    name: str\n    length: int\n    domains: Dict[str, Tuple[int, int]]\n    hotspots: List[int]\n    cancer_frequency: int\n    sequence: str\n    known_rescues: Dict[str, List[str]]",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "UniversalRescue",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class UniversalRescue:\n    \"\"\"A rescue mutation that works across multiple variants.\"\"\"\n    position: int\n    original_aa: str\n    rescue_aa: str\n    rescued_variants: List[str]\n    rescue_efficiency: Dict[str, float]  # variant -> efficiency score\n    mechanism: str\n    universality_score: float  # 0-1, how broadly applicable\n@dataclass",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "TransferLearningResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class TransferLearningResult:\n    \"\"\"Results from transfer learning analysis.\"\"\"\n    source_protein: str\n    target_protein: str\n    embedding_correlation: float\n    attention_pattern_similarity: float\n    rescue_prediction_accuracy: float\n    transferable_features: List[str]\n    recommendations: List[str]\n@dataclass",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "MultiTargetDesign",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class MultiTargetDesign:\n    \"\"\"Design that targets multiple tumor suppressors.\"\"\"\n    name: str\n    targets: List[str]  # Gene names\n    mutations_per_target: Dict[str, List[str]]\n    combined_patient_impact: int\n    development_complexity: str\n    synergy_score: float\n# ============================================================================\n# UNIVERSAL RESCUE FINDER",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "UniversalRescueFinder",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class UniversalRescueFinder:\n    \"\"\"Find rescue mutations that work across multiple p53 variants.\"\"\"\n    def __init__(self):\n        self.p53_sequence = SEQUENCES.get(\"TP53\", \"\")\n        self.known_rescues = TUMOR_SUPPRESSORS[\"TP53\"][\"known_rescues\"]\n    def find_universal_rescues(self, cancer_mutations: List[str],\n                               min_coverage: float = 0.5) -> List[UniversalRescue]:\n        \"\"\"\n        Find positions where a single mutation rescues multiple cancer variants.\n        Args:",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "MultiTargetDesignEngine",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class MultiTargetDesignEngine:\n    \"\"\"Design rescue strategies across multiple tumor suppressors.\"\"\"\n    def __init__(self):\n        self.proteins = TUMOR_SUPPRESSORS\n        self.sequences = SEQUENCES\n    def get_protein_profile(self, gene: str) -> Optional[TumorSuppressorProfile]:\n        \"\"\"Get profile for a tumor suppressor.\"\"\"\n        if gene not in self.proteins:\n            return None\n        info = self.proteins[gene]",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "TransferLearningAnalyzer",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class TransferLearningAnalyzer:\n    \"\"\"Analyze transfer learning potential between proteins.\"\"\"\n    def __init__(self):\n        self.engine = MultiTargetDesignEngine()\n    def analyze_transfer(self, source: str, target: str) -> TransferLearningResult:\n        \"\"\"\n        Analyze how well rescue strategies transfer between proteins.\n        \"\"\"\n        comparison = self.engine.compare_proteins(source, target)\n        # Embedding correlation (placeholder - would need actual embeddings)",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "MultiTargetPlatform",
+        "kind": 6,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "class MultiTargetPlatform:\n    \"\"\"\n    Main platform for multi-target generalization.\n    \"\"\"\n    def __init__(self):\n        self.universal_finder = UniversalRescueFinder()\n        self.design_engine = MultiTargetDesignEngine()\n        self.transfer_analyzer = TransferLearningAnalyzer()\n    def get_available_targets(self) -> List[Dict]:\n        \"\"\"Get list of available tumor suppressor targets.\"\"\"",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "def main():\n    \"\"\"Command-line interface for multi-target platform.\"\"\"\n    import argparse\n    parser = argparse.ArgumentParser(description=\"p53-proteoMgCAD Multi-Target Platform\")\n    parser.add_argument(\"--analyze\", type=str, help=\"Analyze a specific tumor suppressor\")\n    parser.add_argument(\"--compare\", type=str, nargs=2, help=\"Compare two proteins\")\n    parser.add_argument(\"--universal\", action=\"store_true\", help=\"Find universal p53 rescues\")\n    parser.add_argument(\"--report\", type=str, help=\"Generate full report to file\")\n    args = parser.parse_args()\n    platform = MultiTargetPlatform()",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "TUMOR_SUPPRESSORS",
+        "kind": 5,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "TUMOR_SUPPRESSORS = {\n    \"TP53\": {\n        \"name\": \"Tumor Protein p53\",\n        \"uniprot\": \"P04637\",\n        \"length\": 393,\n        \"domains\": {\n            \"TAD1\": (1, 40),      # Transactivation domain 1\n            \"TAD2\": (40, 60),     # Transactivation domain 2\n            \"PRD\": (60, 92),      # Proline-rich domain\n            \"DBD\": (102, 292),    # DNA-binding domain",
+        "detail": "p53cad.engine.multi_target",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCES",
+        "kind": 5,
+        "importPath": "p53cad.engine.multi_target",
+        "description": "p53cad.engine.multi_target",
+        "peekOfCode": "SEQUENCES = {\n    \"TP53\": \"MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD\",\n    \"PTEN\": \"MTAIIKEIVSRNKRRYQEDGFDLDLTYIYPNIIAMGFPAERLEGVYRNNIDDVVRFLDSKHKNHYKIYNLCAERHYDTAKFNCRVAQYPFEDHNPPQLELIKPFCEDLDQWLSEDDNHVAAIHCKAGKGRTGVMICAYLLHRGKFLKAQEALDFYGEVRTRDKKGVTIPSQRRYVYYYSYLLKNHLDYRPVALLFHKMMFETIPMFSGGTCNPQFVVCQLKVKIYSSNSGPTRREDKFMYFEFPQPLPVCGDIKVEFFHKQNKMLKKDKMFHFWVNTFFIPGPEETSEKVENGSLCDQEIDSICSIERADNDKEYLVLTLTKNDLDKANKDKANRYFSPNFKVKLYFTKTVEEPSNPEASSSTSVTPDVSDNEPDHYRYSDTTDSDPENEPFDEDQHTQITKV\",\n    \"VHL\": \"MPRRAENWDEAEVGAEEAGVEEYGPEEDGGEESGAEESGPEESGPEELGAEEEMEAGRPRPVLRSVNSREPSQVIFCNRSPRPVVLPVWLNFDGEPQPYPTLPPGTGRRIHSYRGHLWLFRDAGTHDGLLVNQTELFVPSLNVDGQPIFANITLPVYTLKERCLQVVRSLVKPENYRRLDIVRSLYEDLEDHPNVQKDLERLTQERIAHQRMGD\",\n}\n# ============================================================================\n# DATA CLASSES\n# ============================================================================\n@dataclass\nclass TumorSuppressorProfile:",
+        "detail": "p53cad.engine.multi_target",
         "documentation": {}
     },
     {
