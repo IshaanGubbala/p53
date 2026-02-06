@@ -4,33 +4,111 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from pathlib import Path
 import torch
 import torch.nn.functional as F
 import requests
 import time
 import json
+import logging
+from typing import Any, Dict, Optional
 
 import importlib
 from p53cad.engine.latent import ManifoldEmbedder, ManifoldWalker
 from p53cad.engine.oracle import FunctionalOracle
 from p53cad.engine.explain import SaliencyMap
 from p53cad.analysis.grassmann import GrassmannMetric
-from p53cad.data.dms import P53_WT, apply_mutation
+from p53cad.data import dms as dms_module
 from p53cad.viz.pymol import PyMolGenerator
 
-# New Enhancement Modules
+# DMS core helpers (required)
+P53_WT = dms_module.P53_WT
+apply_mutation = dms_module.apply_mutation
+get_dms_data = dms_module.get_dms_data
+parse_single_mutation = dms_module.parse_single_mutation
+
+# DMS optional helpers (guarded)
+physics_based_score_fn = getattr(dms_module, "physics_based_score", None)
+get_coverage_report_fn = getattr(dms_module, "get_coverage_report", None)
+
+logger = logging.getLogger(__name__)
+if not callable(physics_based_score_fn):
+    available_exports = sorted(name for name in dir(dms_module) if not name.startswith("_"))
+    logger.warning(
+        "Optional DMS helper 'physics_based_score' unavailable in module %s. "
+        "Validation will run in DMS-only fail-closed mode. "
+        "Available exports: %s",
+        getattr(dms_module, "__file__", "unknown"),
+        ", ".join(available_exports),
+    )
+
+# Optional enhancement modules loaded independently so one failure
+# does not disable every analysis section.
+MODULE_IMPORT_ERRORS = {}
+
+DrugGeneratorEngine = None
+P53_BINDING_POCKETS = {}
+ExplainabilityEngine = None
+P53_FUNCTIONAL_SITES = {}
+ExperimentalPipeline = None
+ClinicalImpactEngine = None
+PatientStratifier = None
+MultiTargetPlatform = None
+TUMOR_SUPPRESSORS = {}
+MDValidationEngine = None
+ExplainabilityDependencyError = RuntimeError
+
 try:
     from p53cad.engine.drug_generator import DrugGeneratorEngine, P53_BINDING_POCKETS
-    from p53cad.engine.explainability import ExplainabilityEngine, P53_FUNCTIONAL_SITES
-    from p53cad.engine.experimental import ExperimentalPipeline
+except Exception as e:
+    MODULE_IMPORT_ERRORS["drug"] = str(e)
+
+try:
+    from p53cad.engine.explainability import (
+        ExplainabilityDependencyError,
+        ExplainabilityEngine,
+        P53_FUNCTIONAL_SITES,
+    )
+except Exception as e:
+    MODULE_IMPORT_ERRORS["explainability"] = str(e)
+
+try:
     from p53cad.analysis.clinical_impact import ClinicalImpactEngine, PatientStratifier
+except Exception as e:
+    MODULE_IMPORT_ERRORS["clinical"] = str(e)
+
+try:
+    from p53cad.engine.experimental import ExperimentalPipeline
+except Exception as e:
+    MODULE_IMPORT_ERRORS["experimental"] = str(e)
+
+try:
     from p53cad.engine.multi_target import MultiTargetPlatform, TUMOR_SUPPRESSORS
+except Exception as e:
+    MODULE_IMPORT_ERRORS["multi_target"] = str(e)
+
+try:
     from p53cad.engine.md_validation import MDValidationEngine
-    ENHANCED_MODULES_AVAILABLE = True
-except ImportError as e:
-    ENHANCED_MODULES_AVAILABLE = False
-    print(f"Enhanced modules not fully loaded: {e}")
+except Exception as e:
+    MODULE_IMPORT_ERRORS["md_validation"] = str(e)
+
+DRUG_MODULE_AVAILABLE = DrugGeneratorEngine is not None and bool(P53_BINDING_POCKETS)
+EXPLAINABILITY_MODULE_AVAILABLE = ExplainabilityEngine is not None
+CLINICAL_MODULE_AVAILABLE = ClinicalImpactEngine is not None
+ENHANCED_MODULES_AVAILABLE = any(
+    [
+        DRUG_MODULE_AVAILABLE,
+        EXPLAINABILITY_MODULE_AVAILABLE,
+        CLINICAL_MODULE_AVAILABLE,
+        ExperimentalPipeline is not None,
+        MultiTargetPlatform is not None,
+        MDValidationEngine is not None,
+    ]
+)
+
+if MODULE_IMPORT_ERRORS:
+    print(f"Optional module import issues: {MODULE_IMPORT_ERRORS}")
 
 # === LIVE SIMULATION FUNCTIONS ===
 def predict_structure_esmfold(sequence: str) -> str:
@@ -135,6 +213,92 @@ def generate_motion_frames(pdb_string: str, n_frames: int = 20) -> list:
 
     return frames
 
+
+def get_optimization_stage(step: float, total_steps: int) -> dict:
+    """Return stage metadata for the live optimization timeline."""
+    progress = float(step) / max(float(total_steps), 1.0)
+    if progress < 0.25:
+        return {
+            "name": "Stage 1: Exploration",
+            "description": "Sampling broad structural alternatives.",
+            "color": "#0EA5E9",
+        }
+    if progress < 0.55:
+        return {
+            "name": "Stage 2: Growth",
+            "description": "Amplifying beneficial mutation motifs.",
+            "color": "#2563EB",
+        }
+    if progress < 0.82:
+        return {
+            "name": "Stage 3: Refinement",
+            "description": "Pruning unstable and low-signal changes.",
+            "color": "#10B981",
+        }
+    return {
+        "name": "Stage 4: Convergence",
+        "description": "Locking in the final rescue architecture.",
+        "color": "#F59E0B",
+    }
+
+
+def build_morph_keyframes(
+    pdb_string: str,
+    mutation_positions: list,
+    start_step: float,
+    end_step: float,
+    total_steps: int,
+    n_frames: int = 12,
+) -> list:
+    """Interpolate several morph frames so the live viewer transitions smoothly."""
+    if not pdb_string:
+        return []
+
+    if start_step > end_step:
+        start_step, end_step = end_step, start_step
+
+    if n_frames < 2:
+        n_frames = 2
+
+    if not mutation_positions:
+        return [pdb_string]
+
+    frames = []
+    step_delta = end_step - start_step
+    denom = max(n_frames - 1, 1)
+    for frame_idx in range(n_frames):
+        interp_step = start_step + step_delta * (frame_idx / denom)
+        frames.append(
+            morph_pdb_for_mutations(
+                pdb_string,
+                mutation_positions=mutation_positions,
+                step=interp_step,
+                total_steps=total_steps,
+            )
+        )
+    return frames
+
+
+def compute_camera_focus_positions(
+    current_positions: list,
+    previous_positions: Optional[list] = None,
+    max_points: int = 8,
+) -> list:
+    """Prioritize newly changing residues for live camera focus."""
+    current = sorted({int(p) for p in current_positions if p})
+    if not current:
+        return []
+
+    previous = sorted({int(p) for p in (previous_positions or []) if p})
+    current_set = set(current)
+    previous_set = set(previous)
+
+    # Focus first on residues that changed since the last viewer refresh.
+    changed = sorted((current_set - previous_set) | (previous_set - current_set))
+    if changed:
+        return changed[:max_points]
+    return current[:max_points]
+
 # --- PAGE CONFIG ---
 st.set_page_config(
     page_title="p53-proteoMgCAD",
@@ -148,76 +312,124 @@ st.set_page_config(
 # ============================================================================
 st.markdown("""
 <style>
-    /* Import Google Font */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
 
     :root {
-        --bg-base: #ECF2FA;
-        --bg-tint-1: #D6E7FF;
-        --bg-tint-2: #D1FAE5;
-        --bg-tint-3: #E0F2FE;
-        --surface: #F8FBFF;
-        --surface-muted: #EEF4FF;
-        --surface-strong: #E6F0FF;
-        --border-soft: #D5E1F3;
+        --bg-base: #EEF4FA;
+        --bg-tint-1: #D8E7FF;
+        --bg-tint-2: #D2F5EA;
+        --bg-tint-3: #DDF1FF;
+        --surface: #F9FCFF;
+        --surface-muted: #EEF5FF;
+        --surface-strong: #E5F0FF;
+        --border-soft: #CEDDF2;
+        --border-strong: #9EB8E0;
+        --text-main: #0F213F;
+        --text-muted: #4A5D7C;
         --accent: #2563EB;
-        --accent-strong: #1D4ED8;
+        --accent-strong: #1E40AF;
         --accent-soft: #DBEAFE;
-        --accent-2: #0EA5E9;
-        --accent-2-soft: #CFFAFE;
-        --accent-dark: #0B1B3B;
+        --accent-2: #0891B2;
+        --accent-3: #0F766E;
+        --accent-dark: #0A1736;
     }
 
-    /* ===== GLOBAL RESET & BASE ===== */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-        background: radial-gradient(1200px 700px at 8% -10%, var(--bg-tint-1), transparent 62%),
-                    radial-gradient(900px 600px at 92% -20%, var(--bg-tint-2), transparent 58%),
-                    radial-gradient(700px 520px at 50% 0%, var(--bg-tint-3), transparent 60%),
-                    var(--bg-base) !important;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        background:
+            radial-gradient(1000px 620px at 12% -10%, var(--bg-tint-1), transparent 65%),
+            radial-gradient(860px 620px at 90% -20%, var(--bg-tint-2), transparent 63%),
+            radial-gradient(640px 460px at 48% 2%, var(--bg-tint-3), transparent 62%),
+            linear-gradient(180deg, #F5F9FF 0%, var(--bg-base) 100%) !important;
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        color: var(--text-main) !important;
+    }
+
+    [data-testid="stAppViewContainer"] {
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    [data-testid="stAppViewContainer"]::before {
+        content: "";
+        position: fixed;
+        right: -180px;
+        top: 14vh;
+        width: 420px;
+        height: 420px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(56, 189, 248, 0.22), rgba(56, 189, 248, 0.0) 68%);
+        pointer-events: none;
+        filter: blur(1px);
+        animation: floatOrb 9s ease-in-out infinite;
+        z-index: 0;
+    }
+
+    [data-testid="stAppViewContainer"]::after {
+        content: "";
+        position: fixed;
+        left: -180px;
+        bottom: 5vh;
+        width: 360px;
+        height: 360px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.0) 70%);
+        pointer-events: none;
+        animation: floatOrb 11s ease-in-out infinite reverse;
+        z-index: 0;
+    }
+
+    @keyframes floatOrb {
+        0% { transform: translateY(0px) translateX(0px); }
+        50% { transform: translateY(-16px) translateX(10px); }
+        100% { transform: translateY(0px) translateX(0px); }
+    }
+
+    @keyframes fadeLift {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .main .block-container {
-        max-width: 1200px !important;
-        padding: 2rem 2.5rem 3rem 2.5rem !important;
+        max-width: 1320px !important;
+        padding: 2.05rem 2.7rem 3.25rem 2.7rem !important;
+        position: relative;
+        z-index: 1;
+        animation: fadeLift 0.45s ease-out both;
     }
 
-    /* Hide Streamlit chrome */
     #MainMenu, footer, header, .stDeployButton {display: none !important; visibility: hidden !important;}
 
-    /* ===== TYPOGRAPHY (Larger for readability) ===== */
     html, body {
-        font-size: 17px !important;
+        font-size: 18px !important;
     }
 
     h1, h2, h3, h4, h5, h6, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        font-family: 'Inter', sans-serif !important;
-        color: #0F172A !important;
-        font-weight: 600 !important;
-        letter-spacing: -0.025em !important;
+        font-family: 'Sora', sans-serif !important;
+        color: var(--text-main) !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
     }
 
-    h1, .stMarkdown h1 { font-size: 2.5rem !important; font-weight: 700 !important; }
-    h2, .stMarkdown h2 { font-size: 1.85rem !important; }
-    h3, .stMarkdown h3 { font-size: 1.4rem !important; }
-    h4, .stMarkdown h4 { font-size: 1.2rem !important; }
+    h1, .stMarkdown h1 { font-size: 2.74rem !important; }
+    h2, .stMarkdown h2 { font-size: 1.96rem !important; }
+    h3, .stMarkdown h3 { font-size: 1.42rem !important; }
+    h4, .stMarkdown h4 { font-size: 1.16rem !important; }
 
     p, span, label, .stMarkdown p, .stMarkdown li {
-        font-family: 'Inter', sans-serif !important;
-        color: #374151 !important;
-        line-height: 1.7 !important;
-        font-size: 1.05rem !important;
+        font-family: 'Manrope', sans-serif !important;
+        color: var(--text-muted) !important;
+        line-height: 1.68 !important;
+        font-size: 1.08rem !important;
     }
 
-    /* ===== HERO HEADER ===== */
     .hero-container {
         text-align: center;
-        padding: 2.5rem 1.5rem 1.75rem 1.5rem;
-        margin-bottom: 1.75rem;
-        background: linear-gradient(135deg, #FFFFFF 0%, #F1F7FF 55%, #E0F2FE 100%);
+        padding: 2.6rem 1.6rem 1.85rem 1.6rem;
+        margin-bottom: 1.9rem;
+        background: linear-gradient(130deg, #FFFFFF 0%, #ECF4FF 52%, #D9EEFF 100%);
         border: 1px solid var(--border-soft);
-        border-radius: 18px;
-        box-shadow: 0 16px 30px rgba(15,23,42,0.10), 0 4px 10px rgba(30,64,175,0.12);
+        border-radius: 20px;
+        box-shadow: 0 20px 42px rgba(17, 47, 106, 0.16), 0 6px 14px rgba(7, 23, 63, 0.08);
         position: relative;
         overflow: hidden;
     }
@@ -227,72 +439,113 @@ st.markdown("""
         position: absolute;
         top: 0;
         left: 0;
-        height: 5px;
+        height: 6px;
         width: 100%;
-        background: linear-gradient(90deg, var(--accent-dark), var(--accent), #38BDF8);
+        background: linear-gradient(90deg, var(--accent-dark), var(--accent), #38BDF8, var(--accent-3));
     }
 
     .hero-container::after {
         content: "";
         position: absolute;
-        right: -40px;
-        top: -60px;
-        width: 220px;
-        height: 220px;
-        background: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.35), transparent 65%);
+        right: -50px;
+        top: -80px;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle at 40% 45%, rgba(34, 211, 238, 0.42), transparent 68%);
         filter: blur(2px);
     }
 
     .hero-badge {
         display: inline-block;
-        background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%);
-        color: #E0F2FE;
-        font-size: 0.85rem;
-        font-weight: 600;
-        padding: 0.4rem 1rem;
-        border-radius: 50px;
+        background: linear-gradient(140deg, var(--accent-dark) 0%, var(--accent) 100%);
+        color: #E7F1FF !important;
+        font-size: 0.79rem !important;
+        font-weight: 700 !important;
+        padding: 0.46rem 1.1rem;
+        border-radius: 999px;
         margin-bottom: 0.75rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        box-shadow: 0 10px 20px rgba(11,27,59,0.25);
+        box-shadow: 0 11px 24px rgba(10, 23, 54, 0.3);
     }
 
     .hero-title {
-        font-family: 'Inter', sans-serif !important;
-        font-size: 2.75rem !important;
-        font-weight: 700 !important;
+        font-family: 'Sora', sans-serif !important;
+        font-size: 3.08rem !important;
+        font-weight: 800 !important;
         color: var(--accent-dark) !important;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.034em;
         margin: 0 0 0.5rem 0 !important;
-        line-height: 1.2;
+        line-height: 1.15;
     }
 
     .hero-subtitle {
-        font-size: 1.2rem;
-        color: #4B5563;
-        max-width: 600px;
+        font-size: 1.14rem !important;
+        color: #324A70 !important;
+        max-width: 780px;
         margin: 0 auto 0.5rem auto;
-        line-height: 1.5;
-        font-weight: 400;
+        line-height: 1.48;
+        font-weight: 600 !important;
     }
 
     .hero-description {
-        font-size: 1rem;
-        color: #6B7280;
-        max-width: 500px;
+        font-size: 1.08rem !important;
+        color: #4F678D !important;
+        max-width: 620px;
         margin: 0 auto;
     }
 
-    /* ===== CARD COMPONENTS ===== */
+    .studio-banner {
+        padding: 1.2rem 1.35rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #F6FBFF 0%, #EBF4FF 60%, #DEF7F2 100%);
+        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.1);
+        margin-bottom: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .studio-banner::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 5px;
+        background: linear-gradient(180deg, var(--accent-dark), var(--accent), var(--accent-2));
+    }
+
+    .studio-kicker {
+        margin: 0 0 0.25rem 0 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem !important;
+        font-weight: 800 !important;
+        color: #315586 !important;
+    }
+
+    .studio-subtitle {
+        margin: 0 !important;
+        color: #406089 !important;
+        font-size: 0.96rem !important;
+    }
+
     .lovable-card {
         background: linear-gradient(180deg, #FFFFFF 0%, var(--surface) 100%);
         border: 1px solid var(--border-soft);
-        border-radius: 14px;
-        padding: 1.25rem;
+        border-radius: 16px;
+        padding: 1.28rem;
         margin-bottom: 1rem;
-        box-shadow: 0 10px 24px rgba(30,64,175,0.08), 0 2px 6px rgba(15,23,42,0.06);
+        box-shadow: 0 12px 28px rgba(28, 66, 133, 0.11), 0 2px 8px rgba(15, 23, 42, 0.06);
         position: relative;
         overflow: hidden;
+        transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .lovable-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 32px rgba(28, 66, 133, 0.15), 0 5px 12px rgba(15, 23, 42, 0.08);
     }
 
     .lovable-card::before {
@@ -306,305 +559,341 @@ st.markdown("""
     }
 
     .lovable-card h2, .lovable-card h3, .lovable-card h4 {
-        color: #0F172A !important;
-        margin: 0 0 0.5rem 0 !important;
-        font-weight: 600 !important;
+        color: var(--text-main) !important;
+        margin: 0 0 0.45rem 0 !important;
+        font-weight: 700 !important;
     }
 
     .lovable-card p {
-        color: #4B5563 !important;
+        color: var(--text-muted) !important;
         margin: 0 !important;
     }
 
     .lovable-card-accent {
-        background: linear-gradient(135deg, var(--accent-soft) 0%, #E0F2FE 55%, #D1FAE5 100%);
-        border: 1px solid #93C5FD;
-        border-left: 4px solid var(--accent-dark);
+        background: linear-gradient(135deg, #EAF3FF 0%, #DDF7FF 55%, #D9F8EE 100%);
+        border: 1px solid #8EB9EB;
+        border-left: 5px solid var(--accent-dark);
         border-radius: 14px;
-        padding: 1.25rem;
+        padding: 1.2rem;
         margin-bottom: 1rem;
-        box-shadow: 0 12px 24px rgba(37,99,235,0.12);
+        box-shadow: 0 12px 24px rgba(30, 85, 166, 0.13);
     }
 
     .lovable-card-accent h3 {
-        color: #1E3A5F !important;
-        margin: 0 0 0.25rem 0 !important;
-        font-size: 1rem !important;
-        font-weight: 600 !important;
+        color: #133966 !important;
+        margin: 0 0 0.28rem 0 !important;
+        font-size: 1.02rem !important;
+        font-weight: 700 !important;
     }
 
     .lovable-card-accent p {
-        color: #475569 !important;
-        font-size: 0.85rem !important;
+        color: #2F5A84 !important;
+        font-size: 0.87rem !important;
     }
 
-    /* Important data highlight */
     .data-highlight {
-        background: #E0F2FE;
-        border: 1px solid #38BDF8;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        font-weight: 600;
-        color: #0C4A6E;
+        background: linear-gradient(120deg, #E1F1FF 0%, #D4FAF3 100%);
+        border: 1px solid #56A4E8;
+        border-radius: 10px;
+        padding: 0.74rem 1rem;
+        font-weight: 700;
+        color: #124A78;
     }
 
-    /* ===== SIDEBAR ===== */
     [data-testid="stSidebar"] {
-        background: var(--surface) !important;
+        background: linear-gradient(180deg, #F8FCFF 0%, #EFF6FF 100%) !important;
         border-right: 1px solid var(--border-soft) !important;
+        backdrop-filter: blur(8px);
     }
 
     [data-testid="stSidebar"] [data-testid="stMarkdown"] {
-        color: #374151 !important;
+        color: #2F4A70 !important;
     }
 
     .section-header {
-        font-size: 0.7rem !important;
-        font-weight: 600 !important;
-        color: #9CA3AF !important;
+        font-size: 0.72rem !important;
+        font-weight: 800 !important;
+        color: #6A80A4 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.08em !important;
-        margin-bottom: 0.75rem !important;
+        letter-spacing: 0.1em !important;
+        margin-bottom: 0.7rem !important;
     }
 
     .feature-pill {
         display: inline-block;
-        background: var(--surface-strong);
-        color: #334155;
-        font-size: 0.7rem;
-        font-weight: 500;
-        padding: 0.2rem 0.6rem;
-        border-radius: 50px;
+        background: linear-gradient(120deg, #E7F1FF 0%, #DCF9F5 100%);
+        color: #2E4B72;
+        font-size: 0.71rem;
+        font-weight: 700;
+        padding: 0.2rem 0.62rem;
+        border-radius: 999px;
         margin-right: 0.4rem;
+        border: 1px solid #C1D8F4;
     }
 
-    /* ===== TABS (Larger) ===== */
     .stTabs [data-baseweb="tab-list"] {
-        background: var(--surface-muted) !important;
-        border-radius: 12px !important;
+        background: linear-gradient(135deg, #EAF3FF 0%, #E2EEFF 100%) !important;
+        border-radius: 14px !important;
         padding: 6px !important;
         gap: 6px !important;
-        border: none !important;
+        border: 1px solid #D4E4FB !important;
     }
 
     .stTabs [data-baseweb="tab"] {
         background: transparent !important;
         border-radius: 10px !important;
-        color: #4B5563 !important;
-        font-weight: 500 !important;
-        font-size: 1rem !important;
-        padding: 0.7rem 1.25rem !important;
+        color: #3D567A !important;
+        font-weight: 700 !important;
+        font-size: 1.08rem !important;
+        padding: 0.86rem 1.32rem !important;
         border: none !important;
+        transition: all 0.15s ease !important;
     }
 
     .stTabs [data-baseweb="tab"]:hover {
-        color: #1F2937 !important;
+        color: #1F3F70 !important;
+        background: rgba(255, 255, 255, 0.45) !important;
     }
 
     .stTabs [aria-selected="true"] {
-        background: var(--surface) !important;
-        color: #0F172A !important;
-        font-weight: 600 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
+        background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%) !important;
+        color: #ECF4FF !important;
+        font-weight: 800 !important;
+        box-shadow: 0 8px 18px rgba(30, 64, 175, 0.3) !important;
     }
 
-    /* Tab highlight line removal */
     .stTabs [data-baseweb="tab-highlight"] {
         display: none !important;
     }
 
-    /* ===== RADIO BUTTONS (Larger) ===== */
     .stRadio > div {
         flex-direction: row !important;
         flex-wrap: wrap !important;
-        gap: 0.6rem !important;
+        gap: 0.55rem !important;
     }
 
     .stRadio > div > label {
         background: var(--surface) !important;
-        border: 1.5px solid var(--border-soft) !important;
+        border: 1.4px solid var(--border-soft) !important;
         border-radius: 10px !important;
-        padding: 0.65rem 1.2rem !important;
+        padding: 0.62rem 1.15rem !important;
         margin: 0 !important;
-        font-size: 1rem !important;
-        color: #374151 !important;
+        font-size: 1.04rem !important;
+        color: #34547D !important;
         cursor: pointer !important;
-        transition: all 0.15s ease !important;
+        transition: all 0.16s ease !important;
     }
 
     .stRadio > div > label:hover {
         border-color: var(--accent) !important;
-        background: var(--surface-strong) !important;
+        background: #F0F6FF !important;
     }
 
     .stRadio > div > label[data-checked="true"],
     .stRadio > div > label:has(input:checked) {
-        background: var(--accent-soft) !important;
+        background: linear-gradient(135deg, #E6F0FF 0%, #DBF4FF 100%) !important;
         border-color: var(--accent) !important;
-        color: #1E3A8A !important;
-        font-weight: 500 !important;
+        color: #1C4686 !important;
+        font-weight: 700 !important;
     }
 
-    /* Hide radio circles */
     .stRadio [role="radiogroup"] > label > div:first-child {
         display: none !important;
     }
 
-    /* ===== BUTTONS (Larger) ===== */
     .stButton > button {
-        background: #0F172A !important;
-        color: #FFFFFF !important;
+        background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%) !important;
+        color: #ECF4FF !important;
         border: none !important;
-        border-radius: 10px !important;
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        transition: all 0.15s ease !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        border-radius: 12px !important;
+        padding: 0.88rem 1.62rem !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+        transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+        box-shadow: 0 10px 18px rgba(30, 64, 175, 0.28) !important;
+    }
+
+    /* Force high-contrast text/icons inside blue buttons */
+    .stButton > button,
+    .stButton > button span,
+    .stButton > button p,
+    .stButton > button div,
+    .stButton > button svg {
+        color: #F8FBFF !important;
+        fill: #F8FBFF !important;
+        stroke: #F8FBFF !important;
     }
 
     .stButton > button:hover {
-        background: #1E293B !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 16px 24px rgba(30, 64, 175, 0.33) !important;
     }
 
     .stButton > button[kind="primary"] {
-        background: var(--accent) !important;
+        background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%) !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        background: var(--accent-strong) !important;
+        background: linear-gradient(135deg, #112F77 0%, var(--accent-strong) 100%) !important;
     }
 
     .stDownloadButton > button {
-        background: var(--surface) !important;
-        color: #1F2937 !important;
-        border: 1.5px solid var(--border-soft) !important;
-        font-size: 0.95rem !important;
-        padding: 0.65rem 1.25rem !important;
+        background: linear-gradient(180deg, #F9FCFF 0%, #F1F7FF 100%) !important;
+        color: #27476F !important;
+        border: 1.4px solid var(--border-soft) !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        padding: 0.62rem 1.2rem !important;
+        border-radius: 11px !important;
     }
 
     .stDownloadButton > button:hover {
-        background: var(--surface-muted) !important;
-        border-color: #9CA3AF !important;
+        background: #EEF5FF !important;
+        border-color: #9BB8E1 !important;
     }
 
-    /* ===== INPUT FIELDS (Larger) ===== */
-    .stTextInput > div > div > input {
-        background: var(--surface) !important;
-        border: 1.5px solid var(--border-soft) !important;
+    .stTextInput > div > div > input,
+    .stNumberInput input {
+        background: #FAFCFF !important;
+        border: 1.4px solid var(--border-soft) !important;
         border-radius: 10px !important;
-        padding: 0.75rem 1rem !important;
-        font-size: 1rem !important;
-        color: #0F172A !important;
+        padding: 0.82rem 1.05rem !important;
+        font-size: 1.05rem !important;
+        color: var(--text-main) !important;
     }
 
-    .stTextInput > div > div > input:focus {
+    .stTextInput > div > div > input:focus,
+    .stNumberInput input:focus {
         border-color: var(--accent) !important;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
     }
 
-    .stSelectbox > div > div {
-        background: var(--surface) !important;
-        border: 1.5px solid var(--border-soft) !important;
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background: #FAFCFF !important;
+        border: 1.4px solid var(--border-soft) !important;
         border-radius: 10px !important;
-        font-size: 1rem !important;
+        font-size: 1.03rem !important;
     }
 
-    /* ===== METRICS (Larger) ===== */
+    .stMultiSelect [data-baseweb="tag"] {
+        background: linear-gradient(120deg, #E3F0FF 0%, #D9F7F1 100%) !important;
+        border: 1px solid #B8D2F2 !important;
+        border-radius: 8px !important;
+        color: #1F4D82 !important;
+    }
+
     [data-testid="stMetric"] {
-        background: var(--surface) !important;
-        border: 1.5px solid var(--border-soft) !important;
-        border-radius: 12px !important;
-        padding: 1.25rem !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.06) !important;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 100%) !important;
+        border: 1.4px solid var(--border-soft) !important;
+        border-radius: 14px !important;
+        padding: 1.22rem 1.24rem !important;
+        box-shadow: 0 8px 16px rgba(23, 57, 116, 0.1) !important;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-testid="stMetric"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent), #38BDF8);
     }
 
     [data-testid="stMetricLabel"] {
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        color: #6B7280 !important;
+        font-size: 0.81rem !important;
+        font-weight: 800 !important;
+        color: #5D779D !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
+        letter-spacing: 0.08em !important;
     }
 
     [data-testid="stMetricValue"] {
-        font-size: 1.85rem !important;
-        font-weight: 700 !important;
-        color: #0F172A !important;
+        font-size: 1.98rem !important;
+        font-weight: 800 !important;
+        color: #0E2A50 !important;
     }
 
-    /* Metric delta (positive/negative indicator) */
     [data-testid="stMetricDelta"] {
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        font-size: 0.98rem !important;
     }
 
     [data-testid="stMetricDelta"] svg {
-        stroke-width: 3px !important;
+        stroke-width: 2.7px !important;
     }
 
-    /* ===== ALERTS (Larger) ===== */
     [data-testid="stAlert"] > div {
         border-radius: 12px !important;
-        padding: 1.25rem !important;
-        font-size: 1rem !important;
+        padding: 1rem 1.2rem !important;
+        font-size: 1.04rem !important;
+        border: 1px solid #C9D9EF !important;
     }
 
-    /* ===== EXPANDERS (Larger) ===== */
     .streamlit-expanderHeader {
-        background: var(--surface-muted) !important;
-        border: 1.5px solid var(--border-soft) !important;
+        background: linear-gradient(135deg, #F3F8FF 0%, #EAF2FF 100%) !important;
+        border: 1.4px solid var(--border-soft) !important;
         border-radius: 12px !important;
-        font-weight: 600 !important;
-        font-size: 1.05rem !important;
-        padding: 1rem !important;
+        font-weight: 700 !important;
+        font-size: 1.07rem !important;
+        padding: 0.9rem 1rem !important;
     }
 
-    /* ===== DATAFRAMES (Larger) ===== */
     .stDataFrame {
-        border: 1.5px solid var(--border-soft) !important;
+        border: 1.4px solid var(--border-soft) !important;
         border-radius: 12px !important;
         overflow: hidden !important;
-        font-size: 0.95rem !important;
+        font-size: 1rem !important;
+        box-shadow: 0 8px 16px rgba(19, 53, 103, 0.08) !important;
     }
 
-    /* ===== DIVIDERS ===== */
     hr, .stDivider {
         border: none !important;
-        border-top: 1.5px solid #E5E7EB !important;
-        margin: 2rem 0 !important;
+        border-top: 1.5px solid #D7E5F8 !important;
+        margin: 1.8rem 0 !important;
     }
 
-    /* ===== SLIDERS (Larger) ===== */
     .stSlider [data-baseweb="slider"] [role="slider"] {
-        background: var(--accent) !important;
+        background: linear-gradient(135deg, var(--accent-dark), var(--accent)) !important;
         width: 20px !important;
         height: 20px !important;
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.14) !important;
     }
 
     .stSlider [data-testid="stTickBarMin"],
     .stSlider [data-testid="stTickBarMax"] {
-        font-size: 0.9rem !important;
-        color: #6B7280 !important;
+        font-size: 0.85rem !important;
+        color: #607B9E !important;
     }
 
-    /* ===== PLOTLY CHARTS ===== */
+    .js-plotly-plot {
+        border-radius: 14px !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: 0 12px 22px rgba(22, 57, 116, 0.09) !important;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%) !important;
+    }
+
     .js-plotly-plot .plotly {
-        border-radius: 12px !important;
+        border-radius: 14px !important;
     }
 
-    /* ===== CUSTOM UTILITY CLASSES (Larger) ===== */
     .design-card {
         background: linear-gradient(180deg, #FFFFFF 0%, var(--surface) 100%);
-        border: 1.5px solid var(--border-soft);
-        border-radius: 14px;
-        padding: 1.25rem;
+        border: 1.4px solid var(--border-soft);
+        border-radius: 15px;
+        padding: 1.2rem;
         margin-bottom: 1rem;
-        box-shadow: 0 10px 20px rgba(14,116,144,0.08), 0 2px 6px rgba(15,23,42,0.06);
+        box-shadow: 0 12px 22px rgba(21, 76, 143, 0.1), 0 2px 7px rgba(14, 25, 42, 0.06);
         position: relative;
         overflow: hidden;
+        transition: transform 0.18s ease;
+    }
+
+    .design-card:hover {
+        transform: translateY(-2px);
     }
 
     .design-card::before {
@@ -618,17 +907,17 @@ st.markdown("""
     }
 
     .design-card b {
-        color: #0F172A;
-        font-weight: 600;
-        font-size: 1.1rem;
+        color: #102947;
+        font-weight: 700;
+        font-size: 1.03rem;
     }
 
     .constraint-card {
-        background: linear-gradient(180deg, #FFFFFF 0%, #F0F9FF 100%);
-        border: 1.5px solid var(--border-soft);
-        border-radius: 14px;
-        padding: 1.25rem;
-        box-shadow: 0 10px 20px rgba(59,130,246,0.10), 0 2px 6px rgba(15,23,42,0.06);
+        background: linear-gradient(180deg, #FFFFFF 0%, #F1F9FF 100%);
+        border: 1.4px solid var(--border-soft);
+        border-radius: 15px;
+        padding: 1.22rem;
+        box-shadow: 0 12px 22px rgba(36, 101, 187, 0.11), 0 2px 7px rgba(15, 23, 42, 0.05);
         position: relative;
         overflow: hidden;
     }
@@ -644,45 +933,723 @@ st.markdown("""
     }
 
     .accent-box {
-        background: linear-gradient(135deg, var(--accent-soft) 0%, #E0F2FE 60%);
-        border: 1px solid #93C5FD;
-        border-left: 4px solid var(--accent-dark);
+        background: linear-gradient(135deg, #EAF3FF 0%, #DAF6FF 60%, #D5F7EE 100%);
+        border: 1px solid #A5C4EA;
+        border-left: 5px solid var(--accent-dark);
         border-radius: 14px;
-        padding: 1rem 1.25rem;
-        box-shadow: 0 10px 20px rgba(37,99,235,0.12);
+        padding: 1rem 1.2rem;
+        box-shadow: 0 11px 20px rgba(37, 99, 235, 0.13);
+    }
+
+    .candidate-card {
+        background: linear-gradient(135deg, #F7FBFF 0%, #ECF5FF 100%);
+        border: 1px solid var(--border-soft);
+        border-left: 5px solid var(--accent);
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 10px 18px rgba(28, 76, 146, 0.1);
+    }
+
+    .candidate-card h4 {
+        margin: 0 0 0.35rem 0;
+        color: #113156;
+        font-size: 1rem;
+        font-family: 'Sora', sans-serif !important;
+    }
+
+    .candidate-card p {
+        margin: 0;
+        color: #2E557F !important;
+        font-size: 0.88rem !important;
     }
 
     .gen-design-header {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #0F172A;
-        margin-bottom: 0.5rem;
+        font-family: 'Sora', sans-serif !important;
+        font-size: 1.86rem;
+        font-weight: 800;
+        color: #0F2A4D;
+        margin: 0 0 0.25rem 0;
+        letter-spacing: -0.02em;
     }
 
-    /* ===== SPINNER ===== */
     .stSpinner > div {
         border-color: var(--accent) !important;
     }
 
-    /* ===== CHECKBOX ===== */
     .stCheckbox label {
-        font-size: 0.875rem !important;
-        color: #374151 !important;
+        font-size: 0.87rem !important;
+        color: #3A587F !important;
     }
 
-    /* ===== MULTISELECT ===== */
-    .stMultiSelect > div > div {
-        background: var(--surface) !important;
-        border: 1px solid #E5E7EB !important;
-        border-radius: 8px !important;
-    }
+    @media (max-width: 900px) {
+        .main .block-container {
+            padding: 1rem 1rem 2rem 1rem !important;
+        }
 
-    .stMultiSelect [data-baseweb="tag"] {
-        background: var(--accent-soft) !important;
-        border-radius: 6px !important;
+        .hero-container {
+            padding: 1.65rem 1rem 1.2rem 1rem;
+            border-radius: 16px;
+        }
+
+        .hero-title {
+            font-size: 2.32rem !important;
+        }
+
+        .hero-subtitle {
+            font-size: 1.11rem !important;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.7rem 0.95rem !important;
+            font-size: 0.98rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
+
+# --- PLOTLY VISUAL SYSTEM ---
+P53CAD_PLOTLY_TEMPLATE = go.layout.Template(
+    layout=go.Layout(
+        paper_bgcolor="rgba(248, 252, 255, 0.92)",
+        plot_bgcolor="rgba(241, 247, 255, 0.88)",
+        colorway=[
+            "#1D4ED8", "#0284C7", "#06B6D4", "#14B8A6", "#0F766E", "#F59E0B", "#EF4444"
+        ],
+        font=dict(family="Manrope, sans-serif", size=14, color="#18385F"),
+        title=dict(
+            x=0.02, xanchor="left",
+            font=dict(family="Sora, sans-serif", size=19, color="#0F2A4D")
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            bgcolor="rgba(255,255,255,0.72)",
+            bordercolor="rgba(158, 184, 224, 0.55)",
+            borderwidth=1,
+            font=dict(size=12, color="#284C79")
+        ),
+        hoverlabel=dict(
+            bgcolor="rgba(10, 23, 54, 0.93)",
+            font=dict(color="#ECF4FF", size=12)
+        ),
+        margin=dict(l=24, r=20, t=52, b=42),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(148, 180, 221, 0.35)",
+            zeroline=False,
+            linecolor="rgba(122, 152, 191, 0.42)",
+            tickcolor="rgba(122, 152, 191, 0.42)",
+            title_font=dict(color="#1F4878", size=14),
+            tickfont=dict(color="#3A5D89", size=12)
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(148, 180, 221, 0.35)",
+            zeroline=False,
+            linecolor="rgba(122, 152, 191, 0.42)",
+            tickcolor="rgba(122, 152, 191, 0.42)",
+            title_font=dict(color="#1F4878", size=14),
+            tickfont=dict(color="#3A5D89", size=12)
+        ),
+    )
+)
+pio.templates["p53cad"] = P53CAD_PLOTLY_TEMPLATE
+px.defaults.template = "p53cad"
+px.defaults.color_discrete_sequence = ["#1D4ED8", "#0284C7", "#06B6D4", "#14B8A6", "#0F766E", "#F59E0B", "#EF4444"]
+
+
+def style_plotly_figure(fig: go.Figure, chart_kind: str = "default") -> go.Figure:
+    """Apply a shared chart style so every panel looks visually consistent."""
+    if fig is None:
+        return fig
+
+    fig.update_layout(template="p53cad", transition=dict(duration=250, easing="cubic-in-out"))
+
+    # Consistent larger chart canvases for readability.
+    if fig.layout.height is None:
+        default_heights = {
+            "bar": 500,
+            "scatter": 520,
+            "pareto": 520,
+            "heatmap": 430,
+            "trajectory": 420,
+            "multiline": 430,
+            "mini": 340,
+            "3d": 520,
+            "default": 460,
+        }
+        fig.update_layout(height=default_heights.get(chart_kind, 460))
+
+    if chart_kind in {"trajectory", "multiline", "mini"}:
+        fig.update_layout(hovermode="x unified")
+        fig.update_traces(marker=dict(line=dict(width=1, color="rgba(255,255,255,0.85)")), selector=dict(type="scatter"))
+        fig.update_traces(line=dict(width=2.8), selector=dict(type="scatter"))
+
+    if chart_kind in {"scatter", "pareto"}:
+        fig.update_layout(hovermode="closest")
+        fig.update_traces(marker=dict(line=dict(width=1.2, color="rgba(255,255,255,0.9)")), selector=dict(type="scatter"))
+
+    if chart_kind in {"bar"}:
+        fig.update_layout(
+            bargap=0.24,
+            margin=dict(l=24, r=20, t=64, b=106),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.23,
+                xanchor="left",
+                x=0,
+                bgcolor="rgba(255,255,255,0.84)",
+            ),
+        )
+        fig.update_traces(
+            marker=dict(line=dict(width=0.8, color="rgba(255,255,255,0.82)")),
+            selector=dict(type="bar")
+        )
+
+    if chart_kind in {"scatter", "pareto"}:
+        fig.update_layout(
+            margin=dict(l=24, r=20, t=64, b=96),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.2,
+                xanchor="left",
+                x=0,
+                bgcolor="rgba(255,255,255,0.84)",
+            ),
+        )
+
+    if chart_kind in {"heatmap"}:
+        fig.update_xaxes(showgrid=False)
+        fig.update_yaxes(showgrid=False)
+        fig.update_layout(margin=dict(l=10, r=10, t=44, b=16))
+        fig.update_traces(
+            xgap=1,
+            ygap=1,
+            selector=dict(type="heatmap")
+        )
+
+    if chart_kind in {"3d"}:
+        fig.update_traces(
+            marker=dict(line=dict(width=0.8, color="rgba(255,255,255,0.85)")),
+            selector=dict(type="scatter3d")
+        )
+        fig.update_layout(
+            scene=dict(
+                bgcolor="rgba(241,247,255,0.70)",
+                xaxis=dict(
+                    showbackground=True,
+                    backgroundcolor="rgba(223,237,255,0.55)",
+                    gridcolor="rgba(146,177,218,0.28)",
+                    zeroline=False,
+                    color="#2E5888"
+                ),
+                yaxis=dict(
+                    showbackground=True,
+                    backgroundcolor="rgba(221,247,241,0.48)",
+                    gridcolor="rgba(146,177,218,0.28)",
+                    zeroline=False,
+                    color="#2E5888"
+                ),
+                zaxis=dict(
+                    showbackground=True,
+                    backgroundcolor="rgba(230,240,255,0.60)",
+                    gridcolor="rgba(146,177,218,0.28)",
+                    zeroline=False,
+                    color="#2E5888"
+                ),
+            )
+        )
+
+    return fig
+
+
+def render_plotly(fig: go.Figure, chart_kind: str = "default", **kwargs):
+    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **kwargs)
+
+
+def render_plotly_in(container, fig: go.Figure, chart_kind: str = "default", **kwargs):
+    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **kwargs)
+
+
+def safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:
+    """Safely execute optional DMS physics fallback scoring."""
+    if not callable(physics_based_score_fn):
+        return None
+    try:
+        result = physics_based_score_fn(mutation)
+    except Exception as err:
+        logger.warning("physics_based_score failed for %s: %s", mutation, err)
+        return None
+    if not isinstance(result, dict):
+        logger.warning("physics_based_score returned non-dict for %s", mutation)
+        return None
+    return result
+
+
+def parse_mutation_tokens(raw_text: str) -> list:
+    """Parse comma-separated mutation strings into validated point mutations."""
+    if not raw_text:
+        return []
+
+    mutations = []
+    for token in str(raw_text).replace(";", ",").split(","):
+        candidate = token.strip().upper()
+        parsed = parse_single_mutation(candidate)
+        if parsed is None:
+            continue
+        wt_aa, pos, mut_aa = parsed
+        mutations.append(f"{wt_aa}{pos}{mut_aa}")
+    return mutations
+
+
+def build_sequence_from_mutations(target_mutation: str, rescue_mutations: list) -> str:
+    """Apply target + rescue mutations sequentially and return final sequence."""
+    sequence = apply_mutation(P53_WT, target_mutation) if target_mutation else None
+    if sequence is None:
+        sequence = P53_WT
+
+    for mut in rescue_mutations:
+        updated = apply_mutation(sequence, mut)
+        if updated is not None:
+            sequence = updated
+
+    return sequence
+
+
+@st.cache_data(show_spinner=False)
+def get_dms_lookup_tables() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Load single-mutation DMS data and return lookup tables by mutation and position."""
+    try:
+        dms_df = get_dms_data()
+    except Exception:
+        return pd.DataFrame(columns=["mutation", "score"]), pd.DataFrame(columns=["pos", "pos_mean_score", "pos_count"])
+
+    if dms_df is None or dms_df.empty or "mutation" not in dms_df.columns or "score" not in dms_df.columns:
+        return pd.DataFrame(columns=["mutation", "score"]), pd.DataFrame(columns=["pos", "pos_mean_score", "pos_count"])
+
+    dms_work = dms_df.copy()
+    if "n_mutations" in dms_work.columns:
+        dms_work = dms_work[dms_work["n_mutations"] == 1].copy()
+
+    dms_work["mutation"] = dms_work["mutation"].astype(str).str.strip().str.upper()
+    dms_work["score"] = pd.to_numeric(dms_work["score"], errors="coerce")
+    dms_work = dms_work.dropna(subset=["mutation", "score"])
+
+    by_mutation = dms_work.groupby("mutation", as_index=False)["score"].mean()
+
+    if "pos" in dms_work.columns:
+        by_position = dms_work.groupby("pos", as_index=False).agg(
+            pos_mean_score=("score", "mean"),
+            pos_count=("score", "count"),
+        )
+    else:
+        by_position = pd.DataFrame(columns=["pos", "pos_mean_score", "pos_count"])
+
+    return by_mutation, by_position
+
+
+@st.cache_data(show_spinner=False)
+def get_score_calibration_profile() -> Dict[str, float]:
+    """Build a robust score calibration profile from observed single-mutation DMS labels."""
+    fallback = {
+        "clip_low": -3.0,
+        "clip_high": 4.0,
+        "center": 0.0,
+        "scale": 1.0,
+        "n_scores": 0.0,
+    }
+    try:
+        dms_df = get_dms_data()
+    except Exception:
+        return fallback
+    if dms_df is None or dms_df.empty or "score" not in dms_df.columns:
+        return fallback
+
+    dms_work = dms_df.copy()
+    if "n_mutations" in dms_work.columns:
+        dms_work = dms_work[dms_work["n_mutations"] == 1].copy()
+
+    scores = pd.to_numeric(dms_work["score"], errors="coerce").dropna().to_numpy(dtype=float)
+    if scores.size < 20:
+        return fallback
+
+    q1, q5, q95, q99 = np.percentile(scores, [1, 5, 95, 99])
+    center = float(np.median(scores))
+    scale = float(max((q95 - q5) / 2.0, 1e-3))
+    clip_low = float(min(q1, q5))
+    clip_high = float(max(q99, q95))
+    if clip_high <= clip_low:
+        clip_low, clip_high = -3.0, 4.0
+
+    return {
+        "clip_low": clip_low,
+        "clip_high": clip_high,
+        "center": center,
+        "scale": scale,
+        "n_scores": float(scores.size),
+    }
+
+
+def calibrate_oracle_score(raw_score: float, profile: Dict[str, float]) -> float:
+    """Map raw oracle output to observed DMS-like range with smooth saturation + clipping."""
+    center = float(profile.get("center", 0.0))
+    scale = float(max(profile.get("scale", 1.0), 1e-6))
+    clip_low = float(profile.get("clip_low", -3.0))
+    clip_high = float(profile.get("clip_high", 4.0))
+    squashed = center + scale * np.tanh((float(raw_score) - center) / scale)
+    return float(np.clip(squashed, clip_low, clip_high))
+
+
+def estimate_oracle_uncertainty(pooled: torch.Tensor, mc_samples: int = 8) -> float:
+    """Estimate predictive uncertainty via MC-dropout standard deviation."""
+    if oracle is None or pooled is None:
+        return 0.0
+    n_samples = max(int(mc_samples), 2)
+    was_training = oracle.model.training
+    preds = []
+    try:
+        oracle.model.train()
+        with torch.no_grad():
+            for _ in range(n_samples):
+                preds.append(float(oracle.model(pooled).squeeze(-1).mean().item()))
+    except Exception:
+        return 0.0
+    finally:
+        if not was_training:
+            oracle.model.eval()
+    return float(np.std(np.asarray(preds, dtype=float)))
+
+
+def build_trust_adjusted_score(
+    raw_score: float,
+    pooled: Optional[torch.Tensor],
+    pooled_ref: Optional[torch.Tensor],
+    calibration_profile: Dict[str, float],
+    uncertainty_weight: float = 0.8,
+    ood_rank_weight: float = 1.25,
+    ood_radius: float = 1.75,
+    mc_samples: int = 8,
+) -> Dict[str, float]:
+    """Compute calibrated and trust-adjusted score used for ranking/filtering."""
+    calibrated = calibrate_oracle_score(raw_score, calibration_profile)
+    uncertainty = estimate_oracle_uncertainty(pooled, mc_samples=mc_samples)
+    ood_distance = 0.0
+    if pooled is not None and pooled_ref is not None:
+        with torch.no_grad():
+            ood_distance = float(torch.norm(pooled - pooled_ref, p=2, dim=-1).mean().item())
+    ood_excess = max(0.0, ood_distance - float(ood_radius))
+    adjusted = calibrated - float(uncertainty_weight) * uncertainty - float(ood_rank_weight) * ood_excess
+    adjusted = float(
+        np.clip(
+            adjusted,
+            float(calibration_profile.get("clip_low", -3.0)),
+            float(calibration_profile.get("clip_high", 4.0)),
+        )
+    )
+    return {
+        "score_raw": float(raw_score),
+        "score_calibrated": float(calibrated),
+        "score_adjusted": float(adjusted),
+        "uncertainty": float(uncertainty),
+        "ood_distance": float(ood_distance),
+        "ood_excess": float(ood_excess),
+    }
+
+
+def get_active_analysis_candidate(default_target_mutation: str) -> dict | None:
+    """Build a normalized candidate payload from session state for analysis panels."""
+    selected = st.session_state.get("selected_candidate")
+    if isinstance(selected, dict) and selected.get("sequence"):
+        clean_muts = [
+            m.strip().upper()
+            for m in selected.get("mutations", [])
+            if parse_single_mutation(str(m).strip().upper()) is not None
+        ]
+        return {
+            "target_mutation": st.session_state.get("target_mut_saved", default_target_mutation),
+            "sequence": str(selected.get("sequence", P53_WT)),
+            "mutations": clean_muts,
+            "score": float(selected.get("score", 0.0)),
+            "stability": float(selected.get("stability", 0.0)),
+            "binding": float(selected.get("binding", 0.0)),
+            "identity": float(selected.get("identity", 0.0)),
+            "n_mutations": int(selected.get("n_mutations", len(clean_muts))),
+            "source": "selected_candidate",
+            "mut_summary_raw": ", ".join(clean_muts),
+        }
+
+    results = st.session_state.get("results")
+    if isinstance(results, pd.DataFrame) and not results.empty and "Score" in results.columns:
+        best = results.loc[results["Score"].idxmax()]
+        parsed_muts = parse_mutation_tokens(best.get("MutSummary", ""))
+        sequence = str(best.get("Sequence", ""))
+        if not sequence:
+            sequence = build_sequence_from_mutations(default_target_mutation, parsed_muts)
+        return {
+            "target_mutation": st.session_state.get("target_mut_saved", default_target_mutation),
+            "sequence": sequence,
+            "mutations": parsed_muts,
+            "score": float(best.get("Score", 0.0)),
+            "stability": float(best.get("Stability", 0.0)),
+            "binding": float(best.get("DNARecruitment", 0.0)),
+            "identity": float(best.get("Identity", 0.0)),
+            "n_mutations": int(best.get("MutationCount", len(parsed_muts))),
+            "source": "results_table",
+            "mut_summary_raw": str(best.get("MutSummary", "")),
+        }
+
+    return None
+
+
+def sync_analysis_inputs_from_candidate(active_candidate: Optional[Dict[str, Any]]) -> None:
+    """Sync analysis text inputs when a different candidate is selected."""
+    if not active_candidate:
+        return
+
+    target = str(active_candidate.get("target_mutation", "")).strip().upper()
+    rescue_list = [str(m).strip().upper() for m in active_candidate.get("mutations", []) if str(m).strip()]
+    rescue_text = ", ".join(rescue_list[:6])
+    candidate_key = f"{target}|{','.join(rescue_list)}"
+
+    if st.session_state.get("_analysis_last_candidate_key") == candidate_key:
+        return
+
+    st.session_state["_analysis_last_candidate_key"] = candidate_key
+    st.session_state["exp_cancer_main"] = target or "R175H"
+    st.session_state["exp_rescue_main"] = rescue_text or "N239Y, T284R"
+    st.session_state["ci_cancer_main"] = target or "R175H"
+    st.session_state["ci_rescue_main"] = rescue_text or "N239Y, T284R"
+
+
+def compute_target_baseline_metrics(target_mutation: str) -> Dict[str, float]:
+    """Compute baseline oracle metrics for the target-only mutant."""
+    if oracle is None:
+        return {
+            "score": 0.0,
+            "score_raw": 0.0,
+            "score_calibrated": 0.0,
+            "stability": 0.0,
+            "binding": 0.0,
+            "uncertainty": 0.0,
+            "ood_distance": 0.0,
+        }
+
+    seq = apply_mutation(P53_WT, target_mutation) if target_mutation else None
+    if seq is None:
+        seq = P53_WT
+
+    calibration_profile = get_score_calibration_profile()
+    aa_ids = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+    with torch.no_grad():
+        emb = embedder.get_embeddings(seq).detach()
+        z, logits, probs = embedder.latent_forward_ascent(emb)
+        pooled = z.mean(dim=1)
+        if pooled.shape[-1] != 320:
+            pooled = pooled[:, :320]
+        raw_score = float(oracle.model(pooled).item())
+        logits_aa = logits[:, :, aa_ids]
+        stability = float(F.log_softmax(logits_aa, dim=-1).max(dim=-1).values.mean().item())
+        binding = float(embedder.get_dna_contact_prob(z, logits, probs=probs).item())
+
+    score_bundle = build_trust_adjusted_score(
+        raw_score=raw_score,
+        pooled=pooled,
+        pooled_ref=pooled,
+        calibration_profile=calibration_profile,
+        uncertainty_weight=0.8,
+        ood_rank_weight=1.25,
+        ood_radius=1.75,
+        mc_samples=8,
+    )
+    return {
+        "score": float(score_bundle["score_adjusted"]),
+        "score_raw": float(score_bundle["score_raw"]),
+        "score_calibrated": float(score_bundle["score_calibrated"]),
+        "stability": stability,
+        "binding": binding,
+        "uncertainty": float(score_bundle["uncertainty"]),
+        "ood_distance": float(score_bundle["ood_distance"]),
+    }
+
+
+def filter_candidate_set(
+    candidates: list[dict],
+    target_mutation: str,
+    baseline_score: float,
+    min_score_gain: float = 0.05,
+    min_rescue_mutations: int = 1,
+) -> tuple[list[dict], Dict[str, Any]]:
+    """Drop baseline-like candidates that do not meaningfully improve over target-only baseline."""
+    target_mut = str(target_mutation).strip().upper()
+    kept = []
+    removed = 0
+
+    for cand in candidates:
+        muts = [str(m).strip().upper() for m in cand.get("mutations", []) if str(m).strip()]
+        rescue_muts = [m for m in muts if m != target_mut]
+        score_primary = float(cand.get("score_adjusted", cand.get("score", 0.0)))
+        score_gain = score_primary - float(baseline_score)
+        is_baseline_like = (len(rescue_muts) < int(min_rescue_mutations)) or (score_gain < float(min_score_gain))
+
+        cand["score_for_selection"] = float(score_primary)
+        cand["rescue_mutations"] = rescue_muts
+        cand["score_gain_vs_target"] = score_gain
+        cand["is_baseline_like"] = is_baseline_like
+
+        if is_baseline_like:
+            removed += 1
+        else:
+            kept.append(cand)
+
+    fallback_used = False
+    if not kept and candidates:
+        fallback_used = True
+        kept = sorted(candidates, key=lambda c: float(c.get("score", 0.0)), reverse=True)[:1]
+
+    summary = {
+        "total": len(candidates),
+        "kept": len(kept),
+        "removed": removed,
+        "fallback_used": fallback_used,
+        "min_score_gain": float(min_score_gain),
+        "baseline_score": float(baseline_score),
+    }
+    return kept, summary
+
+
+def mutation_set_for_candidate(candidate: Dict[str, Any], target_mutation: str) -> set[str]:
+    target = str(target_mutation).strip().upper()
+    muts = [str(m).strip().upper() for m in candidate.get("mutations", []) if str(m).strip()]
+    return {m for m in muts if m != target}
+
+
+def jaccard_overlap(set_a: set[str], set_b: set[str]) -> float:
+    if not set_a and not set_b:
+        return 1.0
+    union = set_a | set_b
+    if not union:
+        return 0.0
+    return float(len(set_a & set_b) / len(union))
+
+
+def candidate_rank_value(candidate: Dict[str, Any]) -> float:
+    if "selection_score" in candidate:
+        return float(candidate["selection_score"])
+    if "score_gain_vs_target" in candidate:
+        return float(candidate["score_gain_vs_target"])
+    if "score_adjusted" in candidate:
+        return float(candidate["score_adjusted"])
+    return float(candidate.get("score", 0.0))
+
+
+def select_diverse_candidates(
+    candidates: list[dict],
+    target_mutation: str,
+    desired_count: int,
+    novelty_weight: float = 0.35,
+    overlap_penalty: float = 0.20,
+) -> tuple[list[dict], Dict[str, Any]]:
+    """Greedy re-ranker using score gain + novelty and explicit mutation overlap penalty."""
+    if not candidates:
+        return [], {
+            "pool_size": 0,
+            "selected": 0,
+            "novelty_weight": float(novelty_weight),
+            "overlap_penalty": float(overlap_penalty),
+            "fallback_used": False,
+        }
+
+    target = str(target_mutation).strip().upper()
+    enriched: list[Dict[str, Any]] = []
+    for cand in candidates:
+        mut_set = mutation_set_for_candidate(cand, target)
+        score_gain = float(cand.get("score_gain_vs_target", cand.get("score_adjusted", cand.get("score", 0.0))))
+        enriched.append(
+            {
+                "candidate": cand,
+                "mut_set": mut_set,
+                "profile": str(cand.get("profile", "Unknown")),
+                "score_gain": score_gain,
+            }
+        )
+
+    # Stage 1: keep the best restart per profile.
+    best_by_profile: Dict[str, Dict[str, Any]] = {}
+    for row in enriched:
+        profile = row["profile"]
+        prev = best_by_profile.get(profile)
+        if prev is None or row["score_gain"] > prev["score_gain"]:
+            best_by_profile[profile] = row
+
+    selected_rows: list[Dict[str, Any]] = []
+    seed_rows = sorted(best_by_profile.values(), key=lambda r: r["score_gain"], reverse=True)
+    for row in seed_rows:
+        if len(selected_rows) >= desired_count:
+            break
+        selected_rows.append(row)
+
+    selected_ids = {id(r["candidate"]) for r in selected_rows}
+    remaining = [r for r in enriched if id(r["candidate"]) not in selected_ids]
+
+    # Stage 2: greedy utility = score_gain + novelty bonus - overlap penalty.
+    while len(selected_rows) < desired_count and remaining:
+        best_idx = -1
+        best_utility = -float("inf")
+        for idx, row in enumerate(remaining):
+            if selected_rows:
+                overlaps = [jaccard_overlap(row["mut_set"], s["mut_set"]) for s in selected_rows]
+                max_overlap = float(max(overlaps))
+                novelty = float(1.0 - np.mean(overlaps))
+            else:
+                max_overlap = 0.0
+                novelty = 1.0
+            utility = row["score_gain"] + (novelty_weight * novelty) - (overlap_penalty * max_overlap)
+            if utility > best_utility:
+                best_utility = utility
+                best_idx = idx
+        if best_idx < 0:
+            break
+        chosen = remaining.pop(best_idx)
+        chosen["selection_utility"] = float(best_utility)
+        selected_rows.append(chosen)
+
+    if not selected_rows:
+        top = max(enriched, key=lambda r: r["score_gain"])
+        selected_rows = [top]
+
+    selected: list[dict] = []
+    for rank, row in enumerate(selected_rows[:desired_count], start=1):
+        cand = row["candidate"]
+        if selected:
+            prior_sets = [mutation_set_for_candidate(c, target) for c in selected]
+            overlaps = [jaccard_overlap(row["mut_set"], s) for s in prior_sets]
+            max_overlap = float(max(overlaps))
+            novelty = float(1.0 - np.mean(overlaps))
+        else:
+            max_overlap = 0.0
+            novelty = 1.0
+        selection_score = row["score_gain"] + (novelty_weight * novelty) - (overlap_penalty * max_overlap)
+        cand["selection_rank"] = rank
+        cand["selection_score"] = float(selection_score)
+        cand["diversity_novelty"] = float(novelty)
+        cand["max_mutation_overlap"] = float(max_overlap)
+        selected.append(cand)
+
+    summary = {
+        "pool_size": len(candidates),
+        "selected": len(selected),
+        "novelty_weight": float(novelty_weight),
+        "overlap_penalty": float(overlap_penalty),
+        "fallback_used": len(selected_rows) == 1 and len(candidates) > 1,
+    }
+    return selected, summary
+
 
 # Initialize models (NO CACHE - force fresh reload)
 def load_models_v8():
@@ -1089,6 +2056,7 @@ def run_search(target_mut_override=None):
 
 # === GENERATIVE DESIGN ENGINE (LIVE VERSION) ===
 def run_generative_design_live(constraints: dict, n_candidates: int = 6,
+                                n_steps: Optional[int] = None,
                                 progress_callback=None, structure_callback=None):
     """
     Generative Design Mode with LIVE VISUALIZATION.
@@ -1110,6 +2078,15 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
     locked_positions = constraints.get('locked_positions', [248, 273])
     delivery_method = constraints.get('delivery_method', 'gene_therapy')
     exploration_diversity = constraints.get('diversity', 0.5)
+    calibration_profile = get_score_calibration_profile()
+    uncertainty_weight = float(constraints.get("uncertainty_penalty_weight", 0.8))
+    ood_rank_weight = float(constraints.get("ood_rank_penalty_weight", 1.25))
+    ood_radius = float(constraints.get("ood_trust_radius", 1.75))
+    ood_loss_weight = float(constraints.get("ood_loss_weight", 12.0))
+    mc_dropout_samples = int(max(2, constraints.get("mc_dropout_samples", 8)))
+    if n_steps is None:
+        n_steps = int(constraints.get("optimization_steps", 100))
+    n_steps = int(np.clip(n_steps, 20, 500))
 
     if delivery_method == 'protein_therapy':
         min_identity = max(min_identity, 95.0)
@@ -1117,14 +2094,21 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
         min_identity = max(min_identity, 92.0)
 
     all_candidates = []
+    emb_target_ref = embedder.get_embeddings(cancer_seq).detach()
+    emb_wt = embedder.get_embeddings(P53_WT).detach()
+    with torch.no_grad():
+        z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
+        pooled_target_ref = z_target_ref.mean(dim=1)
+        if pooled_target_ref.shape[-1] != 320:
+            pooled_target_ref = pooled_target_ref[:, :320]
 
     weight_profiles = [
-        {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#00D4FF'},
-        {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#FFD700'},
-        {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#FF6B6B'},
-        {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#00FF88'},
-        {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#9D00FF'},
-        {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#FF9500'},
+        {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#2563EB'},
+        {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#0EA5E9'},
+        {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#10B981'},
+        {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#14B8A6'},
+        {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#1D4ED8'},
+        {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#0891B2'},
     ]
 
     for candidate_idx in range(n_candidates):
@@ -1133,8 +2117,7 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
 
         profile = weight_profiles[candidate_idx % len(weight_profiles)]
 
-        emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
-        emb_wt = embedder.get_embeddings(P53_WT).detach()
+        emb = emb_target_ref.clone().detach().requires_grad_(True)
 
         with torch.no_grad():
             perturbation = torch.randn_like(emb) * 0.05 * exploration_diversity
@@ -1143,7 +2126,6 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
         optimizer = torch.optim.Adam([emb], lr=0.04)
         locked_indices = [int(p) - 1 for p in locked_positions if p]
 
-        n_steps = 100  # Faster for live viz
         trajectory = []  # Store optimization trajectory
         best_valid_state = None
         best_valid_score = -float('inf')
@@ -1173,12 +2155,14 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
             stability = log_probs.max(dim=-1).values.mean()
             dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
             hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+            ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1).mean()
 
             # Loss
             loss = -score * profile['function']
             loss -= profile['stability'] * stability
             loss -= profile['binding'] * dna_force
             loss -= 3.0 * hydro_packing
+            loss += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
 
             probs_aa = F.softmax(logits_aa[0], dim=-1)
             wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
@@ -1197,6 +2181,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
                 loss += 500.0 * (min_identity - 5 - seq_identity)
             if stability.item() < min_stability:
                 loss += 100.0 * (min_stability - stability)
+            if dna_force.item() < min_binding:
+                loss += 80.0 * (min_binding - dna_force)
             if locked_indices:
                 loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
 
@@ -1217,25 +2203,43 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
 
                     # Get mutation positions for visualization
                     mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
+                    score_bundle = build_trust_adjusted_score(
+                        raw_score=float(score.item()),
+                        pooled=pooled,
+                        pooled_ref=pooled_target_ref,
+                        calibration_profile=calibration_profile,
+                        uncertainty_weight=uncertainty_weight,
+                        ood_rank_weight=ood_rank_weight,
+                        ood_radius=ood_radius,
+                        mc_samples=mc_dropout_samples,
+                    )
 
                     trajectory.append({
                         'step': step_idx,
-                        'score': score.item(),
+                        'score': score_bundle['score_adjusted'],
+                        'score_raw': score_bundle['score_raw'],
+                        'score_calibrated': score_bundle['score_calibrated'],
                         'stability': stability.item(),
                         'binding': dna_force.item(),
                         'identity': seq_identity,
                         'n_mutations': n_mutations,
-                        'mutations': muts[:5],
+                        'mutations': muts,
                         'mut_positions': mut_positions,
                         'sequence': current_seq,
+                        'uncertainty': score_bundle['uncertainty'],
+                        'ood_distance': score_bundle['ood_distance'],
                         'lx': pooled[0, 0].item(),
                         'ly': pooled[0, 1].item()
                     })
 
                     # Track best valid
-                    if seq_identity >= min_identity and stability.item() >= min_stability:
-                        if score.item() > best_valid_score:
-                            best_valid_score = score.item()
+                    if (
+                        seq_identity >= min_identity
+                        and stability.item() >= min_stability
+                        and dna_force.item() >= min_binding
+                    ):
+                        if score_bundle['score_adjusted'] > best_valid_score:
+                            best_valid_score = score_bundle['score_adjusted']
                             best_valid_state = trajectory[-1].copy()
 
                     # YIELD for live visualization
@@ -1258,14 +2262,22 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
             'color': profile['color'],
             'sequence': final_state['sequence'],
             'score': final_state['score'],
+            'score_raw': final_state.get('score_raw', final_state['score']),
+            'score_calibrated': final_state.get('score_calibrated', final_state['score']),
             'stability': final_state['stability'],
             'binding': final_state['binding'],
             'identity': final_state['identity'],
             'n_mutations': final_state['n_mutations'],
             'mutations': final_state['mutations'],
             'mut_positions': final_state.get('mut_positions', []),
+            'uncertainty': float(final_state.get('uncertainty', 0.0)),
+            'ood_distance': float(final_state.get('ood_distance', 0.0)),
             'trajectory': trajectory,
-            'meets_constraints': final_state['identity'] >= min_identity and final_state['stability'] >= min_stability
+            'meets_constraints': (
+                final_state['identity'] >= min_identity
+                and final_state['stability'] >= min_stability
+                and final_state['binding'] >= min_binding
+            )
         }
         all_candidates.append(candidate)
 
@@ -1273,7 +2285,7 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
 
 
 # === GENERATIVE DESIGN ENGINE ===
-def run_generative_design(constraints: dict, n_candidates: int = 6):
+def run_generative_design(constraints: dict, n_candidates: int = 6, n_steps: Optional[int] = None):
     """
     Generative Design Mode: Like mechanical CAD topology optimization.
 
@@ -1301,6 +2313,15 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
     locked_positions = constraints.get('locked_positions', [248, 273])
     delivery_method = constraints.get('delivery_method', 'gene_therapy')
     exploration_diversity = constraints.get('diversity', 0.5)
+    calibration_profile = get_score_calibration_profile()
+    uncertainty_weight = float(constraints.get("uncertainty_penalty_weight", 0.8))
+    ood_rank_weight = float(constraints.get("ood_rank_penalty_weight", 1.25))
+    ood_radius = float(constraints.get("ood_trust_radius", 1.75))
+    ood_loss_weight = float(constraints.get("ood_loss_weight", 12.0))
+    mc_dropout_samples = int(max(2, constraints.get("mc_dropout_samples", 8)))
+    if n_steps is None:
+        n_steps = int(constraints.get("optimization_steps", 150))
+    n_steps = int(np.clip(n_steps, 20, 500))
 
     # Adjust identity based on delivery method
     if delivery_method == 'protein_therapy':
@@ -1309,6 +2330,22 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
         min_identity = max(min_identity, 92.0)
 
     all_candidates = []
+    emb_target_ref = embedder.get_embeddings(cancer_seq).detach()
+    emb_wt = embedder.get_embeddings(P53_WT).detach()
+    with torch.no_grad():
+        z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
+        pooled_target_ref = z_target_ref.mean(dim=1)
+        if pooled_target_ref.shape[-1] != 320:
+            pooled_target_ref = pooled_target_ref[:, :320]
+
+    wt_aa_indices = []
+    for aa in P53_WT:
+        aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+        if aa_id in AA_IDS:
+            wt_aa_indices.append(AA_IDS.index(aa_id))
+        else:
+            wt_aa_indices.append(0)
+    wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb_target_ref.device)
 
     for candidate_idx in range(n_candidates):
         # DIVERSITY: Each candidate explores different regions via:
@@ -1336,8 +2373,7 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
 
         profile = weight_profiles[candidate_idx % len(weight_profiles)]
 
-        emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
-        emb_wt = embedder.get_embeddings(P53_WT).detach()
+        emb = emb_target_ref.clone().detach().requires_grad_(True)
 
         # Add initial perturbation for diversity
         with torch.no_grad():
@@ -1347,8 +2383,6 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
         optimizer = torch.optim.Adam([emb], lr=0.04)
         locked_indices = [int(p) - 1 for p in locked_positions if p]
 
-        # Shorter optimization for multiple candidates
-        n_steps = 150
         best_valid_state = None
         best_valid_score = -float('inf')
 
@@ -1368,23 +2402,16 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
 
             dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
             hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+            ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1).mean()
 
             # LOSS with profile-specific weights
             loss = -score * profile['function']
             loss -= profile['stability'] * stability
             loss -= profile['binding'] * dna_force
             loss -= 3.0 * hydro_packing
+            loss += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
 
             # CONSTRAINT ENFORCEMENT (hard constraints from user)
-            wt_aa_indices = []
-            for aa in P53_WT:
-                aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
-                if aa_id in AA_IDS:
-                    wt_aa_indices.append(AA_IDS.index(aa_id))
-                else:
-                    wt_aa_indices.append(0)
-            wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
-
             probs_aa = F.softmax(logits_aa[0], dim=-1)
             wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
             mutation_prob = 1.0 - wt_probs
@@ -1406,6 +2433,8 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
             # HARD CONSTRAINT: Stability floor
             if stability.item() < min_stability:
                 loss += 100.0 * (min_stability - stability)
+            if dna_force.item() < min_binding:
+                loss += 80.0 * (min_binding - dna_force)
 
             # LOCKED POSITIONS
             if locked_indices:
@@ -1420,19 +2449,37 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
 
             # Track best valid state
             with torch.no_grad():
-                if seq_identity >= min_identity and stability.item() >= min_stability:
-                    if score.item() > best_valid_score:
-                        best_valid_score = score.item()
+                if (
+                    seq_identity >= min_identity
+                    and stability.item() >= min_stability
+                    and dna_force.item() >= min_binding
+                ):
+                    score_bundle = build_trust_adjusted_score(
+                        raw_score=float(score.item()),
+                        pooled=pooled,
+                        pooled_ref=pooled_target_ref,
+                        calibration_profile=calibration_profile,
+                        uncertainty_weight=uncertainty_weight,
+                        ood_rank_weight=ood_rank_weight,
+                        ood_radius=ood_radius,
+                        mc_samples=mc_dropout_samples,
+                    )
+                    if score_bundle["score_adjusted"] > best_valid_score:
+                        best_valid_score = score_bundle["score_adjusted"]
                         top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
                         top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
                         tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
                         best_valid_state = {
                             'sequence': "".join(tokens)[:len(P53_WT)],
-                            'score': score.item(),
+                            'score': score_bundle["score_adjusted"],
+                            'score_raw': score_bundle["score_raw"],
+                            'score_calibrated': score_bundle["score_calibrated"],
                             'stability': stability.item(),
                             'binding': dna_force.item(),
                             'identity': seq_identity,
-                            'n_mutations': n_mutations
+                            'n_mutations': n_mutations,
+                            'uncertainty': score_bundle["uncertainty"],
+                            'ood_distance': score_bundle["ood_distance"],
                         }
 
         # Final decode
@@ -1441,7 +2488,10 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
             logits_aa = logits[:, :, AA_IDS]
             log_probs = F.log_softmax(logits_aa, dim=-1)
             stability = log_probs.max(dim=-1).values.mean()
-            score = oracle.model(z.mean(dim=1))
+            pooled = z.mean(dim=1)
+            if pooled.shape[-1] != 320:
+                pooled = pooled[:, :320]
+            score = oracle.model(pooled)
             dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
 
             probs_aa = F.softmax(logits_aa[0], dim=-1)
@@ -1455,18 +2505,36 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
             final_seq = "".join(tokens)[:len(P53_WT)]
 
             muts = [f"{P53_WT[j]}{j+1}{final_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != final_seq[j]]
+            final_score_bundle = build_trust_adjusted_score(
+                raw_score=float(score.item()),
+                pooled=pooled,
+                pooled_ref=pooled_target_ref,
+                calibration_profile=calibration_profile,
+                uncertainty_weight=uncertainty_weight,
+                ood_rank_weight=ood_rank_weight,
+                ood_radius=ood_radius,
+                mc_samples=mc_dropout_samples,
+            )
 
         # Use best valid state if final doesn't meet constraints
-        if best_valid_state and (seq_identity < min_identity or stability.item() < min_stability):
+        if best_valid_state and (
+            seq_identity < min_identity
+            or stability.item() < min_stability
+            or dna_force.item() < min_binding
+        ):
             candidate = {
                 'candidate_id': candidate_idx + 1,
                 'profile': profile['name'],
                 'sequence': best_valid_state['sequence'],
                 'score': best_valid_state['score'],
+                'score_raw': best_valid_state.get('score_raw', best_valid_state['score']),
+                'score_calibrated': best_valid_state.get('score_calibrated', best_valid_state['score']),
                 'stability': best_valid_state['stability'],
                 'binding': best_valid_state['binding'],
                 'identity': best_valid_state['identity'],
                 'n_mutations': best_valid_state['n_mutations'],
+                'uncertainty': float(best_valid_state.get('uncertainty', 0.0)),
+                'ood_distance': float(best_valid_state.get('ood_distance', 0.0)),
                 'mutations': [f"{P53_WT[j]}{j+1}{best_valid_state['sequence'][j]}"
                              for j in range(len(P53_WT))
                              if j < len(best_valid_state['sequence']) and P53_WT[j] != best_valid_state['sequence'][j]],
@@ -1477,13 +2545,21 @@ def run_generative_design(constraints: dict, n_candidates: int = 6):
                 'candidate_id': candidate_idx + 1,
                 'profile': profile['name'],
                 'sequence': final_seq,
-                'score': score.item(),
+                'score': final_score_bundle['score_adjusted'],
+                'score_raw': final_score_bundle['score_raw'],
+                'score_calibrated': final_score_bundle['score_calibrated'],
                 'stability': stability.item(),
                 'binding': dna_force.item(),
                 'identity': seq_identity,
                 'n_mutations': n_mutations,
+                'uncertainty': float(final_score_bundle.get('uncertainty', 0.0)),
+                'ood_distance': float(final_score_bundle.get('ood_distance', 0.0)),
                 'mutations': muts,
-                'meets_constraints': seq_identity >= min_identity and stability.item() >= min_stability
+                'meets_constraints': (
+                    seq_identity >= min_identity
+                    and stability.item() >= min_stability
+                    and dna_force.item() >= min_binding
+                )
             }
 
         all_candidates.append(candidate)
@@ -1537,8 +2613,13 @@ tab1, tab2 = st.tabs(["🧬 Design Studio", "📊 Analysis & Drugs"])
 # === TAB 1: DESIGN STUDIO (Main Design Interface) ===
 with tab1:
     # === GENERATIVE DESIGN CAD MODE ===
-    st.markdown('<p class="gen-design-header"> proteoMgCAD Studio</p>', unsafe_allow_html=True)
-    st.markdown("*Define constraints. AI generates optimal second-site rescues. Topology optimization for proteins.*")
+    st.markdown("""
+    <div class="studio-banner">
+        <p class="studio-kicker">Generative Protein Engineering</p>
+        <p class="gen-design-header">proteoMgCAD Studio</p>
+        <p class="studio-subtitle">Define constraints. AI generates optimal second-site rescues. Topology optimization for proteins.</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("---")
 
     # === CONSTRAINT SPECIFICATION PANEL ===
@@ -1634,6 +2715,38 @@ with tab1:
             index=3,
             help="How many diverse solutions to generate"
         )
+        gd_opt_steps = st.slider(
+            "Optimization Steps",
+            min_value=40,
+            max_value=400,
+            value=120,
+            step=10,
+            help="Gradient steps per candidate. Higher can improve quality but increases runtime."
+        )
+        gd_min_gain = st.slider(
+            "Min Score Gain vs Target",
+            min_value=0.00,
+            max_value=1.00,
+            value=0.05,
+            step=0.01,
+            help="Filter out baseline-like candidates unless they exceed this score gain over target-only baseline."
+        )
+        gd_restarts = st.slider(
+            "Restarts Per Profile",
+            min_value=1,
+            max_value=4,
+            value=2,
+            step=1,
+            help="Independent optimization restarts per objective profile to escape local minima."
+        )
+        gd_novelty_weight = st.slider(
+            "Novelty Weight",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.35,
+            step=0.05,
+            help="Higher values prioritize mutation-pattern diversity in final reranking."
+        )
 
     with gen_col2:
         st.info(f"""
@@ -1643,6 +2756,11 @@ with tab1:
         - Locked: {len(gd_locked)} positions
         - Delivery: {gd_delivery}
         - Candidates: {gd_n_candidates} diverse solutions
+        - Steps per candidate: {gd_opt_steps}
+        - Min gain filter: +{gd_min_gain:.2f} vs target baseline
+        - Restarts/profile: {gd_restarts}
+        - Novelty weight: {gd_novelty_weight:.2f}
+        - Scoring: calibrated + uncertainty/OOD trust penalty
         """)
 
     # === VISUALIZATION MODE ===
@@ -1665,7 +2783,16 @@ with tab1:
             'min_binding': gd_min_binding,
             'locked_positions': gd_locked,
             'delivery_method': delivery_map[gd_delivery],
-            'diversity': gd_diversity
+            'diversity': gd_diversity,
+            'optimization_steps': gd_opt_steps,
+            'min_score_gain': gd_min_gain,
+            'restarts_per_profile': gd_restarts,
+            'novelty_weight': gd_novelty_weight,
+            'ood_trust_radius': 1.75,
+            'ood_loss_weight': 12.0,
+            'ood_rank_penalty_weight': 1.25,
+            'uncertainty_penalty_weight': 0.8,
+            'mc_dropout_samples': 8,
         }
 
         if gd_live_mode:
@@ -1722,35 +2849,57 @@ with tab1:
                 structure_placeholder.warning(f"Could not load initial structure: {e}")
 
             all_candidates = []
+            weight_profiles = [
+                {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#2563EB'},
+                {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#0EA5E9'},
+                {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#10B981'},
+                {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#14B8A6'},
+                {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#1D4ED8'},
+                {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#0891B2'},
+            ]
+            profile_attempt_counts = {p["name"]: 0 for p in weight_profiles}
+            total_trials = int(max(gd_n_candidates, 1) * max(gd_restarts, 1))
+            score_calibration = get_score_calibration_profile()
+            uncertainty_weight = float(constraints.get("uncertainty_penalty_weight", 0.8))
+            ood_rank_weight = float(constraints.get("ood_rank_penalty_weight", 1.25))
+            ood_radius = float(constraints.get("ood_trust_radius", 1.75))
+            ood_loss_weight = float(constraints.get("ood_loss_weight", 12.0))
+            mc_dropout_samples = int(max(2, constraints.get("mc_dropout_samples", 8)))
+            cancer_seq_base = apply_mutation(P53_WT, gd_target)
+            if cancer_seq_base is None:
+                cancer_seq_base = P53_WT
+            AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+            emb_target_ref = embedder.get_embeddings(cancer_seq_base).detach()
+            emb_wt = embedder.get_embeddings(P53_WT).detach()
+            with torch.no_grad():
+                z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
+                pooled_target_ref = z_target_ref.mean(dim=1)
+                if pooled_target_ref.shape[-1] != 320:
+                    pooled_target_ref = pooled_target_ref[:, :320]
+
+            wt_aa_indices = []
+            for aa in P53_WT:
+                aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+                if aa_id in AA_IDS:
+                    wt_aa_indices.append(AA_IDS.index(aa_id))
+                else:
+                    wt_aa_indices.append(0)
+            wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb_target_ref.device)
 
             # Run generation with live updates
-            for candidate_idx in range(gd_n_candidates):
-                torch.manual_seed(42 + candidate_idx * 17)
-                np.random.seed(42 + candidate_idx * 17)
-
-                weight_profiles = [
-                    {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#00D4FF'},
-                    {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#FFD700'},
-                    {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#FF6B6B'},
-                    {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#00FF88'},
-                    {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#9D00FF'},
-                    {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#FF9500'},
-                ]
-                profile = weight_profiles[candidate_idx % len(weight_profiles)]
+            for trial_idx in range(total_trials):
+                torch.manual_seed(42 + trial_idx * 17)
+                np.random.seed(42 + trial_idx * 17)
+                profile = weight_profiles[trial_idx % len(weight_profiles)]
+                profile_attempt_counts[profile["name"]] += 1
+                restart_idx = profile_attempt_counts[profile["name"]]
 
                 status_placeholder.markdown(f"""
-                ###  Building Candidate {candidate_idx + 1}/{gd_n_candidates}
-                **Strategy:** {profile['name']}
+                ###  Building Trial {trial_idx + 1}/{total_trials}
+                **Strategy:** {profile['name']} | Restart {restart_idx}/{gd_restarts}
                 """)
 
-                cancer_seq = apply_mutation(P53_WT, gd_target)
-                if cancer_seq is None:
-                    cancer_seq = P53_WT
-
-                AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
-
-                emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)
-                emb_wt = embedder.get_embeddings(P53_WT).detach()
+                emb = emb_target_ref.clone().detach().requires_grad_(True)
 
                 with torch.no_grad():
                     perturbation = torch.randn_like(emb) * 0.05 * gd_diversity
@@ -1759,19 +2908,14 @@ with tab1:
                 optimizer = torch.optim.Adam([emb], lr=0.04)
                 locked_indices = [int(p) - 1 for p in gd_locked if p]
 
-                wt_aa_indices = []
-                for aa in P53_WT:
-                    aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
-                    if aa_id in AA_IDS:
-                        wt_aa_indices.append(AA_IDS.index(aa_id))
-                    else:
-                        wt_aa_indices.append(0)
-                wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
-
-                n_steps = 80  # Faster for live viz
+                n_steps = int(np.clip(gd_opt_steps, 20, 500))
                 trajectory = []
                 best_valid_state = None
                 best_valid_score = -float('inf')
+                mut_positions = []
+                previous_render_mut_positions = []
+                last_render_step = 0
+                render_stride = 10
 
                 for step_idx in range(1, n_steps + 1):
                     optimizer.zero_grad()
@@ -1788,11 +2932,13 @@ with tab1:
                     stability = log_probs.max(dim=-1).values.mean()
                     dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
                     hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
+                    ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1).mean()
 
                     loss = -score * profile['function']
                     loss -= profile['stability'] * stability
                     loss -= profile['binding'] * dna_force
                     loss -= 3.0 * hydro_packing
+                    loss += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
 
                     probs_aa = F.softmax(logits_aa[0], dim=-1)
                     wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
@@ -1811,6 +2957,8 @@ with tab1:
                         loss += 500.0 * (gd_identity - 5 - seq_identity)
                     if stability.item() < gd_min_stability:
                         loss += 100.0 * (gd_min_stability - stability)
+                    if dna_force.item() < gd_min_binding:
+                        loss += 80.0 * (gd_min_binding - dna_force)
                     if locked_indices:
                         loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
 
@@ -1829,29 +2977,59 @@ with tab1:
                             current_seq = "".join(tokens)[:len(P53_WT)]
                             muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
                             mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
+                            score_bundle = build_trust_adjusted_score(
+                                raw_score=float(score.item()),
+                                pooled=pooled,
+                                pooled_ref=pooled_target_ref,
+                                calibration_profile=score_calibration,
+                                uncertainty_weight=uncertainty_weight,
+                                ood_rank_weight=ood_rank_weight,
+                                ood_radius=ood_radius,
+                                mc_samples=mc_dropout_samples,
+                            )
 
                             trajectory.append({
-                                'step': step_idx, 'score': score.item(), 'stability': stability.item(),
+                                'step': step_idx, 'score': score_bundle['score_adjusted'], 'stability': stability.item(),
+                                'score_raw': score_bundle['score_raw'],
+                                'score_calibrated': score_bundle['score_calibrated'],
                                 'binding': dna_force.item(), 'identity': seq_identity, 'n_mutations': n_mutations,
-                                'mutations': muts[:5], 'mut_positions': mut_positions, 'sequence': current_seq,
+                                'mutations': muts, 'mut_positions': mut_positions, 'sequence': current_seq,
+                                'uncertainty': score_bundle['uncertainty'],
+                                'ood_distance': score_bundle['ood_distance'],
                                 'lx': pooled[0, 0].item(), 'ly': pooled[0, 1].item(),
                                 'lz': pooled[0, 2].item() if pooled.shape[-1] > 2 else score.item()  # 3D latent
                             })
 
-                            if seq_identity >= gd_identity and stability.item() >= gd_min_stability:
-                                if score.item() > best_valid_score:
-                                    best_valid_score = score.item()
+                            if (
+                                seq_identity >= gd_identity
+                                and stability.item() >= gd_min_stability
+                                and dna_force.item() >= gd_min_binding
+                            ):
+                                if score_bundle['score_adjusted'] > best_valid_score:
+                                    best_valid_score = score_bundle['score_adjusted']
                                     best_valid_state = trajectory[-1].copy()
 
+                            stage_meta = get_optimization_stage(step_idx, n_steps)
                             # Update live metrics display
                             with metrics_placeholder.container():
+                                st.markdown(
+                                    f"""
+                                    <div style="background:linear-gradient(135deg,#EAF3FF 0%,#DBF4FF 100%);
+                                                border:1px solid #B7D4F7; border-left:5px solid {stage_meta['color']};
+                                                border-radius:10px; padding:0.55rem 0.75rem; margin-bottom:0.7rem;">
+                                        <p style="margin:0; color:#1E3A5F; font-weight:700; font-size:0.85rem;">{stage_meta['name']}</p>
+                                        <p style="margin:0.15rem 0 0 0; color:#3B5C85; font-size:0.78rem;">{stage_meta['description']}</p>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
                                 st.markdown(f"**Step {step_idx}/{n_steps}**")
                                 mc1, mc2 = st.columns(2)
-                                mc1.metric("Score", f"{score.item():.3f}")
+                                mc1.metric("Score", f"{score_bundle['score_adjusted']:.3f}")
                                 mc2.metric("Identity", f"{seq_identity:.1f}%")
                                 mc3, mc4 = st.columns(2)
                                 mc3.metric("Stability", f"{stability.item():.3f}")
-                                mc4.metric("Mutations", n_mutations)
+                                mc4.metric("Uncertainty", f"{score_bundle['uncertainty']:.3f}")
 
                             # Update mutations list
                             with mutations_placeholder.container():
@@ -1860,113 +3038,284 @@ with tab1:
                                     st.write(f"• {m}")
 
                             # Update progress
-                            overall_progress = (candidate_idx * n_steps + step_idx) / (gd_n_candidates * n_steps)
-                            progress_placeholder.progress(overall_progress, text=f"Overall: {overall_progress*100:.0f}%")
+                            overall_progress = (trial_idx * n_steps + step_idx) / (total_trials * n_steps)
+                            progress_placeholder.progress(
+                                overall_progress,
+                                text=f"Overall: {overall_progress*100:.0f}% | {stage_meta['name']}",
+                            )
 
                             # Update trajectory plot (only every 10 steps to reduce flicker)
-                            if len(trajectory) > 1 and step_idx % 10 == 0:
+                            if len(trajectory) > 1 and step_idx % render_stride == 0:
                                 traj_df = pd.DataFrame(trajectory)
                                 fig_traj = go.Figure()
-                                fig_traj.add_trace(go.Scatter(x=traj_df['step'], y=traj_df['score'],
-                                                              mode='lines+markers', name='Score',
-                                                              line=dict(color=profile['color'], width=3)))
-                                fig_traj.add_trace(go.Scatter(x=traj_df['step'], y=traj_df['stability'],
-                                                              mode='lines', name='Stability',
-                                                              line=dict(color='#FFD700', dash='dot')))
-                                fig_traj.update_layout(template='plotly_white', height=200,
-                                                       margin=dict(l=0, r=0, t=30, b=0),
-                                                       title=f"Candidate {candidate_idx+1} Optimization",
-                                                       showlegend=True)
-                                trajectory_placeholder.plotly_chart(fig_traj, use_container_width=True)
+                                fig_traj.add_trace(go.Scatter(
+                                    x=traj_df['step'],
+                                    y=traj_df['score'],
+                                    mode='lines+markers',
+                                    name='Rescue Score',
+                                    line=dict(color=profile['color'], width=3, shape='spline', smoothing=0.7),
+                                    marker=dict(size=5),
+                                    fill='tozeroy',
+                                    fillcolor='rgba(37, 99, 235, 0.14)'
+                                ))
+                                fig_traj.add_trace(go.Scatter(
+                                    x=traj_df['step'],
+                                    y=traj_df['stability'],
+                                    mode='lines',
+                                    name='Stability',
+                                    line=dict(color='#38BDF8', width=2.3, dash='dot')
+                                ))
+                                fig_traj.add_trace(go.Scatter(
+                                    x=traj_df['step'],
+                                    y=traj_df['identity'],
+                                    mode='lines',
+                                    name='Identity (%)',
+                                    line=dict(color='#1D4ED8', width=2, dash='dash'),
+                                    yaxis='y2'
+                                ))
+                                fig_traj.add_hline(
+                                    y=gd_min_stability,
+                                    line_dash='dot',
+                                    line_width=1.2,
+                                    line_color='#0EA5E9',
+                                    annotation_text='Stability floor',
+                                    annotation_position='top left'
+                                )
+                                fig_traj.update_layout(
+                                    template='plotly_white',
+                                    height=240,
+                                    margin=dict(l=0, r=0, t=34, b=0),
+                                    title=f"Trial {trial_idx+1} Optimization",
+                                    xaxis_title="Step",
+                                    yaxis_title="Score / Stability",
+                                    yaxis2=dict(
+                                        title="Identity %",
+                                        overlaying='y',
+                                        side='right',
+                                        range=[75, 101],
+                                        showgrid=False
+                                    ),
+                                    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0)
+                                )
+                                render_plotly_in(trajectory_placeholder, fig_traj, chart_kind="mini", use_container_width=True)
 
-                # === 3D STRUCTURE - Update every 20 steps for LIVE MORPHING ===
-                if step_idx % 20 == 0 or step_idx == n_steps:
-                    if mut_positions:
-                        mut_str = "+".join([str(p) for p in mut_positions[:10]])
-                    else:
-                        mut_str = "none"
-
+                # === 3D STRUCTURE - Update every render stride with smooth keyframes ===
+                if step_idx % render_stride == 0 or step_idx == n_steps:
                     try:
                         with open("data/raw/p53_wt.pdb", "r") as f:
                             pdb_content = f.read()
 
-                        # MORPH the structure based on mutations - coordinates actually change!
-                        morphed_pdb = morph_pdb_for_mutations(
-                            pdb_content,
-                            mut_positions,
-                            step_idx,
-                            n_steps
-                        )
-
+                        stage_meta = get_optimization_stage(step_idx, n_steps)
                         progress_pct = int((step_idx / n_steps) * 100)
                         is_final = step_idx == n_steps
+                        frame_start = last_render_step if last_render_step > 0 else max(1, step_idx - render_stride)
+                        frame_count = min(12, max(6, (step_idx - frame_start) + 4))
+                        morph_frames = build_morph_keyframes(
+                            pdb_string=pdb_content,
+                            mutation_positions=mut_positions,
+                            start_step=frame_start,
+                            end_step=step_idx,
+                            total_steps=n_steps,
+                            n_frames=frame_count,
+                        )
+                        if not morph_frames:
+                            morph_frames = [pdb_content]
 
-                        # Render structure with morphing
+                        frame_payload = json.dumps(morph_frames)
+                        mut_payload = json.dumps(mut_positions[:10])
+                        focus_positions = compute_camera_focus_positions(
+                            mut_positions,
+                            previous_positions=previous_render_mut_positions,
+                            max_points=10,
+                        )
+                        focus_payload = json.dumps(focus_positions)
+                        grow_radius = 0.35 + (progress_pct / 100.0) * 0.35
+                        base_opacity = 0.60 + (progress_pct / 100.0) * 0.25
+                        viewer_id = f"morph_view_{trial_idx}_{step_idx}"
+                        status_text = (
+                            f"Finalized {profile['name']} candidate"
+                            if is_final
+                            else f"{profile['name']} | Step {step_idx}/{n_steps}"
+                        )
+
                         live_3d_html = f"""
                         <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-                        <div id="morph_view_{candidate_idx}_{step_idx}" style="width:100%; height:380px; border-radius:12px; border:3px solid {profile["color"]}; background:#0F172A;"></div>
-                        <div style="height:8px; background:linear-gradient(90deg, {profile["color"]} {progress_pct}%, #374151 {progress_pct}%); border-radius:4px; margin-top:8px;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+                            <div style="background:rgba(11,27,59,0.9); color:#DBEAFE; border-left:4px solid {stage_meta['color']};
+                                        padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700;">
+                                {stage_meta['name']}
+                            </div>
+                            <div style="color:#475569; font-size:12px; font-weight:600;">
+                                {stage_meta['description']}
+                            </div>
+                        </div>
+                        <div id="{viewer_id}" style="width:100%; height:382px; border-radius:12px; border:3px solid {profile["color"]}; background:#0F172A;"></div>
+                        <div style="height:10px; background:#334155; border-radius:6px; margin-top:8px; overflow:hidden;">
+                            <div style="height:100%; width:{progress_pct}%; background:linear-gradient(90deg, {profile['color']} 0%, {stage_meta['color']} 100%);"></div>
+                        </div>
                         <script>
-                            let viewer = $3Dmol.createViewer('morph_view_{candidate_idx}_{step_idx}', {{backgroundColor: '0x0F172A'}});
-                            let pdb = `{morphed_pdb.replace(chr(10), chr(92) + 'n').replace('`', '')}`;
-                            viewer.addModel(pdb, 'pdb');
-                            viewer.setStyle({{}}, {{cartoon: {{color: '0x64748B', opacity: 0.7}}}});
-                            let muts = "{mut_str}".split("+");
-                            muts.forEach(pos => {{
-                                if (pos && pos !== 'none') {{
-                                    let p = parseInt(pos);
-                                    viewer.addStyle({{resi: p}}, {{
-                                        cartoon: {{color: '{profile["color"]}', opacity: 1.0}},
-                                        stick: {{color: '{profile["color"]}', radius: 0.3}}
+                            (() => {{
+                                const frames = {frame_payload};
+                                const mutPositions = {mut_payload};
+                                const focusPositions = {focus_payload};
+                                const viewer = $3Dmol.createViewer('{viewer_id}', {{backgroundColor: '0x0F172A'}});
+                                const profileColor = '{profile["color"]}';
+                                const growRadius = {grow_radius:.3f};
+                                const baseOpacity = {base_opacity:.3f};
+                                const hasFocus = focusPositions.length > 0 || mutPositions.length > 0;
+                                const focusSelection = focusPositions.length > 0
+                                    ? {{resi: focusPositions}}
+                                    : (mutPositions.length > 0 ? {{resi: mutPositions}} : {{}});
+
+                                function applyStyles() {{
+                                    viewer.setStyle({{}}, {{cartoon: {{color: '0x64748B', opacity: baseOpacity}}}});
+                                    viewer.addStyle({{resi: [112,113,114,115,116,117,118,119,120,121,122,123,124]}},
+                                                   {{cartoon: {{color: '0x0EA5E9', opacity: 0.95}}}});
+                                    viewer.addStyle({{resi: [236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251]}},
+                                                   {{cartoon: {{color: '0x10B981', opacity: 0.95}}}});
+                                    mutPositions.forEach((p) => {{
+                                        viewer.addStyle({{resi: p}}, {{
+                                            cartoon: {{color: profileColor, opacity: 1.0}},
+                                            stick: {{color: profileColor, radius: 0.28 + growRadius * 0.22}}
+                                        }});
+                                        viewer.addStyle({{resi: p, atom: 'CA'}}, {{
+                                            sphere: {{color: profileColor, radius: growRadius, opacity: 0.95}}
+                                        }});
                                     }});
-                                    viewer.addStyle({{resi: p, atom: 'CA'}}, {{sphere: {{color: '{profile["color"]}', radius: 0.6}}}});
                                 }}
-                            }});
-                            viewer.addStyle({{resi: [112,113,114,115,116,117,118,119,120,121,122,123,124]}}, {{cartoon: {{color: '0x0EA5E9', opacity: 0.9}}}});
-                            viewer.addStyle({{resi: [236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251]}}, {{cartoon: {{color: '0x10B981', opacity: 0.9}}}});
-                            viewer.zoomTo();
-                            viewer.spin('y', 1.5);
-                            viewer.render();
+
+                                function focusCamera(durationMs) {{
+                                    if (hasFocus) {{
+                                        viewer.zoomTo(focusSelection, durationMs);
+                                    }} else {{
+                                        viewer.zoomTo({{}}, durationMs);
+                                    }}
+                                }}
+
+                                function renderFrame(frameIndex) {{
+                                    viewer.removeAllModels();
+                                    viewer.addModel(frames[frameIndex], 'pdb');
+                                    applyStyles();
+                                    if (frameIndex === 0) {{
+                                        focusCamera(320);
+                                    }} else if (frameIndex % 2 === 0 && hasFocus) {{
+                                        focusCamera(120);
+                                    }}
+                                    viewer.render();
+                                }}
+
+                                let frameIndex = 0;
+                                renderFrame(frameIndex);
+                                viewer.spin('y', hasFocus ? 0.55 : 1.0);
+
+                                if (frames.length > 1) {{
+                                    const interval = setInterval(() => {{
+                                        frameIndex = (frameIndex + 1) % frames.length;
+                                        renderFrame(frameIndex);
+                                    }}, 95);
+                                    setTimeout(() => clearInterval(interval), Math.max(2200, frames.length * 100));
+                                }}
+                            }})();
                         </script>
-                        <p style="text-align:center; color:{profile['color']}; font-weight:600; margin-top:10px; font-size:15px;">
-                            {"✅ " + profile['name'] + " Complete" if is_final else "🔄 " + profile['name'] + " Step " + str(step_idx) + "/" + str(n_steps)} | {len(mut_positions)} mutations
+                        <p style="text-align:center; color:{profile['color']}; font-weight:600; margin-top:10px; font-size:14px;">
+                            {status_text} | {len(mut_positions)} active mutation sites
                         </p>
                         """
                         with structure_placeholder.container():
-                            components.html(live_3d_html, height=450)
+                            components.html(live_3d_html, height=474)
+                        last_render_step = step_idx
+                        previous_render_mut_positions = list(mut_positions)
                     except Exception as e:
                         structure_placeholder.error(f"Could not render protein: {e}")
 
                 # Store final candidate
                 final_state = best_valid_state if best_valid_state else trajectory[-1]
                 candidate = {
-                    'candidate_id': candidate_idx + 1,
+                    'candidate_id': trial_idx + 1,
                     'profile': profile['name'],
                     'color': profile['color'],
+                    'restart': restart_idx,
+                    'trial_idx': trial_idx + 1,
                     'sequence': final_state['sequence'],
                     'score': final_state['score'],
+                    'score_raw': final_state.get('score_raw', final_state['score']),
+                    'score_calibrated': final_state.get('score_calibrated', final_state['score']),
                     'stability': final_state['stability'],
                     'binding': final_state['binding'],
                     'identity': final_state['identity'],
                     'n_mutations': final_state['n_mutations'],
                     'mutations': final_state['mutations'],
                     'mut_positions': final_state.get('mut_positions', []),
+                    'uncertainty': float(final_state.get('uncertainty', 0.0)),
+                    'ood_distance': float(final_state.get('ood_distance', 0.0)),
                     'trajectory': trajectory,
-                    'meets_constraints': final_state['identity'] >= gd_identity and final_state['stability'] >= gd_min_stability
+                    'meets_constraints': (
+                        final_state['identity'] >= gd_identity
+                        and final_state['stability'] >= gd_min_stability
+                        and final_state['binding'] >= gd_min_binding
+                    )
                 }
                 all_candidates.append(candidate)
 
             candidates = all_candidates
-            status_placeholder.success(f" Generated {len(candidates)} candidate designs!")
+            status_placeholder.success(f"Generated {len(candidates)} raw trial designs. Applying quality/diversity selection...")
 
         else:
             # Non-live mode (faster)
-            with st.spinner(f" Generating {gd_n_candidates} candidate designs..."):
-                candidates = run_generative_design_live(constraints, n_candidates=gd_n_candidates)
+            with st.spinner(
+                f"Generating {gd_n_candidates * gd_restarts} trial designs ({gd_restarts} restarts/profile)..."
+            ):
+                candidates = run_generative_design_live(
+                    constraints,
+                    n_candidates=int(max(gd_n_candidates, 1) * max(gd_restarts, 1)),
+                    n_steps=gd_opt_steps,
+                )
+
+        baseline_metrics = compute_target_baseline_metrics(gd_target)
+        candidates, filter_summary = filter_candidate_set(
+            candidates=candidates,
+            target_mutation=gd_target,
+            baseline_score=baseline_metrics["score"],
+            min_score_gain=gd_min_gain,
+            min_rescue_mutations=1,
+        )
+        candidates, diversity_summary = select_diverse_candidates(
+            candidates=candidates,
+            target_mutation=gd_target,
+            desired_count=gd_n_candidates,
+            novelty_weight=gd_novelty_weight,
+            overlap_penalty=0.20,
+        )
+        for rank_idx, cand in enumerate(candidates, start=1):
+            cand["candidate_id"] = rank_idx
+
+        if filter_summary["removed"] > 0:
+            st.info(
+                "Quality filter removed "
+                f"{filter_summary['removed']} baseline-like candidates "
+                f"(min gain +{gd_min_gain:.2f} vs trust-adjusted baseline {baseline_metrics['score']:.3f})."
+            )
+        if filter_summary["fallback_used"]:
+            st.warning(
+                "No candidate passed the quality filter; showing the top-scoring design only. "
+                "Lower `Min Score Gain vs Target` or increase `Optimization Steps`."
+            )
+        st.info(
+            "Diversity rerank selected "
+            f"{len(candidates)} final candidates from {diversity_summary['pool_size']} filtered designs "
+            f"(novelty weight {diversity_summary['novelty_weight']:.2f}, overlap penalty {diversity_summary['overlap_penalty']:.2f})."
+        )
+        st.caption(
+            "Scores shown below are trust-adjusted: calibrated to DMS range, then penalized by MC-dropout "
+            "uncertainty and latent OOD distance."
+        )
 
         # Store in session state
         st.session_state['gd_candidates'] = candidates
         st.session_state['gd_constraints'] = constraints
+        st.session_state['gd_filter_summary'] = filter_summary
+        st.session_state['gd_target_baseline'] = baseline_metrics
+        st.session_state['gd_diversity_summary'] = diversity_summary
 
     # === CANDIDATE GALLERY ===
     if 'gd_candidates' in st.session_state and st.session_state['gd_candidates']:
@@ -1984,9 +3333,30 @@ with tab1:
 
         sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
         sum_col1.metric("Valid Designs", f"{valid_count}/{len(candidates)}")
-        sum_col2.metric("Avg Function Score", f"{avg_score:.3f}")
+        sum_col2.metric("Avg Trust Score", f"{avg_score:.3f}")
         sum_col3.metric("Avg Identity", f"{avg_identity:.1f}%")
         sum_col4.metric("Design Space Coverage", f"{len(set(c['profile'] for c in candidates))} profiles")
+
+        filter_summary = st.session_state.get("gd_filter_summary")
+        target_baseline = st.session_state.get("gd_target_baseline")
+        diversity_summary = st.session_state.get("gd_diversity_summary")
+        if isinstance(filter_summary, dict) and isinstance(target_baseline, dict):
+            st.caption(
+                "Quality filter: "
+                f"kept {filter_summary.get('kept', len(candidates))}/"
+                f"{filter_summary.get('total', len(candidates))}, "
+                f"removed {filter_summary.get('removed', 0)} baseline-like designs. "
+                f"Target baseline trust score={float(target_baseline.get('score', 0.0)):.3f}, "
+                f"min gain=+{float(filter_summary.get('min_score_gain', 0.0)):.2f}."
+            )
+        if isinstance(diversity_summary, dict):
+            st.caption(
+                "Diversification: "
+                f"pool {diversity_summary.get('pool_size', len(candidates))} → "
+                f"selected {diversity_summary.get('selected', len(candidates))}; "
+                f"novelty weight={float(diversity_summary.get('novelty_weight', 0.0)):.2f}, "
+                f"overlap penalty={float(diversity_summary.get('overlap_penalty', 0.0)):.2f}."
+            )
 
         # Pareto frontier visualization
         st.markdown("###  Pareto Frontier (Trade-offs)")
@@ -1996,11 +3366,26 @@ with tab1:
         fig_pareto = go.Figure()
 
         # Color by profile
-        colors = {'Balanced': '#00D4FF', 'Stability-First': '#FFD700', 'Binding-Optimized': '#FF6B6B',
-                  'Function-Maximized': '#00FF88', 'Conservative': '#9D00FF', 'Experimental': '#FF9500'}
+        colors = {'Balanced': '#2563EB', 'Stability-First': '#0EA5E9', 'Binding-Optimized': '#10B981',
+                  'Function-Maximized': '#14B8A6', 'Conservative': '#1D4ED8', 'Experimental': '#0891B2'}
+        min_identity_gate = constraints.get('min_identity', 90)
+        min_function_gate = constraints.get('min_function', -0.2)
+
+        bind_min = float(pareto_df['binding'].min()) if len(pareto_df) else 0.0
+        bind_span = float(pareto_df['binding'].max() - bind_min) if len(pareto_df) else 1.0
+        bind_span = bind_span if bind_span > 1e-8 else 1.0
+        pareto_df['binding_size'] = 12 + 18 * ((pareto_df['binding'] - bind_min) / bind_span)
 
         for profile in pareto_df['profile'].unique():
             df_profile = pareto_df[pareto_df['profile'] == profile]
+            customdata = np.stack(
+                [
+                    df_profile['binding'].to_numpy(),
+                    df_profile['stability'].to_numpy(),
+                    df_profile['n_mutations'].to_numpy()
+                ],
+                axis=-1
+            )
             fig_pareto.add_trace(go.Scatter(
                 x=df_profile['identity'],
                 y=df_profile['score'],
@@ -2008,33 +3393,73 @@ with tab1:
                 name=profile,
                 text=df_profile['candidate_id'].astype(str),
                 textposition='top center',
+                customdata=customdata,
                 marker=dict(
-                    size=df_profile['binding'] * 3 + 10,
+                    size=df_profile['binding_size'],
                     color=colors.get(profile, '#FFFFFF'),
-                    line=dict(width=2, color='white'),
-                    opacity=0.8
+                    line=dict(width=1.4, color='rgba(255,255,255,0.9)'),
+                    opacity=0.9,
+                    symbol='circle'
                 ),
                 hovertemplate=f"<b>{profile}</b><br>" +
                               "Identity: %{x:.1f}%<br>" +
-                              "Score: %{y:.3f}<br>" +
-                              "Binding: %{marker.size:.1f}<extra></extra>"
+                              "Trust score: %{y:.3f}<br>" +
+                              "DNA Binding: %{customdata[0]:.2f}<br>" +
+                              "Stability: %{customdata[1]:.3f}<br>" +
+                              "Mutations: %{customdata[2]:.0f}<extra></extra>"
             ))
 
-        # Add constraint boundaries
-        fig_pareto.add_vline(x=constraints.get('min_identity', 90), line_dash="dash", line_color="red",
-                            annotation_text=f"Min Identity: {constraints.get('min_identity', 90)}%")
-        fig_pareto.add_hline(y=constraints.get('min_function', -0.2), line_dash="dash", line_color="orange",
-                            annotation_text="Min Function")
+        y_top = float(pareto_df['score'].max()) + 0.12 if len(pareto_df) else 0.5
+        x_right = float(pareto_df['identity'].max()) + 0.7 if len(pareto_df) else 100
+        fig_pareto.add_shape(
+            type="rect",
+            x0=min_identity_gate,
+            x1=x_right,
+            y0=min_function_gate,
+            y1=y_top,
+            fillcolor="rgba(16, 185, 129, 0.10)",
+            line=dict(width=0),
+            layer="below"
+        )
+        fig_pareto.add_vline(
+            x=min_identity_gate,
+            line_dash="dash",
+            line_width=1.7,
+            line_color="#EF4444",
+            annotation_text=f"Identity floor {min_identity_gate:.0f}%"
+        )
+        fig_pareto.add_hline(
+            y=min_function_gate,
+            line_dash="dash",
+            line_width=1.7,
+            line_color="#F59E0B",
+            annotation_text=f"Function floor {min_function_gate:.2f}"
+        )
+
+        best_idx = pareto_df['score'].idxmax()
+        best_row = pareto_df.loc[best_idx]
+        fig_pareto.add_trace(go.Scatter(
+            x=[best_row['identity']],
+            y=[best_row['score']],
+            mode='markers+text',
+            text=["Best"],
+            textposition='top right',
+            name='Best Candidate',
+            marker=dict(size=24, color="#F59E0B", symbol='star', line=dict(width=1.3, color="#FFFFFF")),
+            hovertemplate="<b>Best Candidate</b><br>Identity: %{x:.1f}%<br>Trust score: %{y:.3f}<extra></extra>"
+        ))
 
         fig_pareto.update_layout(
             template="plotly_white",
-            title="Design Space Exploration (Size = DNA Binding)",
+            title="Design Space Exploration (Size = DNA Binding, Green = Feasible Region)",
             xaxis_title="Sequence Identity (%)",
-            yaxis_title="Rescue Score",
+            yaxis_title="Trust-Adjusted Rescue Score",
             height=400,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02)
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            xaxis=dict(range=[max(79, pareto_df['identity'].min() - 1), min(100, x_right)]),
+            yaxis=dict(range=[min(min_function_gate - 0.15, pareto_df['score'].min() - 0.08), y_top])
         )
-        st.plotly_chart(fig_pareto, use_container_width=True)
+        render_plotly(fig_pareto, chart_kind="pareto", use_container_width=True)
 
         # === 3D STRUCTURE GALLERY ===
         st.markdown("### ️ 3D Structure Gallery")
@@ -2051,7 +3476,7 @@ with tab1:
 
         if pdb_available:
             # Display 3 candidates per row
-            sorted_candidates = sorted(candidates, key=lambda x: x['score'], reverse=True)
+            sorted_candidates = sorted(candidates, key=candidate_rank_value, reverse=True)
             n_cols = 3
 
             for row_start in range(0, min(len(sorted_candidates), 6), n_cols):
@@ -2061,7 +3486,7 @@ with tab1:
                     cand_idx = row_start + i
                     if cand_idx < len(sorted_candidates):
                         cand = sorted_candidates[cand_idx]
-                        profile_color = cand.get('color', '#00D4FF')
+                        profile_color = cand.get('color', '#2563EB')
 
                         # Get mutation positions
                         mut_positions = cand.get('mut_positions', [])
@@ -2084,7 +3509,7 @@ with tab1:
 
                         with col:
                             # Validity badge
-                            badge_color = "#00FF88" if cand['meets_constraints'] else "#FF6B6B"
+                            badge_color = "#10B981" if cand['meets_constraints'] else "#EF4444"
                             badge_text = "" if cand['meets_constraints'] else "️"
 
                             st.markdown(f"""
@@ -2155,7 +3580,7 @@ with tab1:
                             m1, m2, m3 = st.columns(3)
                             m1.metric("Score", f"{cand['score']:.2f}", label_visibility="collapsed")
                             m2.metric("ID%", f"{cand['identity']:.0f}%", label_visibility="collapsed")
-                            m3.metric("Muts", cand['n_mutations'], label_visibility="collapsed")
+                            m3.metric("Unc", f"{float(cand.get('uncertainty', 0.0)):.2f}", label_visibility="collapsed")
 
                             # Show unique mutations
                             if unique_muts:
@@ -2187,22 +3612,57 @@ with tab1:
                         row.append(1 if pos in c_muts else 0)
                     matrix.append(row)
 
+                mut_yesno = [["Yes" if v == 1 else "No" for v in row] for row in matrix]
                 fig_heatmap = go.Figure(data=go.Heatmap(
                     z=matrix,
                     x=[f"Pos {p}" for p in positions_sorted],
                     y=[f"#{c['candidate_id']} {c['profile']}" for c in sorted_candidates],
-                    colorscale=[[0, '#0e1117'], [1, '#00D4FF']],
-                    showscale=False
+                    customdata=mut_yesno,
+                    colorscale=[[0, '#EDF4FF'], [1, '#1D4ED8']],
+                    zmin=0,
+                    zmax=1,
+                    showscale=True,
+                    colorbar=dict(
+                        title="Mutated",
+                        tickvals=[0, 1],
+                        ticktext=["No", "Yes"],
+                        len=0.72
+                    ),
+                    hovertemplate="Candidate: %{y}<br>Position: %{x}<br>Mutated: %{customdata}<extra></extra>"
                 ))
                 fig_heatmap.update_layout(
                     template='plotly_white',
-                    height=250,
+                    height=280,
                     margin=dict(l=0, r=0, t=30, b=0),
                     title="Mutation Positions by Candidate",
                     xaxis_title="Position",
                     yaxis_title=""
                 )
-                st.plotly_chart(fig_heatmap, use_container_width=True)
+                fig_heatmap.update_xaxes(tickangle=-45)
+                render_plotly(fig_heatmap, chart_kind="heatmap", use_container_width=True)
+
+                # Frequency plot to reveal consensus hotspots across candidates
+                pos_counts = np.sum(np.array(matrix), axis=0)
+                fig_hotspots = go.Figure(go.Bar(
+                    x=[f"Pos {p}" for p in positions_sorted],
+                    y=pos_counts,
+                    marker=dict(
+                        color=pos_counts,
+                        colorscale='Blues',
+                        line=dict(width=0.8, color='rgba(255,255,255,0.8)')
+                    ),
+                    hovertemplate="Position: %{x}<br>Candidates mutating: %{y}<extra></extra>"
+                ))
+                fig_hotspots.update_layout(
+                    template='plotly_white',
+                    height=220,
+                    margin=dict(l=0, r=0, t=26, b=0),
+                    title="Consensus Mutation Frequency",
+                    xaxis_title="Residue Position",
+                    yaxis_title="Count"
+                )
+                fig_hotspots.update_xaxes(tickangle=-45)
+                render_plotly(fig_hotspots, chart_kind="bar", use_container_width=True)
 
                 # Consensus mutations (positions mutated by multiple candidates)
                 position_counts = {}
@@ -2218,7 +3678,7 @@ with tab1:
         st.markdown("### Candidate Details")
 
         # Sort by score (best first)
-        sorted_candidates = sorted(candidates, key=lambda x: x['score'], reverse=True)
+        sorted_candidates = sorted(candidates, key=candidate_rank_value, reverse=True)
 
         for i in range(0, len(sorted_candidates), 2):
             card_cols = st.columns(2)
@@ -2228,7 +3688,7 @@ with tab1:
                     cand = sorted_candidates[i + j]
 
                     # Color based on validity
-                    border_color = "#00FF88" if cand['meets_constraints'] else "#FF6B6B"
+                    border_color = "#10B981" if cand['meets_constraints'] else "#EF4444"
                     validity_badge = " VALID" if cand['meets_constraints'] else "️ CONSTRAINT VIOLATION"
 
                     with col:
@@ -2240,10 +3700,11 @@ with tab1:
                         """, unsafe_allow_html=True)
 
                         # Metrics row
-                        m1, m2, m3 = st.columns(3)
+                        m1, m2, m3, m4 = st.columns(4)
                         m1.metric("Score", f"{cand['score']:.3f}")
-                        m2.metric("Identity", f"{cand['identity']:.1f}%")
-                        m3.metric("Mutations", cand['n_mutations'])
+                        m2.metric("Gain vs target", f"{float(cand.get('score_gain_vs_target', 0.0)):+.3f}")
+                        m3.metric("Identity", f"{cand['identity']:.1f}%")
+                        m4.metric("Mutations", cand['n_mutations'])
 
                         # Show mutations
                         muts_display = ", ".join(cand['mutations'][:5])
@@ -2253,6 +3714,18 @@ with tab1:
 
                         # Physics scores
                         st.caption(f"Stability: {cand['stability']:.3f} | Binding: {cand['binding']:.2f}")
+                        st.caption(
+                            f"Raw score: {float(cand.get('score_raw', cand['score'])):.3f} | "
+                            f"Calibrated: {float(cand.get('score_calibrated', cand['score'])):.3f} | "
+                            f"Uncertainty: {float(cand.get('uncertainty', 0.0)):.3f} | "
+                            f"OOD dist: {float(cand.get('ood_distance', 0.0)):.3f}"
+                        )
+                        if "selection_score" in cand:
+                            st.caption(
+                                f"Selection score: {float(cand.get('selection_score', 0.0)):.3f} | "
+                                f"Novelty: {float(cand.get('diversity_novelty', 0.0)):.2f} | "
+                                f"Max overlap: {float(cand.get('max_mutation_overlap', 0.0)):.2f}"
+                            )
 
                         # Action buttons
                         btn_col1, btn_col2 = st.columns(2)
@@ -2286,6 +3759,11 @@ with tab1:
             'ID': c['candidate_id'],
             'Profile': c['profile'],
             'Score': f"{c['score']:.3f}",
+            'Raw Score': f"{float(c.get('score_raw', c['score'])):.3f}",
+            'Gain vs Target': f"{float(c.get('score_gain_vs_target', 0.0)):+.3f}",
+            'Uncertainty': f"{float(c.get('uncertainty', 0.0)):.3f}",
+            'OOD Dist': f"{float(c.get('ood_distance', 0.0)):.3f}",
+            'Novelty': f"{float(c.get('diversity_novelty', 0.0)):.2f}",
             'Stability': f"{c['stability']:.3f}",
             'Binding': f"{c['binding']:.2f}",
             'Identity': f"{c['identity']:.1f}%",
@@ -2323,7 +3801,7 @@ with tab1:
         # Hero metrics row
         hero_col1, hero_col2, hero_col3, hero_col4 = st.columns(4)
         with hero_col1:
-            st.metric("🎯 Rescue Score", f"{best_candidate['score']:.3f}",
+            st.metric("🎯 Trust Score", f"{best_candidate['score']:.3f}",
                      delta="Best" if best_candidate['meets_constraints'] else "Constraint Issue")
         with hero_col2:
             st.metric("🧬 Identity", f"{best_candidate['identity']:.1f}%",
@@ -2331,7 +3809,13 @@ with tab1:
         with hero_col3:
             st.metric("⚡ Stability", f"{best_candidate['stability']:.3f}")
         with hero_col4:
-            st.metric("🔗 DNA Binding", f"{best_candidate['binding']:.2f}")
+            st.metric("📉 Uncertainty", f"{float(best_candidate.get('uncertainty', 0.0)):.3f}")
+        st.caption(
+            f"Raw oracle score: {float(best_candidate.get('score_raw', best_candidate['score'])):.3f} | "
+            f"Calibrated score: {float(best_candidate.get('score_calibrated', best_candidate['score'])):.3f} | "
+            f"OOD distance: {float(best_candidate.get('ood_distance', 0.0)):.3f} | "
+            f"DNA Binding: {best_candidate['binding']:.2f}"
+        )
 
         # Two column layout: Mutations + 3D Structure | Graphs
         result_col1, result_col2 = st.columns([1, 1])
@@ -2364,35 +3848,92 @@ with tab1:
 
             if best_candidate.get('trajectory') and len(best_candidate['trajectory']) > 1:
                 traj_df = pd.DataFrame(best_candidate['trajectory'])
+                min_identity_target = constraints.get('min_identity', 90)
+                min_function_target = constraints.get('min_function', -0.2)
+                min_stability_target = constraints.get('min_stability', -0.2)
 
                 fig_result = go.Figure()
                 fig_result.add_trace(go.Scatter(
                     x=traj_df['step'], y=traj_df['score'],
                     mode='lines+markers', name='Rescue Score',
-                    line=dict(color=best_candidate.get('color', '#00D4FF'), width=3),
-                    marker=dict(size=6)
+                    line=dict(color=best_candidate.get('color', '#2563EB'), width=3),
+                    marker=dict(size=6),
+                    fill='tozeroy',
+                    fillcolor='rgba(37, 99, 235, 0.12)'
                 ))
                 fig_result.add_trace(go.Scatter(
                     x=traj_df['step'], y=traj_df['stability'],
                     mode='lines', name='Stability',
-                    line=dict(color='#FFD700', width=2, dash='dot')
+                    line=dict(color='#38BDF8', width=2, dash='dot')
                 ))
                 fig_result.add_trace(go.Scatter(
                     x=traj_df['step'], y=traj_df['binding'] / 10,  # Scale for visibility
                     mode='lines', name='DNA Binding (scaled)',
-                    line=dict(color='#00FF88', width=2, dash='dash')
+                    line=dict(color='#10B981', width=2, dash='dash')
                 ))
+                fig_result.add_trace(go.Scatter(
+                    x=traj_df['step'], y=traj_df['identity'],
+                    mode='lines', name='Identity (%)',
+                    line=dict(color='#1D4ED8', width=2, dash='dashdot'),
+                    yaxis='y2'
+                ))
+
+                fig_result.add_hline(
+                    y=min_function_target,
+                    line_dash='dot',
+                    line_width=1.2,
+                    line_color='#F59E0B',
+                    annotation_text='Function floor',
+                    annotation_position='bottom right'
+                )
+                fig_result.add_hline(
+                    y=min_stability_target,
+                    line_dash='dot',
+                    line_width=1.2,
+                    line_color='#0EA5E9',
+                    annotation_text='Stability floor',
+                    annotation_position='top right'
+                )
+                fig_result.add_shape(
+                    type='line',
+                    x0=float(traj_df['step'].min()),
+                    x1=float(traj_df['step'].max()),
+                    y0=min_identity_target,
+                    y1=min_identity_target,
+                    xref='x',
+                    yref='y2',
+                    line=dict(color='#DC2626', width=1.2, dash='dot')
+                )
+                fig_result.add_annotation(
+                    x=float(traj_df['step'].max()),
+                    y=min_identity_target,
+                    xref='x',
+                    yref='y2',
+                    text='Identity floor',
+                    showarrow=False,
+                    xanchor='right',
+                    yanchor='bottom',
+                    font=dict(size=10, color='#DC2626'),
+                    bgcolor='rgba(255,255,255,0.65)'
+                )
 
                 fig_result.update_layout(
                     template='plotly_white',
-                    height=250,
+                    height=300,
                     margin=dict(l=0, r=0, t=30, b=0),
                     title=f"Candidate #{best_candidate['candidate_id']} Evolution",
                     xaxis_title="Optimization Step",
-                    yaxis_title="Score",
+                    yaxis_title="Score / Stability / Binding (scaled)",
+                    yaxis2=dict(
+                        title="Identity (%)",
+                        overlaying='y',
+                        side='right',
+                        range=[75, 101],
+                        showgrid=False
+                    ),
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
                 )
-                st.plotly_chart(fig_result, use_container_width=True)
+                render_plotly(fig_result, chart_kind="trajectory", use_container_width=True)
             else:
                 st.info("No trajectory data available")
 
@@ -2409,7 +3950,7 @@ with tab1:
             for i, aa in enumerate(seq):
                 pos = i + 1  # 1-indexed
                 if pos in mut_positions:
-                    seq_html += f'<span style="color: #FF6B6B; font-weight: bold; background: rgba(255,107,107,0.2); padding: 2px 1px; border-radius: 3px;">{aa}</span>'
+                    seq_html += f'<span style="color: #F43F5E; font-weight: bold; background: rgba(244,63,94,0.18); padding: 2px 1px; border-radius: 3px;">{aa}</span>'
                 else:
                     seq_html += f'<span style="color: #94A3B8;">{aa}</span>'
                 # Add line break every 60 residues
@@ -2459,7 +4000,7 @@ with tab1:
                     x=traj_df['lx'], y=traj_df['ly'],
                     z=traj_df.get('lz', traj_df['score']),
                     mode='lines',
-                    line=dict(color='rgba(100,100,100,0.5)', width=2),
+                    line=dict(color='rgba(37,99,235,0.55)', width=4),
                     name='Path',
                     showlegend=False
                 ))
@@ -2472,11 +4013,18 @@ with tab1:
                     marker=dict(
                         size=6,
                         color=traj_df['step'],
-                        colorscale='Viridis',
-                        colorbar=dict(title='Step', x=1.02),
+                        colorscale=[
+                            [0.0, '#1D4ED8'],
+                            [0.5, '#0EA5E9'],
+                            [1.0, '#10B981']
+                        ],
+                        colorbar=dict(title='Step', x=1.02, thickness=12),
                         opacity=0.9
                     ),
-                    text=[f"Step {s}<br>Score: {sc:.3f}" for s, sc in zip(traj_df['step'], traj_df['score'])],
+                    text=[
+                        f"Step {s}<br>Score: {sc:.3f}<br>Identity: {ident:.1f}%"
+                        for s, sc, ident in zip(traj_df['step'], traj_df['score'], traj_df['identity'])
+                    ],
                     hoverinfo='text',
                     name='Optimization Path'
                 ))
@@ -2485,13 +4033,13 @@ with tab1:
                 fig_3d.add_trace(go.Scatter3d(
                     x=[traj_df['lx'].iloc[0]], y=[traj_df['ly'].iloc[0]],
                     z=[traj_df.get('lz', traj_df['score']).iloc[0]],
-                    mode='markers', marker=dict(size=12, color='#FF6B6B', symbol='diamond'),
+                    mode='markers', marker=dict(size=12, color='#DC2626', symbol='diamond', line=dict(color='white', width=1)),
                     name='Start (Cancer)'
                 ))
                 fig_3d.add_trace(go.Scatter3d(
                     x=[traj_df['lx'].iloc[-1]], y=[traj_df['ly'].iloc[-1]],
                     z=[traj_df.get('lz', traj_df['score']).iloc[-1]],
-                    mode='markers', marker=dict(size=12, color='#00FF88', symbol='diamond'),
+                    mode='markers', marker=dict(size=13, color='#059669', symbol='diamond', line=dict(color='white', width=1)),
                     name='End (Rescued)'
                 ))
 
@@ -2507,7 +4055,7 @@ with tab1:
                     ),
                     legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5)
                 )
-                st.plotly_chart(fig_3d, use_container_width=True)
+                render_plotly(fig_3d, chart_kind="3d", use_container_width=True)
 
             with viz_col2:
                 # === MULTI-METRIC COMPARISON ===
@@ -2527,7 +4075,7 @@ with tab1:
                 fig_multi.add_trace(go.Scatter(
                     x=traj_df['step'], y=normalize(traj_df['score']),
                     mode='lines+markers', name='Rescue Score',
-                    line=dict(color='#0EA5E9', width=3),
+                    line=dict(color='#0EA5E9', width=3, shape='spline', smoothing=0.6),
                     marker=dict(size=4)
                 ))
 
@@ -2535,22 +4083,43 @@ with tab1:
                 fig_multi.add_trace(go.Scatter(
                     x=traj_df['step'], y=normalize(traj_df['stability']),
                     mode='lines', name='Stability',
-                    line=dict(color='#FFD700', width=2)
+                    line=dict(color='#38BDF8', width=2, shape='spline', smoothing=0.6)
                 ))
 
                 # DNA Binding
                 fig_multi.add_trace(go.Scatter(
                     x=traj_df['step'], y=normalize(traj_df['binding']),
                     mode='lines', name='DNA Binding',
-                    line=dict(color='#10B981', width=2)
+                    line=dict(color='#10B981', width=2, shape='spline', smoothing=0.6)
                 ))
 
                 # Identity (inverse - lower mutations = higher identity)
                 fig_multi.add_trace(go.Scatter(
                     x=traj_df['step'], y=normalize(traj_df['identity']),
                     mode='lines', name='Identity',
-                    line=dict(color='#8B5CF6', width=2, dash='dot')
+                    line=dict(color='#1D4ED8', width=2, dash='dot')
                 ))
+
+                fig_multi.add_hline(
+                    y=0.5,
+                    line_dash='dot',
+                    line_color='rgba(59,130,246,0.5)',
+                    line_width=1.1,
+                    annotation_text='Midline'
+                )
+                fig_multi.add_hline(
+                    y=0.8,
+                    line_dash='dot',
+                    line_color='rgba(16,185,129,0.55)',
+                    line_width=1.1,
+                    annotation_text='Target band'
+                )
+                fig_multi.add_vline(
+                    x=float(traj_df['step'].max()),
+                    line_dash='dash',
+                    line_color='rgba(30,64,175,0.45)',
+                    line_width=1.2
+                )
 
                 fig_multi.update_layout(
                     template='plotly_white',
@@ -2561,7 +4130,7 @@ with tab1:
                     yaxis=dict(range=[-0.05, 1.05]),
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
                 )
-                st.plotly_chart(fig_multi, use_container_width=True)
+                render_plotly(fig_multi, chart_kind="multiline", use_container_width=True)
 
             # === RESIDUE CONTRIBUTION HEATMAP ===
             st.markdown("### 🧬 Position-wise Mutation Impact")
@@ -2583,42 +4152,61 @@ with tab1:
             n_chunks = (seq_len + chunk_size - 1) // chunk_size
 
             heatmap_data = []
-            annotations = []
+            region_labels = []
 
             for chunk_idx in range(min(n_chunks, 8)):  # Max 8 rows
                 start = chunk_idx * chunk_size + 1
                 end = min((chunk_idx + 1) * chunk_size, seq_len)
                 row = []
+                row_labels = []
                 for pos in range(start, end + 1):
                     if pos in mut_positions:
                         value = 3  # Mutation
+                        label = "Mutation"
                     elif pos in DNA_BINDING_L1 or pos in DNA_BINDING_L2 or pos in DNA_BINDING_L3:
                         value = 2  # DNA binding region
+                        label = "DNA-binding loop"
                     elif pos in ZINC_BINDING:
                         value = 2.5  # Zinc binding
+                        label = "Zinc-binding site"
                     elif pos in DIMER_INTERFACE:
                         value = 1  # Dimer interface
+                        label = "Dimer interface"
                     else:
                         value = 0  # Normal
+                        label = "Other region"
                     row.append(value)
+                    row_labels.append(label)
                 # Pad if needed
                 while len(row) < chunk_size:
                     row.append(-1)  # Empty
+                    row_labels.append("N/A")
                 heatmap_data.append(row)
+                region_labels.append(row_labels)
 
             fig_heatmap_pos = go.Figure(data=go.Heatmap(
                 z=heatmap_data,
                 x=[str(i) for i in range(1, chunk_size + 1)],
                 y=[f"{i*chunk_size+1}-{min((i+1)*chunk_size, seq_len)}" for i in range(len(heatmap_data))],
+                customdata=region_labels,
                 colorscale=[
-                    [0.0, '#1E293B'],      # Normal (dark)
-                    [0.25, '#3B82F6'],     # Dimer interface (blue)
-                    [0.5, '#10B981'],      # DNA binding (green)
-                    [0.75, '#F59E0B'],     # Zinc (orange)
-                    [1.0, '#EF4444']       # Mutation (red)
+                    [0.00, '#F8FAFC'],   # N/A
+                    [0.25, '#D6E4F7'],   # Other
+                    [0.50, '#3B82F6'],   # Dimer interface
+                    [0.75, '#10B981'],   # DNA loop
+                    [0.875, '#F59E0B'],  # Zinc site
+                    [1.00, '#EF4444']    # Mutation
                 ],
-                showscale=False,
-                hovertemplate='Position: %{x}<br>Region: %{y}<br>Value: %{z}<extra></extra>'
+                zmin=-1,
+                zmax=3,
+                showscale=True,
+                colorbar=dict(
+                    title="Region Type",
+                    tickvals=[-1, 0, 1, 2, 2.5, 3],
+                    ticktext=["N/A", "Other", "Dimer", "DNA Loop", "Zinc", "Mutation"],
+                    len=0.8
+                ),
+                hovertemplate='Chunk Position: %{x}<br>Residue Range: %{y}<br>Type: %{customdata}<extra></extra>'
             ))
 
             fig_heatmap_pos.update_layout(
@@ -2628,16 +4216,16 @@ with tab1:
                 xaxis_title='Position (within chunk)',
                 yaxis_title='Residue Range'
             )
-            st.plotly_chart(fig_heatmap_pos, use_container_width=True)
+            render_plotly(fig_heatmap_pos, chart_kind="heatmap", use_container_width=True)
 
             # Legend for heatmap
             st.markdown("""
-            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: -10px;">
-                <span style="color: #EF4444;">🔴 Mutation</span>
-                <span style="color: #10B981;">🟢 DNA Binding Loop</span>
-                <span style="color: #F59E0B;">🟠 Zinc Site</span>
-                <span style="color: #3B82F6;">🔵 Dimer Interface</span>
-                <span style="color: #64748B;">⬛ Other</span>
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:-6px;">
+                <span style="padding:4px 10px; border-radius:999px; background:#FEE2E2; color:#991B1B; font-weight:600; font-size:12px;">Mutation</span>
+                <span style="padding:4px 10px; border-radius:999px; background:#DCFCE7; color:#166534; font-weight:600; font-size:12px;">DNA Loop</span>
+                <span style="padding:4px 10px; border-radius:999px; background:#FEF3C7; color:#92400E; font-weight:600; font-size:12px;">Zinc Site</span>
+                <span style="padding:4px 10px; border-radius:999px; background:#DBEAFE; color:#1E40AF; font-weight:600; font-size:12px;">Dimer Interface</span>
+                <span style="padding:4px 10px; border-radius:999px; background:#E2E8F0; color:#334155; font-weight:600; font-size:12px;">Other</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -2696,513 +4284,976 @@ with tab1:
 
 # === TAB 2: ANALYSIS & DRUGS ===
 with tab2:
-    # === UNIFIED ANALYSIS TAB ===
     st.markdown("""
-    <div class="lovable-card" style="margin-bottom: 1.5rem;">
-        <h2 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">📊 Analysis Dashboard</h2>
-        <p style="color: #6B7280; margin: 0;">Validate designs, explore mechanisms, and assess clinical potential</p>
+    <div class="lovable-card" style="margin-bottom: 1.25rem;">
+        <h2 style="margin: 0 0 0.45rem 0; font-size: 1.72rem;">📊 Analysis Dashboard</h2>
+        <p style="color: #496487; margin: 0;">Single-page analysis pipeline: validation, mechanism, drug strategy, and clinical impact.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Sub-section selector
-    analysis_section = st.radio(
-        "Select Analysis Module",
-        ["Validation", "Explainability", "Drug Generator", "Clinical Impact"],
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+    active_target = st.session_state.get("target_mut_saved", target_mut)
+    active_candidate = get_active_analysis_candidate(active_target)
+    sync_analysis_inputs_from_candidate(active_candidate)
 
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    if active_candidate:
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Target Mutation", active_candidate["target_mutation"])
+        c2.metric("Rescue Mutations", active_candidate["n_mutations"])
+        c3.metric("Rescue Score", f"{active_candidate['score']:.3f}")
+        c4.metric("Identity", f"{active_candidate['identity']:.1f}%")
+        c5.metric("Stability", f"{active_candidate['stability']:.3f}")
+    else:
+        st.info("Run and select a candidate in the Design Studio to unlock real validation and downstream analysis.")
 
-    # === VALIDATION SECTION ===
-    if analysis_section == "Validation":
-        st.markdown("### 🔬 Validation Dashboard")
-        st.markdown("*Cross-reference AI designs against experimental data and physics*")
+    # === 1) VALIDATION ===
+    st.markdown("---")
+    physics_fallback_available = callable(physics_based_score_fn)
+    if physics_fallback_available:
+        st.markdown("### 1) 🔬 Real Validation (DMS + Physics Fallback)")
+        st.caption("Uses Giacomelli 2018 DMS when available, physics-based estimates (BLOSUM62 + AA properties) as fallback. Evidence triage, not wet-lab proof.")
+    else:
+        st.markdown("### 1) 🔬 Real Validation (DMS only)")
+        st.caption("Uses Giacomelli 2018 DMS where available. Evidence triage, not wet-lab proof.")
+        st.warning("Running in DMS-only mode; physics fallback unavailable.")
 
-        results = st.session_state.get('results', None)
-        target = st.session_state.get('target_mut_saved', target_mut)
+    if active_candidate:
+        dms_by_mut, dms_by_pos = get_dms_lookup_tables()
+        target_for_eval = str(active_candidate["target_mutation"]).upper()
+        rescue_mutations = [m.upper() for m in active_candidate["mutations"]]
+        mut_summary_raw = active_candidate.get("mut_summary_raw", "")
 
-        if results is not None and len(results) > 0:
-            best = results.loc[results['Score'].idxmax()]
-            rescued_seq = best['Sequence']
-            mut_summary = best['MutSummary']
-            our_muts = [m.strip() for m in mut_summary.split(",") if m.strip()]
+        if active_candidate.get("source") == "results_table" and "..." in mut_summary_raw:
+            st.warning("Mutation list from results is truncated. Use `Select` on a candidate card for full mutation-level validation.")
 
-            val_col1, val_col2 = st.columns([2, 1])
+        target_row = dms_by_mut[dms_by_mut["mutation"] == target_for_eval] if not dms_by_mut.empty else pd.DataFrame()
+        target_dms_score = float(target_row["score"].iloc[0]) if not target_row.empty else np.nan
 
-            with val_col1:
-                st.markdown("**Literature Cross-Reference**")
-                if target in KNOWN_RESCUES:
-                    known = KNOWN_RESCUES[target]
-                    st.success(f"Published rescues for {target}: {', '.join(known['published'])}")
-                    overlap = set(our_muts) & set(known['published'])
-                    if overlap:
-                        st.success(f"✓ Your design includes validated rescue: {overlap}")
-                else:
-                    st.warning(f"No published data for {target}. Your design is exploratory.")
+        dms_rows = []
+        for mut in rescue_mutations:
+            parsed = parse_single_mutation(mut)
+            if parsed is None:
+                continue
+            _, pos, _ = parsed
 
-                st.markdown("**Physics Scoring**")
-                physics_df = pd.DataFrame([
-                    {"Metric": "Folding ΔΔG", "Value": f"{best.get('Stability', 0) * -2:.2f} kcal/mol"},
-                    {"Metric": "DNA Binding", "Value": f"{best.get('DNARecruitment', 0):.2f}"},
-                    {"Metric": "Hydro Packing", "Value": f"{best.get('HydroPacking', 0):.2f}"},
-                ])
-                st.dataframe(physics_df, hide_index=True, use_container_width=True)
+            mut_row = dms_by_mut[dms_by_mut["mutation"] == mut] if not dms_by_mut.empty else pd.DataFrame()
+            has_dms = not mut_row.empty
 
-            with val_col2:
-                identity_score = min(best['Identity'] / 95.0, 1.0) * 25
-                function_score = max(0, (best['Score'] + 0.5) * 25)
-                stability_score_val = max(0, (best['Stability'] + 0.3) * 25)
-                literature_score = 25 if target in KNOWN_RESCUES else 10
-                total_confidence = min(identity_score + function_score + stability_score_val + literature_score, 100)
-
-                st.metric("Confidence", f"{total_confidence:.0f}/100",
-                         delta="Validated" if total_confidence > 70 else "Needs Testing")
-
-                st.progress(identity_score / 25, text=f"Identity: {identity_score:.0f}/25")
-                st.progress(function_score / 25, text=f"Function: {function_score:.0f}/25")
-                st.progress(stability_score_val / 25, text=f"Stability: {stability_score_val:.0f}/25")
-
-            # Summary
-            if total_confidence >= 70:
-                st.success(f"**High confidence design** - ready for experimental validation")
-            elif total_confidence >= 50:
-                st.warning(f"**Moderate confidence** - consider optimizing further")
+            physics_used = False
+            if has_dms:
+                mut_score = float(mut_row["score"].iloc[0])
+                score_method = "DMS"
+                confidence = 1.0
             else:
-                st.error(f"**Low confidence** - needs improvement before testing")
+                physics_result = safe_physics_based_score(mut)
+                if physics_result is not None and pd.notna(physics_result.get("score")):
+                    mut_score = float(physics_result["score"])
+                    score_method = "Physics"
+                    confidence = float(physics_result.get("confidence", 0.0))
+                    physics_used = True
+                else:
+                    mut_score = np.nan
+                    score_method = "Unavailable"
+                    confidence = 0.0
 
+            pos_row = dms_by_pos[dms_by_pos["pos"] == pos] if not dms_by_pos.empty else pd.DataFrame()
+            pos_mean = float(pos_row["pos_mean_score"].iloc[0]) if not pos_row.empty else np.nan
+            pos_count = int(pos_row["pos_count"].iloc[0]) if not pos_row.empty else 0
+
+            # Calculate delta vs target (use physics for both if neither has DMS)
+            if has_dms and pd.notna(target_dms_score):
+                delta_vs_target = mut_score - target_dms_score
+            elif (not has_dms) and pd.isna(target_dms_score) and physics_used:
+                target_physics = safe_physics_based_score(target_for_eval)
+                if target_physics is not None and pd.notna(target_physics.get("score")):
+                    delta_vs_target = mut_score - float(target_physics["score"])
+                else:
+                    delta_vs_target = np.nan
+            else:
+                delta_vs_target = np.nan
+
+            # Determine support category
+            if has_dms:
+                if pd.notna(delta_vs_target) and delta_vs_target > 0:
+                    support = "Improves vs target (DMS)"
+                elif pd.notna(delta_vs_target):
+                    support = "Worse vs target (DMS)"
+                else:
+                    support = "DMS measured"
+            else:
+                if score_method == "Physics" and pd.notna(delta_vs_target) and delta_vs_target > 0:
+                    support = "Likely improves (physics)"
+                elif score_method == "Physics" and pd.notna(delta_vs_target):
+                    support = "Likely worse (physics)"
+                elif score_method == "Physics":
+                    support = "Physics estimate"
+                else:
+                    support = "No DMS record"
+
+            dms_rows.append({
+                "Mutation": mut,
+                "Position": pos,
+                "DMS Score": mut_score if has_dms else np.nan,
+                "Physics Score": mut_score if score_method == "Physics" else np.nan,
+                "Combined Score": mut_score,
+                "Delta vs target": delta_vs_target,
+                "Position mean score": pos_mean,
+                "Position record count": pos_count,
+                "Support": support,
+                "Method": score_method,
+                "Confidence": confidence,
+            })
+
+        dms_eval_df = pd.DataFrame(dms_rows)
+
+        # Calculate coverage metrics
+        dms_measured_count = int((dms_eval_df["Method"] == "DMS").sum()) if not dms_eval_df.empty else 0
+        physics_estimated_count = int((dms_eval_df["Method"] == "Physics").sum()) if not dms_eval_df.empty else 0
+        unavailable_count = int((dms_eval_df["Method"] == "Unavailable").sum()) if not dms_eval_df.empty else 0
+        total_mutations = max(len(dms_eval_df), 1)
+        dms_coverage = dms_measured_count / total_mutations if total_mutations else 0.0
+
+        # Mean delta uses Combined Score (DMS where available, physics elsewhere)
+        mean_delta = float(dms_eval_df["Delta vs target"].dropna().mean()) if not dms_eval_df.empty and dms_eval_df["Delta vs target"].notna().any() else np.nan
+
+        # Average confidence (DMS=1.0, physics=0.3-0.6)
+        avg_confidence = float(dms_eval_df["Confidence"].mean()) if not dms_eval_df.empty else 0.5
+
+        function_norm = float(np.clip((active_candidate["score"] + 1.0) / 1.5, 0, 1))
+        identity_norm = float(np.clip((active_candidate["identity"] - 80.0) / 20.0, 0, 1))
+        stability_norm = float(np.clip((active_candidate["stability"] + 0.5) / 0.8, 0, 1))
+        binding_norm = float(np.clip(active_candidate["binding"] / 10.0, 0, 1))
+        physics_norm = (0.35 * function_norm) + (0.25 * identity_norm) + (0.2 * stability_norm) + (0.2 * binding_norm)
+
+        # Evidence score now weights by confidence (DMS-heavy results score higher)
+        dms_effect_norm = float(np.clip((mean_delta + 1.5) / 3.0, 0, 1)) if pd.notna(mean_delta) else 0.5
+        evidence_score = float(100.0 * ((0.40 * physics_norm) + (0.30 * avg_confidence) + (0.30 * dms_effect_norm)))
+
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Evidence Score", f"{evidence_score:.0f}/100", delta="weighted by confidence")
+        m2_delta = f"{dms_measured_count} DMS / {physics_estimated_count} physics"
+        if unavailable_count > 0:
+            m2_delta = f"{m2_delta} / {unavailable_count} unavailable"
+        m2.metric("DMS Coverage", f"{dms_coverage*100:.0f}%", delta=m2_delta)
+        m3.metric("Mean Δ vs target", f"{mean_delta:+.2f}" if pd.notna(mean_delta) else "n/a")
+        if pd.notna(target_dms_score):
+            target_score_text = f"{target_dms_score:+.2f}"
+        elif physics_fallback_available:
+            target_score_text = "physics fallback"
         else:
-            st.info("💡 Run a design in the **Design** or **Studio** tab first, then return here to validate.")
+            target_score_text = "not in DMS"
+        m4.metric("Target DMS Score", target_score_text)
+        confidence_delta = "DMS=100%, Physics=30-60%" if physics_fallback_available else "DMS=100%, unavailable=0%"
+        m5.metric("Avg Confidence", f"{avg_confidence*100:.0f}%", delta=confidence_delta)
 
-    # === EXPLAINABILITY SECTION ===
-    elif analysis_section == "Explainability":
-        if not ENHANCED_MODULES_AVAILABLE:
-            st.warning("Enhanced modules not available. Please ensure all dependencies are installed.")
-        else:
-            st.markdown("""
-            <div class="lovable-card-accent">
-                <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem;">Rescue Mechanism Explainability</h3>
-                <p style="color: #6B7280; margin: 0; font-size: 0.85rem;">Understand WHY your rescue mutations work through attention attribution, counterfactuals, and energy decomposition</p>
-            </div>
-            """, unsafe_allow_html=True)
+        if target_for_eval in KNOWN_RESCUES:
+            published = KNOWN_RESCUES[target_for_eval]["published"]
+            overlap = sorted(set(rescue_mutations) & set([m.upper() for m in published]))
+            if overlap:
+                st.success(f"Published overlap for {target_for_eval}: {', '.join(overlap)}")
+            else:
+                st.info(f"Published rescues for {target_for_eval}: {', '.join(published)}")
 
-            col_exp1, col_exp2 = st.columns([1, 2])
+        vcol1, vcol2 = st.columns([1.9, 1.1])
+        with vcol1:
+            if not dms_eval_df.empty:
+                # Color map for DMS + physics categories
+                color_map = {
+                    "Improves vs target (DMS)": "#0F766E",      # Green (best - DMS validated)
+                    "Worse vs target (DMS)": "#DC2626",         # Red (DMS shows worse)
+                    "DMS measured": "#0284C7",                  # Blue (DMS, no target comparison)
+                    "Likely improves (physics)": "#86EFAC",     # Light green (physics estimate)
+                    "Likely worse (physics)": "#FCA5A5",        # Light red (physics estimate)
+                    "Physics estimate": "#94A3B8",              # Gray (physics, no comparison)
+                    "No DMS record": "#94A3B8",                 # Gray (no scoring data available)
+                }
 
-            with col_exp1:
-                st.markdown("**Configure Analysis**")
+                # Always show delta vs target when available
+                if dms_eval_df["Delta vs target"].notna().any():
+                    dms_plot_df = dms_eval_df[dms_eval_df["Delta vs target"].notna()].copy()
+                    fig_dms = px.bar(
+                        dms_plot_df,
+                        x="Mutation",
+                        y="Delta vs target",
+                        color="Support",
+                        text="Delta vs target",
+                        color_discrete_map=color_map,
+                        title=f"Mutation effect relative to {target_for_eval} (DMS + Physics)",
+                    )
+                    fig_dms.add_hline(y=0, line_dash="dot", line_color="#64748B", line_width=1.3)
+                    fig_dms.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                    fig_dms.update_layout(height=540)
+                    dms_count = len(dms_plot_df[dms_plot_df["Method"] == "DMS"])
+                    physics_count = len(dms_plot_df[dms_plot_df["Method"] == "Physics"])
+                    unavailable_plot_count = len(dms_plot_df[dms_plot_df["Method"] == "Unavailable"])
+                    caption_msg = f"Showing {len(dms_plot_df)} mutations: {dms_count} DMS experimental, {physics_count} physics-based estimates"
+                    if unavailable_plot_count > 0:
+                        caption_msg = f"{caption_msg}, {unavailable_plot_count} unavailable"
+                    st.caption(caption_msg)
+                elif dms_eval_df["Combined Score"].notna().any():
+                    # Show combined scores when no delta available
+                    fig_dms = px.bar(
+                        dms_eval_df,
+                        x="Mutation",
+                        y="Combined Score",
+                        color="Method",
+                        text="Combined Score",
+                        color_discrete_map={"DMS": "#0284C7", "Physics": "#94A3B8", "Unavailable": "#94A3B8"},
+                        title="Mutation scores (DMS experimental + Physics estimates)",
+                    )
+                    fig_dms.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                    fig_dms.update_layout(height=540)
+                else:
+                    support_counts = (
+                        dms_eval_df["Support"]
+                        .value_counts(dropna=False)
+                        .rename_axis("Support")
+                        .reset_index(name="Count")
+                    )
+                    fig_dms = px.bar(
+                        support_counts,
+                        x="Support",
+                        y="Count",
+                        color="Support",
+                        text="Count",
+                        color_discrete_map=color_map,
+                        title="DMS evidence availability for rescue mutations",
+                    )
+                    fig_dms.update_traces(texttemplate="%{text}", textposition="outside")
+                    fig_dms.update_layout(height=540, yaxis_title="Number of rescue mutations")
+                render_plotly(fig_dms, chart_kind="bar", use_container_width=True)
+                st.caption(
+                    "Interpretation: bars above 0 indicate rescue mutations predicted/measured to outperform the target mutation; "
+                    "bar color indicates whether evidence is direct DMS measurement or fallback mode."
+                )
+            else:
+                st.warning("No valid point-mutation rescue list was available for DMS validation.")
 
-                exp_cancer_mut = st.text_input("Cancer Mutation", value="R175H", key="exp_cancer")
-                # Default to well-studied rescue mutations from literature
-                exp_rescue_muts = st.text_input("Rescue Mutations (comma-separated)", value="N239Y, T284R", key="exp_rescue")
+        with vcol2:
+            gauge = go.Figure(
+                go.Indicator(
+                    mode="gauge+number",
+                    value=evidence_score,
+                    number={"suffix": "/100"},
+                    title={"text": "Validation Evidence"},
+                    gauge={
+                        "axis": {"range": [0, 100]},
+                        "bar": {"color": "#1E40AF"},
+                        "steps": [
+                            {"range": [0, 40], "color": "#FEE2E2"},
+                            {"range": [40, 70], "color": "#FEF3C7"},
+                            {"range": [70, 100], "color": "#DCFCE7"},
+                        ],
+                    },
+                )
+            )
+            gauge.update_layout(height=440, margin=dict(l=20, r=20, t=58, b=12))
+            render_plotly(gauge, chart_kind="default", use_container_width=True)
+            st.caption("Evidence score combines model quality, measurement confidence, and rescue improvement signal (0-100).")
 
-                if st.button("Analyze Rescue Mechanism", key="btn_explain"):
-                    rescue_list = [m.strip() for m in exp_rescue_muts.split(",")]
+            physics_breakdown = pd.DataFrame(
+                [
+                    {"Component": "Function", "Weight": function_norm},
+                    {"Component": "Identity", "Weight": identity_norm},
+                    {"Component": "Stability", "Weight": stability_norm},
+                    {"Component": "Binding", "Weight": binding_norm},
+                ]
+            )
+            fig_phy = px.bar(
+                physics_breakdown,
+                x="Component",
+                y="Weight",
+                text="Weight",
+                color="Weight",
+                color_continuous_scale=["#D6ECFF", "#7CC7FA", "#0284C7", "#0F766E"],
+                title="Physics subscore components",
+            )
+            fig_phy.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+            fig_phy.update_layout(coloraxis_showscale=False, yaxis_range=[0, 1.05], height=440)
+            render_plotly(fig_phy, chart_kind="bar", use_container_width=True)
+            st.caption("Each component is normalized to [0,1]; higher bars contribute more strongly to the physics subscore.")
 
-                    with st.spinner("Analyzing rescue mechanism..."):
-                        # Apply mutations to get sequences
-                        wt_seq = P53_WT
+        if not dms_eval_df.empty:
+            show_df = dms_eval_df.copy()
+            # Format score columns
+            show_df["DMS Score"] = show_df["DMS Score"].map(lambda x: f"{x:+.2f}" if pd.notna(x) else "-")
+            show_df["Physics Score"] = show_df["Physics Score"].map(lambda x: f"{x:+.2f}" if pd.notna(x) else "-")
+            show_df["Combined Score"] = show_df["Combined Score"].map(lambda x: f"{x:+.2f}" if pd.notna(x) else "n/a")
+            show_df["Delta vs target"] = show_df["Delta vs target"].map(lambda x: f"{x:+.2f}" if pd.notna(x) else "n/a")
+            show_df["Position mean score"] = show_df["Position mean score"].map(lambda x: f"{x:+.2f}" if pd.notna(x) else "-")
+            show_df["Confidence"] = show_df["Confidence"].map(lambda x: f"{x*100:.0f}%")
+            # Select columns to display
+            display_cols = ["Mutation", "Position", "DMS Score", "Physics Score", "Delta vs target", "Method", "Confidence", "Support"]
+            st.dataframe(show_df[display_cols], hide_index=True, use_container_width=True)
 
-                        # Apply cancer mutation
-                        cancer_pos = int(exp_cancer_mut[1:-1]) - 1
-                        cancer_aa = exp_cancer_mut[-1]
-                        mutant_seq = wt_seq[:cancer_pos] + cancer_aa + wt_seq[cancer_pos+1:]
+            # Add data source info
+            with st.expander("📊 About DMS Coverage & Physics Fallback"):
+                mode_note = (
+                    "**Mode:** DMS + physics fallback enabled.\n"
+                    if physics_fallback_available
+                    else "**Mode:** DMS-only fail-closed (physics fallback unavailable).\n"
+                )
+                st.markdown(mode_note + """
+**Current DMS Dataset:** Giacomelli 2018 cell line data (~367 entries, 88 positions)
 
-                        # Apply rescue mutations
-                        rescue_seq = mutant_seq
-                        for mut in rescue_list:
-                            pos = int(mut[1:-1]) - 1
-                            new_aa = mut[-1]
-                            rescue_seq = rescue_seq[:pos] + new_aa + rescue_seq[pos+1:]
+**Physics-Based Fallback** uses amino acid properties when DMS data unavailable:
+- **BLOSUM62**: Evolutionary substitution scores
+- **Hydropathy**: Kyte-Doolittle scale (burial effects)
+- **Volume**: Steric clash potential
+- **Charge**: Electrostatic effects
 
-                        # Generate explanation
-                        engine = ExplainabilityEngine()
-                        explanation = engine.explain_rescue(
-                            wt_seq, mutant_seq, rescue_seq,
-                            exp_cancer_mut, rescue_list
-                        )
+**For full saturation mutagenesis data** (~8000+ variants):
+- [MaveDB](https://www.mavedb.org/) - Search "TP53"
+- [Nature Genetics 2024](https://www.nature.com/articles/s41588-024-02039-4) - Deep CRISPR study
+                """)
+    else:
+        st.info("Select a generated candidate to run real DMS + physics-based validation.")
 
-                        st.session_state['explanation'] = explanation
-                        st.success("Analysis complete!")
+    # === 2) EXPLAINABILITY ===
+    st.markdown("---")
+    st.markdown("### 2) 🧠 Explainability")
+    st.caption("Mechanistic breakdown with attribution, counterfactuals, and energy terms.")
 
-            with col_exp2:
-                if 'explanation' in st.session_state:
-                    exp = st.session_state['explanation']
+    if not EXPLAINABILITY_MODULE_AVAILABLE:
+        st.warning("Explainability module is unavailable in this environment.")
+        explain_reason = MODULE_IMPORT_ERRORS.get("explainability")
+        if explain_reason:
+            with st.expander("Explainability import details"):
+                st.code(explain_reason, language=None)
+    else:
+        exp_default_target = active_candidate["target_mutation"] if active_candidate else "R175H"
+        exp_default_rescues = ", ".join(active_candidate["mutations"][:6]) if active_candidate and active_candidate["mutations"] else "N239Y, T284R"
+        st.caption(
+            "Strict mode uses real model attention/occlusion/counterfactual terms only (no synthetic attribution fallback)."
+        )
+        col_exp1, col_exp2 = st.columns([1, 2])
 
-                    # Summary
-                    st.markdown("### Summary")
-                    st.info(exp['summary'])
+        with col_exp1:
+            if "exp_cancer_main" not in st.session_state:
+                st.session_state["exp_cancer_main"] = exp_default_target
+            if "exp_rescue_main" not in st.session_state:
+                st.session_state["exp_rescue_main"] = exp_default_rescues
 
-                    # Mechanism
-                    st.markdown("### Rescue Mechanism")
-                    mech = exp['mechanism']
+            exp_cancer_mut = st.text_input("Cancer mutation", key="exp_cancer_main").strip().upper()
+            exp_rescue_muts = st.text_input(
+                "Rescue mutations (comma-separated)",
+                key="exp_rescue_main",
+            )
 
-                    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-                    col_m1.metric("Primary", mech['primary'].replace('_', ' ').title())
-                    col_m2.metric("Confidence", f"{mech['confidence']:.0%}")
-                    col_m3.metric("Stability", f"{mech['contributions']['stability']:+.2f}")
-                    col_m4.metric("Binding", f"{mech['contributions']['binding']:+.2f}")
+            if st.button("Run Explainability Analysis", key="btn_explain_main", use_container_width=True):
+                if parse_single_mutation(exp_cancer_mut) is None:
+                    st.error("Invalid cancer mutation format. Use format like `R175H`.")
+                else:
+                    rescue_list = parse_mutation_tokens(exp_rescue_muts)
+                    if not rescue_list:
+                        st.warning("No valid point-mutation rescue list was parsed.")
+                    with st.spinner("Running explainability analysis..."):
+                        mutant_seq = apply_mutation(P53_WT, exp_cancer_mut)
+                        if mutant_seq is None:
+                            mutant_seq = P53_WT
+                        rescue_seq = build_sequence_from_mutations(exp_cancer_mut, rescue_list)
 
-                    # Evidence
-                    st.markdown("**Evidence:**")
-                    for ev in mech['evidence'][:4]:
+                        try:
+                            engine = ExplainabilityEngine(
+                                model=embedder.model,
+                                tokenizer=embedder.tokenizer,
+                                oracle=oracle,
+                                embedder=embedder,
+                            )
+                            explanation = engine.explain_rescue(
+                                P53_WT,
+                                mutant_seq,
+                                rescue_seq,
+                                exp_cancer_mut,
+                                rescue_list,
+                            )
+                            st.session_state["explanation"] = explanation
+                            st.success("Explainability run complete.")
+                        except ExplainabilityDependencyError as err:
+                            st.session_state.pop("explanation", None)
+                            st.error(
+                                "Explainability dependencies are unavailable for strict mode "
+                                f"({err})."
+                            )
+                            st.info(
+                                "Troubleshooting: run once on CPU and retry. "
+                                "If this persists, your transformer backend is not exposing attention tensors."
+                            )
+                        except Exception as err:
+                            st.session_state.pop("explanation", None)
+                            st.error(
+                                "Explainability runtime error. "
+                                "Try `cpu` runtime or rerun after model reload.\n"
+                                f"Details: {err}"
+                            )
+
+        with col_exp2:
+            if "explanation" in st.session_state:
+                exp = st.session_state["explanation"]
+                mech = exp["mechanism"]
+
+                st.info(exp["summary"])
+                em1, em2, em3, em4 = st.columns(4)
+                em1.metric("Primary", mech["primary"].replace("_", " ").title())
+                em2.metric("Mechanism confidence", f"{mech['confidence']:.0%}")
+                em3.metric("Stability contrib", f"{mech['contributions']['stability']:+.2f}")
+                em4.metric("Binding contrib", f"{mech['contributions']['binding']:+.2f}")
+
+                evidence_lines = mech.get("evidence", [])[:4]
+                if evidence_lines:
+                    st.markdown("**Top evidence**")
+                    for ev in evidence_lines:
                         st.markdown(f"- {ev}")
 
-                    # Energy decomposition
-                    st.markdown("### Energy Decomposition")
-                    energy = exp['energy']
+                energy = exp["energy"]
+                energy_df = pd.DataFrame(
+                    [
+                        {"Component": "Electrostatic", "Contribution": energy["electrostatic"]},
+                        {"Component": "Van der Waals", "Contribution": energy["van_der_waals"]},
+                        {"Component": "H-Bonds", "Contribution": energy["hydrogen_bonds"]},
+                        {"Component": "Solvation", "Contribution": energy["solvation"]},
+                        {"Component": "Backbone", "Contribution": energy["backbone_strain"]},
+                        {"Component": "Packing", "Contribution": energy["sidechain_packing"]},
+                    ]
+                )
+                energy_df["Effect"] = np.where(energy_df["Contribution"] < 0, "Stabilizing", "Destabilizing")
+                fig_energy = px.bar(
+                    energy_df.sort_values("Contribution"),
+                    x="Component",
+                    y="Contribution",
+                    color="Effect",
+                    text="Contribution",
+                    color_discrete_map={"Stabilizing": "#0891B2", "Destabilizing": "#DC2626"},
+                    title="Energy decomposition",
+                )
+                fig_energy.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                fig_energy.add_hline(y=0, line_dash="dot", line_color="#64748B", line_width=1.3)
+                fig_energy.update_layout(height=520)
+                render_plotly(fig_energy, chart_kind="bar", use_container_width=True)
+                st.caption(
+                    "Negative contributions are stabilizing, positive contributions are destabilizing; the total ddG summarizes net rescue energetics."
+                )
+                st.metric("Total ddG", f"{energy['total_ddg']:.2f} kcal/mol", delta=energy["rescue_quality"])
 
-                    energy_df = pd.DataFrame({
-                        'Component': ['Electrostatic', 'Van der Waals', 'H-Bonds', 'Solvation', 'Backbone', 'Packing'],
-                        'Contribution (kcal/mol)': [
-                            energy['electrostatic'],
-                            energy['van_der_waals'],
-                            energy['hydrogen_bonds'],
-                            energy['solvation'],
-                            energy['backbone_strain'],
-                            energy['sidechain_packing']
-                        ]
-                    })
+                attr_records = exp.get("top_attributions", [])
+                if attr_records:
+                    attr_df = pd.DataFrame(attr_records)
+                    attr_df["Label"] = attr_df.apply(
+                        lambda r: f"{r.get('residue', 'X')}{int(r.get('position', 0)) + 1}",
+                        axis=1,
+                    )
+                    attr_df = attr_df.sort_values("composite_importance", ascending=False).head(14)
+                    attr_df = attr_df.sort_values("composite_importance", ascending=True)
+                    fig_attr = px.bar(
+                        attr_df,
+                        x="composite_importance",
+                        y="Label",
+                        color="functional_role",
+                        orientation="h",
+                        title="Top residue attributions",
+                        color_discrete_sequence=["#1D4ED8", "#0284C7", "#06B6D4", "#0F766E", "#64748B"],
+                    )
+                    fig_attr.update_layout(height=540)
+                    render_plotly(fig_attr, chart_kind="bar", use_container_width=True)
+                    st.caption(
+                        "Residue attribution combines attention and occlusion terms; larger bars indicate stronger influence on the rescue prediction."
+                    )
 
-                    fig_energy = px.bar(energy_df, x='Component', y='Contribution (kcal/mol)',
-                                       color='Contribution (kcal/mol)',
-                                       color_continuous_scale='RdBu_r',
-                                       template='plotly_white')
-                    fig_energy.add_hline(y=0, line_dash='dash', line_color='gray')
-                    st.plotly_chart(fig_energy, use_container_width=True)
+                cf_rows = []
+                for source_mut, entries in exp.get("counterfactuals", {}).items():
+                    for item in entries[:3]:
+                        cf_rows.append(
+                            {
+                                "Source": source_mut,
+                                "Alternative": item["alternative"],
+                                "Delta": item["delta_score"],
+                            }
+                        )
+                if cf_rows:
+                    cf_df = pd.DataFrame(cf_rows)
+                    fig_cf = px.bar(
+                        cf_df,
+                        x="Alternative",
+                        y="Delta",
+                        color="Source",
+                        text="Delta",
+                        title="Counterfactual alternatives",
+                    )
+                    fig_cf.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                    fig_cf.add_hline(y=0, line_dash="dot", line_color="#64748B", line_width=1.2)
+                    fig_cf.update_layout(height=500)
+                    render_plotly(fig_cf, chart_kind="bar", use_container_width=True)
+                    st.caption(
+                        "Counterfactual delta compares each suggested substitute against the selected rescue mutation at the same site."
+                    )
+                else:
+                    st.info("No counterfactual alternatives were produced for these rescue mutations.")
 
-                    st.metric("Total ddG", f"{energy['total_ddg']:.2f} kcal/mol",
-                             delta=energy['rescue_quality'])
-
-                    # Risk factors
-                    if mech['risk_factors']:
-                        st.markdown("### Risk Factors")
-                        for risk in mech['risk_factors']:
-                            st.warning(risk)
-
-    # === DRUG GENERATOR SECTION ===
-    elif analysis_section == "Drug Generator":
-            st.subheader("De Novo Drug Generation")
-            st.caption("Generate small molecule drug candidates to stabilize p53 mutants")
-
-            # Show connection to protein rescue if available
-            if 'gd_candidates' in st.session_state and st.session_state['gd_candidates']:
-                best_protein = sorted(st.session_state['gd_candidates'], key=lambda x: x['score'], reverse=True)[0]
-                target = st.session_state.get('gd_constraints', {}).get('target_mutation', 'Unknown')
-
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #10B981 0%, #0EA5E9 100%); padding: 12px 16px;
-                            border-radius: 10px; margin-bottom: 1rem;">
-                    <p style="color: white; margin: 0; font-size: 0.9rem; font-weight: 600;">
-                        🔗 Connected to Best Rescue: Candidate #{} ({}) | Target: {}
-                    </p>
-                    <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0 0; font-size: 0.8rem;">
-                        Drug generation will target binding pockets that complement your rescue mutations
-                    </p>
-                </div>
-                """.format(best_protein['candidate_id'], best_protein['profile'], target), unsafe_allow_html=True)
-
-                # Store for later use
-                st.session_state['drug_target_mutation'] = target
-                st.session_state['drug_rescue_protein'] = best_protein
+                if mech.get("risk_factors"):
+                    st.markdown("**Risk factors**")
+                    for risk in mech["risk_factors"]:
+                        st.warning(risk)
             else:
-                st.info("💡 **Tip:** Run a protein rescue design in the Studio tab first to enable integrated drug-protein combination therapy design.")
+                st.info("Run explainability to generate mechanism and counterfactual charts.")
 
-            col_dg1, col_dg2 = st.columns([1, 2])
+    # === 3) DRUG GENERATION ===
+    st.markdown("---")
+    st.markdown("### 3) 💊 Drug Candidate Generator")
+    st.caption(
+        "Template/denovo modes use model-estimated affinity. Docking modes use AutoDock Vina when optional "
+        "dependencies and receptor PDBQT files are available."
+    )
 
-            with col_dg1:
-                st.markdown("**Target Binding Pocket**")
+    if DRUG_MODULE_AVAILABLE:
+        if active_candidate:
+            st.markdown(
+                f"""
+                <div class="accent-box" style="margin-bottom:0.9rem;">
+                    <b>Connected protein rescue:</b> {active_candidate['target_mutation']} with {active_candidate['n_mutations']} rescue mutations.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                pocket_names = list(P53_BINDING_POCKETS.keys())
-                selected_pocket = st.selectbox("Select Pocket", pocket_names, key="drug_pocket")
+        col_dg1, col_dg2 = st.columns([1, 2])
+        with col_dg1:
+            pocket_names = list(P53_BINDING_POCKETS.keys())
+            selected_pocket = st.selectbox("Target pocket", pocket_names, key="drug_pocket")
+            pocket_info = P53_BINDING_POCKETS[selected_pocket]
+            st.info(f"**{pocket_info.name}**\n\n{pocket_info.description}")
+            st.caption(f"Druggability: {pocket_info.druggability_score:.0%}")
 
-                pocket_info = P53_BINDING_POCKETS[selected_pocket]
-                st.info(f"**{pocket_info.name}**\n\n{pocket_info.description}")
-                st.caption(f"Druggability: {pocket_info.druggability_score:.0%}")
+            n_candidates = st.slider("Number of candidates", 5, 30, 15, key="n_drug_cand")
+            gen_method = st.selectbox(
+                "Generation method",
+                ["template", "denovo", "docking", "docking_md"],
+                key="drug_method",
+            )
 
-                n_candidates = st.slider("Number of Candidates", 5, 30, 15, key="n_drug_cand")
-                gen_method = st.selectbox("Generation Method", ["template", "denovo"], key="drug_method")
+            if st.button("Generate Drug Candidates", key="btn_gen_drugs", use_container_width=True):
+                with st.spinner("Generating drug candidates..."):
+                    engine = DrugGeneratorEngine()
+                    protein_context = None
+                    if active_candidate:
+                        protein_context = {
+                            "mutations": active_candidate.get("mutations", []),
+                            "score": float(active_candidate.get("score", 0.0)),
+                            "target_mutation": active_candidate.get("target_mutation", ""),
+                        }
+                    try:
+                        generated = engine.generate_for_pocket(
+                            selected_pocket,
+                            n_candidates,
+                            gen_method,
+                            protein_context=protein_context,
+                        )
+                    except Exception as e:
+                        st.session_state.pop("drug_candidates", None)
+                        st.error(f"Drug generation failed for method `{gen_method}`: {e}")
+                    else:
+                        st.session_state["drug_candidates"] = generated
+                        if active_candidate:
+                            st.session_state["drug_target_mutation"] = active_candidate["target_mutation"]
+                            st.session_state["drug_rescue_protein"] = {
+                                "profile": active_candidate["source"],
+                                "mutations": active_candidate["mutations"],
+                                "score": active_candidate["score"],
+                            }
+                        st.success(f"Generated {len(generated)} candidates.")
 
-                if st.button("Generate Drug Candidates", key="btn_gen_drugs"):
-                    with st.spinner("Generating drug candidates..."):
-                        engine = DrugGeneratorEngine()
-                        candidates = engine.generate_for_pocket(selected_pocket, n_candidates, gen_method)
-                        st.session_state['drug_candidates'] = candidates
-                        st.session_state['drug_pocket'] = selected_pocket  # Store for combo therapy display
-                        st.success(f"Generated {len(candidates)} candidates!")
+        with col_dg2:
+            if "drug_candidates" in st.session_state and st.session_state["drug_candidates"]:
+                candidates = st.session_state["drug_candidates"]
+                candidates_sorted = sorted(candidates, key=lambda c: c.binding_affinity)
+                props_df = pd.DataFrame(
+                    [
+                        {
+                            "Name": c.name,
+                            "MW": c.molecular_weight,
+                            "LogP": c.logp,
+                            "Drug-likeness": c.drug_likeness,
+                            "BindingAffinity": c.binding_affinity,
+                            "AffinityMagnitude": abs(c.binding_affinity),
+                            "Lipinski": "Pass" if c.passes_lipinski() else "Fail",
+                        }
+                        for c in candidates_sorted
+                    ]
+                )
+                props_df["Rank"] = np.arange(1, len(props_df) + 1)
 
-            with col_dg2:
-                if 'drug_candidates' in st.session_state:
-                    candidates = st.session_state['drug_candidates']
+                context_applied = any(bool(c.metadata.get("protein_context_applied", False)) for c in candidates)
+                run_method = candidates_sorted[0].generation_method if candidates_sorted else "n/a"
+                docking_run = run_method in {"docking", "docking_md"}
 
-                    # Summary table
-                    st.markdown("### Generated Candidates")
+                s1, s2, s3, s4 = st.columns(4)
+                s1.metric("Candidates", len(candidates))
+                s2.metric("Best affinity", f"{props_df['BindingAffinity'].min():.2f} kcal/mol")
+                s3.metric("Mean drug-likeness", f"{props_df['Drug-likeness'].mean():.2f}")
+                s4.metric("Lipinski pass", f"{(props_df['Lipinski'] == 'Pass').mean()*100:.0f}%")
+                st.caption(f"Scoring method: `{run_method}`")
+                if context_applied:
+                    lead = candidates_sorted[0]
+                    st.caption(
+                        "Protein-conditioned ranking active: lead affinity includes rescue-context shift "
+                        f"({lead.metadata.get('protein_context_affinity_shift', 0.0):+.2f} kcal/mol), "
+                        f"alignment={lead.metadata.get('protein_context_pocket_alignment', 0.0):.0%}."
+                    )
+                else:
+                    if docking_run:
+                        st.caption("Protein-conditioned ranking unavailable; using raw docking scores.")
+                    else:
+                        st.caption("Protein-conditioned ranking unavailable; using pocket-only heuristic scoring.")
+                if docking_run:
+                    lead = candidates_sorted[0]
+                    st.caption(
+                        "Docking backend: "
+                        f"{lead.metadata.get('docking_backend', 'unknown')} | "
+                        f"raw affinity={lead.metadata.get('docking_raw_affinity', np.nan):.2f} kcal/mol."
+                    )
+                    if run_method == "docking_md":
+                        st.caption(
+                            "MD status: "
+                            f"{lead.metadata.get('md_status', 'unknown')} - "
+                            f"{lead.metadata.get('md_detail', 'no detail')}"
+                        )
+                        if lead.metadata.get("md_status") != "ran":
+                            st.warning("MD refinement did not execute for this run; see status above for missing setup/dependencies.")
 
-                    drug_data = []
-                    for c in candidates[:10]:
-                        drug_data.append({
-                            'Name': c.name,
-                            'Affinity (kcal/mol)': f"{c.binding_affinity:.2f}",
-                            'Drug-likeness': f"{c.drug_likeness:.2f}",
-                            'MW': f"{c.molecular_weight:.0f}",
-                            'LogP': f"{c.logp:.1f}",
-                            'Lipinski': "Pass" if c.passes_lipinski() else "Fail"
-                        })
+                preview = props_df[["Name", "BindingAffinity", "Drug-likeness", "MW", "LogP", "Lipinski"]].copy().head(12)
+                preview["BindingAffinity"] = preview["BindingAffinity"].map(lambda x: f"{x:.2f}")
+                preview["Drug-likeness"] = preview["Drug-likeness"].map(lambda x: f"{x:.2f}")
+                preview["MW"] = preview["MW"].map(lambda x: f"{x:.0f}")
+                preview["LogP"] = preview["LogP"].map(lambda x: f"{x:.2f}")
+                st.dataframe(preview, hide_index=True, use_container_width=True)
 
-                    st.dataframe(pd.DataFrame(drug_data), use_container_width=True)
+                props_plot_df = props_df.copy()
+                props_plot_df["dup_count"] = props_plot_df.groupby(["MW", "LogP"])["Name"].transform("size")
+                props_plot_df["dup_order"] = props_plot_df.groupby(["MW", "LogP"]).cumcount()
+                props_plot_df["dup_centered"] = props_plot_df["dup_order"] - (props_plot_df["dup_count"] - 1) / 2.0
+                props_plot_df["MW_plot"] = props_plot_df["MW"] + np.where(
+                    props_plot_df["dup_count"] > 1,
+                    props_plot_df["dup_centered"] * 3.0,
+                    0.0,
+                )
+                props_plot_df["LogP_plot"] = props_plot_df["LogP"] + np.where(
+                    props_plot_df["dup_count"] > 1,
+                    props_plot_df["dup_centered"] * 0.05,
+                    0.0,
+                )
 
-                    # Property distribution
-                    st.markdown("### Property Distribution")
+                hover_fields = {
+                    "MW": ":.0f",
+                    "LogP": ":.2f",
+                    "BindingAffinity": ":.2f",
+                    "MW_plot": False,
+                    "LogP_plot": False,
+                    "dup_count": False,
+                    "dup_order": False,
+                    "dup_centered": False,
+                }
 
-                    props_df = pd.DataFrame([{
-                        'MW': c.molecular_weight,
-                        'LogP': c.logp,
-                        'Drug-likeness': c.drug_likeness,
-                        'Affinity': -c.binding_affinity
-                    } for c in candidates])
+                if props_df["Drug-likeness"].nunique() > 1:
+                    fig_props = px.scatter(
+                        props_plot_df,
+                        x="MW_plot",
+                        y="LogP_plot",
+                        color="Drug-likeness",
+                        size="AffinityMagnitude",
+                        symbol="Lipinski",
+                        hover_name="Name",
+                        hover_data=hover_fields,
+                        color_continuous_scale=["#D8EEFF", "#6FB8F5", "#0284C7", "#0F766E"],
+                        title="Drug property landscape",
+                    )
+                    fig_props.update_layout(coloraxis_colorbar_title_text="Drug-likeness")
+                else:
+                    fig_props = px.scatter(
+                        props_plot_df,
+                        x="MW_plot",
+                        y="LogP_plot",
+                        size="AffinityMagnitude",
+                        symbol="Lipinski",
+                        hover_name="Name",
+                        hover_data=hover_fields,
+                        title="Drug property landscape",
+                    )
+                    fig_props.update_traces(marker=dict(color="#0284C7"))
 
-                    fig_props = px.scatter(props_df, x='MW', y='LogP',
-                                          color='Drug-likeness', size='Affinity',
-                                          template='plotly_white',
-                                          title='Property Space')
+                fig_props.add_hline(y=5, line_dash="dash", line_color="#EF4444", annotation_text="LogP=5")
+                fig_props.add_vline(x=500, line_dash="dash", line_color="#EF4444", annotation_text="MW=500")
+                x_min = max(0.0, float(props_plot_df["MW_plot"].min()) - 20.0)
+                x_max = float(props_plot_df["MW_plot"].max()) + 20.0
+                y_min = float(props_plot_df["LogP_plot"].min()) - 0.5
+                y_max = max(5.4, float(props_plot_df["LogP_plot"].max()) + 0.5)
+                fig_props.update_xaxes(title="Molecular weight (Da)", range=[x_min, x_max])
+                fig_props.update_yaxes(title="LogP", range=[y_min, y_max])
+                fig_props.update_layout(height=580)
+                render_plotly(fig_props, chart_kind="scatter", use_container_width=True)
+                st.caption(
+                    "Each point is a candidate; size tracks affinity magnitude, and dashed thresholds mark Lipinski-style MW/LogP cutoffs."
+                )
+                if (props_plot_df["dup_count"] > 1).any():
+                    st.caption("Overlapping MW/LogP points are slightly jittered so each candidate remains visible.")
 
-                    # Add Lipinski rule of 5 boundaries
-                    fig_props.add_hline(y=5, line_dash='dash', line_color='red', annotation_text='LogP=5')
-                    fig_props.add_vline(x=500, line_dash='dash', line_color='red', annotation_text='MW=500')
+                rank_n = min(10, len(props_df))
+                rank_df = props_df.sort_values("BindingAffinity", ascending=True).head(rank_n).copy()
+                rank_title = (
+                    f"Top {rank_n} candidates by docking score"
+                    if docking_run
+                    else f"Top {rank_n} candidates by predicted affinity"
+                )
+                fig_rank = px.bar(
+                    rank_df,
+                    x="Name",
+                    y="BindingAffinity",
+                    color="Drug-likeness",
+                    text="BindingAffinity",
+                    color_continuous_scale=["#DAEEFF", "#70C2F8", "#0284C7", "#0F766E"],
+                    title=rank_title,
+                )
+                fig_rank.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+                fig_rank.update_xaxes(categoryorder="array", categoryarray=rank_df["Name"].tolist(), tickangle=-20)
+                fig_rank.update_layout(height=540, yaxis_title="Binding affinity (kcal/mol)")
+                render_plotly(fig_rank, chart_kind="bar", use_container_width=True)
+                if docking_run:
+                    st.caption(
+                        "More negative bars indicate stronger AutoDock Vina docking scores (or context-adjusted scores if rescue context is active)."
+                    )
+                else:
+                    st.caption(
+                        "More negative bars indicate stronger predicted pocket binding under the current heuristic model."
+                    )
 
-                    st.plotly_chart(fig_props, use_container_width=True)
-
-                    # Top candidate details with 3D visualization
-                    st.markdown("### 🧪 Top Drug Candidate - 3D Structure")
-                    top = candidates[0]
-
-                    drug_col1, drug_col2 = st.columns([2, 1])
-
-                    with drug_col1:
-                        # 3D Molecule viewer using 3Dmol.js with SMILES
-                        drug_3d_html = f"""
-                        <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-                        <script src="https://3Dmol.org/build/3Dmol.ui-min.js"></script>
-                        <style>
-                            #drug_viewer {{
-                                width: 100%;
-                                height: 350px;
-                                border-radius: 12px;
-                                border: 2px solid #10B981;
-                                background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-                            }}
-                            .drug-label {{
-                                text-align: center;
-                                color: #10B981;
-                                font-weight: 600;
-                                margin-top: 8px;
-                                font-size: 14px;
-                            }}
-                        </style>
-                        <div id="drug_viewer"></div>
-                        <p class="drug-label">💊 {top.name} | Affinity: {top.binding_affinity:.2f} kcal/mol</p>
-                        <script>
-                            (async function() {{
-                                let viewer = $3Dmol.createViewer('drug_viewer', {{
-                                    backgroundColor: '0x0F172A'
-                                }});
-
-                                // Use PubChem to get 3D structure from SMILES
-                                let smiles = "{top.smiles}";
-                                try {{
-                                    // Fetch 3D conformer from PubChem
-                                    let response = await fetch(
-                                        'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/' +
-                                        encodeURIComponent(smiles) + '/SDF?record_type=3d'
-                                    );
-                                    if (response.ok) {{
-                                        let sdf = await response.text();
-                                        viewer.addModel(sdf, 'sdf');
-                                    }} else {{
-                                        // Fallback: 2D from SMILES
-                                        viewer.addModel(smiles, 'smiles');
-                                    }}
-                                }} catch(e) {{
+                top = candidates_sorted[0]
+                drug_col1, drug_col2 = st.columns([2, 1])
+                with drug_col1:
+                    drug_3d_html = f"""
+                    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+                    <div id="drug_viewer" style="width:100%; height:390px; border-radius:14px; border:2px solid #10B981; background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);"></div>
+                    <script>
+                        (async function() {{
+                            let viewer = $3Dmol.createViewer('drug_viewer', {{backgroundColor: '0x0F172A'}});
+                            let smiles = "{top.smiles}";
+                            try {{
+                                let response = await fetch(
+                                    'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/' +
+                                    encodeURIComponent(smiles) + '/SDF?record_type=3d'
+                                );
+                                if (response.ok) {{
+                                    viewer.addModel(await response.text(), 'sdf');
+                                }} else {{
                                     viewer.addModel(smiles, 'smiles');
                                 }}
+                            }} catch(e) {{
+                                viewer.addModel(smiles, 'smiles');
+                            }}
+                            viewer.setStyle({{}}, {{stick: {{radius: 0.15, colorscheme: 'Jmol'}}, sphere: {{radius: 0.4, colorscheme: 'Jmol'}}}});
+                            viewer.zoomTo();
+                            viewer.spin('y', 0.7);
+                            viewer.render();
+                        }})();
+                    </script>
+                    """
+                    components.html(drug_3d_html, height=420)
 
-                                // Style: stick with element colors
-                                viewer.setStyle({{}}, {{
-                                    stick: {{radius: 0.15, colorscheme: 'Jmol'}},
-                                    sphere: {{radius: 0.4, colorscheme: 'Jmol'}}
-                                }});
+                with drug_col2:
+                    st.metric("Lead candidate", top.name)
+                    st.metric("Binding affinity", f"{top.binding_affinity:.2f} kcal/mol")
+                    st.metric("Drug-likeness", f"{top.drug_likeness:.2f}")
+                    st.metric("Synthetic access", f"{top.synthetic_accessibility:.1f}/10")
+                    st.metric("Molecular weight", f"{top.molecular_weight:.0f} Da")
+                    st.metric("LogP", f"{top.logp:.1f}")
+                    st.code(top.smiles, language=None)
+                    st.caption(
+                        "3D view is fetched from PubChem when available; otherwise rendered directly from SMILES."
+                    )
+            else:
+                st.info("Generate drug candidates to view redesigned property and ranking charts.")
+    else:
+        st.warning("Drug generation module is unavailable in this environment.")
+        drug_reason = MODULE_IMPORT_ERRORS.get("drug")
+        if not drug_reason and not P53_BINDING_POCKETS:
+            drug_reason = "No configured binding pockets were loaded."
+        if drug_reason:
+            with st.expander("Drug module import details"):
+                st.code(drug_reason, language=None)
 
-                                viewer.zoomTo();
-                                viewer.spin('y', 0.8);
-                                viewer.render();
-                            }})();
-                        </script>
-                        """
-                        import streamlit.components.v1 as components
-                        components.html(drug_3d_html, height=420)
+    # === 4) CLINICAL IMPACT ===
+    st.markdown("---")
+    st.markdown("### 4) 🏥 Clinical Impact")
+    st.caption("Clinical outputs are scenario-based estimates from the current model assumptions.")
 
-                    with drug_col2:
-                        st.markdown("**Drug Properties**")
-                        st.metric("Binding Affinity", f"{top.binding_affinity:.2f} kcal/mol")
-                        st.metric("Mechanism", top.mechanism.replace('_', ' ').title())
-                        st.metric("Drug-likeness", f"{top.drug_likeness:.2f}")
-                        st.metric("Synthetic Access.", f"{top.synthetic_accessibility:.1f}/10")
-                        st.metric("Mol. Weight", f"{top.molecular_weight:.0f} Da")
-                        st.metric("LogP", f"{top.logp:.1f}")
+    if CLINICAL_MODULE_AVAILABLE:
+        ci_default_target = active_candidate["target_mutation"] if active_candidate else "R175H"
+        ci_default_rescues = ", ".join(active_candidate["mutations"][:6]) if active_candidate and active_candidate["mutations"] else "N239Y, T284R"
+        col_ci1, col_ci2 = st.columns([1, 2])
 
-                        lipinski = "✅ Pass" if top.passes_lipinski() else "❌ Fail"
-                        st.markdown(f"**Lipinski Rule of 5:** {lipinski}")
+        with col_ci1:
+            if "ci_cancer_main" not in st.session_state:
+                st.session_state["ci_cancer_main"] = ci_default_target
+            if "ci_rescue_main" not in st.session_state:
+                st.session_state["ci_rescue_main"] = ci_default_rescues
 
-                        st.code(f"{top.smiles}", language=None)
-                        st.caption("SMILES notation")
+            ci_cancer = st.text_input("Cancer mutation", key="ci_cancer_main").strip().upper()
+            ci_rescue_text = st.text_input("Rescue mutations (comma-separated)", key="ci_rescue_main")
 
-                    # === COMBINATION THERAPY SUMMARY ===
-                    if 'drug_rescue_protein' in st.session_state:
-                        st.markdown("---")
-                        st.markdown("### 🧬💊 Combination Therapy Summary")
-                        st.markdown("*Protein rescue + Small molecule stabilization*")
-
-                        protein = st.session_state['drug_rescue_protein']
-                        target = st.session_state.get('drug_target_mutation', 'Unknown')
-
-                        combo_col1, combo_col2 = st.columns(2)
-
-                        with combo_col1:
-                            st.markdown("""
-                            <div style="background: #1E293B; padding: 15px; border-radius: 10px;
-                                        border-left: 4px solid #0EA5E9;">
-                                <p style="color: #0EA5E9; font-weight: 600; margin: 0 0 8px 0;">🧬 Rescue Protein</p>
-                                <p style="color: #E2E8F0; font-size: 0.85rem; margin: 4px 0;">
-                                    <b>Target:</b> {}<br>
-                                    <b>Strategy:</b> {}<br>
-                                    <b>Mutations:</b> {}<br>
-                                    <b>Score:</b> {:.3f}
-                                </p>
-                            </div>
-                            """.format(
-                                target,
-                                protein['profile'],
-                                ', '.join(protein['mutations'][:5]) + ('...' if len(protein['mutations']) > 5 else ''),
-                                protein['score']
-                            ), unsafe_allow_html=True)
-
-                        with combo_col2:
-                            st.markdown("""
-                            <div style="background: #1E293B; padding: 15px; border-radius: 10px;
-                                        border-left: 4px solid #10B981;">
-                                <p style="color: #10B981; font-weight: 600; margin: 0 0 8px 0;">💊 Stabilizer Drug</p>
-                                <p style="color: #E2E8F0; font-size: 0.85rem; margin: 4px 0;">
-                                    <b>Name:</b> {}<br>
-                                    <b>Pocket:</b> {}<br>
-                                    <b>Affinity:</b> {:.2f} kcal/mol<br>
-                                    <b>Mechanism:</b> {}
-                                </p>
-                            </div>
-                            """.format(
-                                top.name,
-                                st.session_state.get('drug_pocket', 'Y220C Cavity'),
-                                top.binding_affinity,
-                                top.mechanism.replace('_', ' ').title()
-                            ), unsafe_allow_html=True)
-
-                        # Synergy explanation
-                        st.info("""
-                        **Therapeutic Strategy:**
-                        1. **Rescue mutations** restore DNA binding and transcriptional activity
-                        2. **Small molecule** provides additional thermodynamic stabilization
-                        3. Combined approach increases therapeutic window and reduces required dose
-
-                        This combination therapy approach mirrors successful strategies used in CFTR
-                        rescue for cystic fibrosis (correctors + potentiators).
-                        """)
-
-    # === CLINICAL IMPACT SECTION ===
-    elif analysis_section == "Clinical Impact":
-        if not ENHANCED_MODULES_AVAILABLE:
-            st.warning("Enhanced modules not available. Please ensure all dependencies are installed.")
-        else:
-            st.markdown("### 🏥 Clinical Impact Assessment")
-            st.markdown("*Quantify the therapeutic potential and clinical viability of your rescue designs*")
-
-            col_ci1, col_ci2 = st.columns([1, 2])
-
-            with col_ci1:
-                st.markdown("**Assessment Configuration**")
-
-                ci_cancer = st.text_input("Cancer Mutation", value="R175H", key="ci_cancer")
-                ci_rescue = st.text_input("Rescue Mutations (comma-separated)", value="N239Y, T284R", key="ci_rescue")
-
-                if st.button("Assess Clinical Impact", key="btn_clinical"):
-                    rescue_list = [m.strip() for m in ci_rescue.split(",")]
-
+            if st.button("Assess Clinical Impact", key="btn_clinical_main", use_container_width=True):
+                if parse_single_mutation(ci_cancer) is None:
+                    st.error("Invalid cancer mutation format. Use format like `R175H`.")
+                else:
+                    rescue_list = parse_mutation_tokens(ci_rescue_text)
+                    rescue_seq = build_sequence_from_mutations(ci_cancer, rescue_list)
                     with st.spinner("Assessing clinical impact..."):
-                        rescue_seq = P53_WT
-
-                        # Apply cancer mutation
-                        cancer_pos = int(ci_cancer[1:-1]) - 1
-                        cancer_aa = ci_cancer[-1]
-                        rescue_seq = rescue_seq[:cancer_pos] + cancer_aa + rescue_seq[cancer_pos+1:]
-
-                        # Apply rescue mutations
-                        for mut in rescue_list:
-                            pos = int(mut[1:-1]) - 1
-                            new_aa = mut[-1]
-                            rescue_seq = rescue_seq[:pos] + new_aa + rescue_seq[pos+1:]
-
                         engine = ClinicalImpactEngine()
                         report = engine.generate_report(
                             name=f"p53_{ci_cancer}_rescue",
                             wt_sequence=P53_WT,
                             rescue_sequence=rescue_seq,
                             cancer_mutation=ci_cancer,
-                            rescue_mutations=rescue_list
+                            rescue_mutations=rescue_list,
                         )
+                        st.session_state["clinical_report"] = report
+                        st.success("Clinical impact assessment complete.")
 
-                        st.session_state['clinical_report'] = report
-                        st.success("Assessment complete!")
+        with col_ci2:
+            if "clinical_report" in st.session_state:
+                report = st.session_state["clinical_report"]
+                pop = report.patient_population
 
-            with col_ci2:
-                if 'clinical_report' in st.session_state:
-                    report = st.session_state['clinical_report']
+                cv1, cv2, cv3 = st.columns(3)
+                cv1.metric("Clinical score", f"{report.overall_clinical_score:.0f}/100")
+                cv2.metric("Viability", report.clinical_viability.upper())
+                cv3.metric("US annual patients", f"{pop.total_patients_per_year:,}")
 
-                    st.markdown("**Clinical Viability**")
-                    col_v1, col_v2 = st.columns(2)
-                    col_v1.metric("Score", f"{report.overall_clinical_score:.0f}/100")
-                    col_v2.metric("Viability", report.clinical_viability.upper())
+                cp1, cp2 = st.columns(2)
+                cp1.metric("Global estimate", f"{pop.global_estimate:,}")
+                if hasattr(pop, "mutation_frequency"):
+                    cp2.metric("Mutation frequency", f"{float(pop.mutation_frequency):.2f}%")
+                else:
+                    cp2.metric("Mutation frequency", "n/a")
 
-                    st.markdown("**Patient Population**")
-                    pop = report.patient_population
-                    col_p1, col_p2 = st.columns(2)
-                    col_p1.metric("US Annual", f"{pop.total_patients_per_year:,}")
-                    col_p2.metric("Global", f"{pop.global_estimate:,}")
-
-                    st.markdown("**Delivery Feasibility**")
-                    delivery_data = []
-                    for d in report.delivery_options[:3]:
-                        delivery_data.append({
-                            'Method': d.method,
-                            'Feasibility': f"{d.feasibility_score:.0%}",
-                            'Cost': d.estimated_cost_per_dose
-                        })
-                    st.dataframe(pd.DataFrame(delivery_data), use_container_width=True, hide_index=True)
-
-                    st.markdown("**Recommendation**")
-                    st.success(report.recommended_development_path)
-
-                    # Export
-                    if st.button("Export Report", key="btn_export_clinical"):
-                        export_data = {
-                            'name': report.rescue_name,
-                            'clinical_score': report.overall_clinical_score,
-                            'viability': report.clinical_viability,
-                            'recommendation': report.recommended_development_path
+                delivery_df = pd.DataFrame(
+                    [
+                        {
+                            "Method": d.method,
+                            "Feasibility": float(d.feasibility_score),
+                            "Cost": d.estimated_cost_per_dose,
                         }
-                        st.download_button(
-                            "Download JSON",
-                            data=json.dumps(export_data, indent=2),
-                            file_name=f"{report.rescue_name}_clinical.json",
-                            mime="application/json"
-                        )
+                        for d in report.delivery_options[:5]
+                    ]
+                )
+                show_delivery = delivery_df.copy()
+                show_delivery["Feasibility"] = show_delivery["Feasibility"].map(lambda x: f"{x:.0%}")
+                st.dataframe(show_delivery, hide_index=True, use_container_width=True)
 
+                fig_delivery = px.bar(
+                    delivery_df.sort_values("Feasibility", ascending=False),
+                    x="Method",
+                    y="Feasibility",
+                    text="Feasibility",
+                    color="Feasibility",
+                    color_continuous_scale=["#D6ECFF", "#7CC7FA", "#0284C7", "#0F766E"],
+                    title="Delivery feasibility",
+                )
+                fig_delivery.update_traces(texttemplate="%{text:.0%}", textposition="outside")
+                fig_delivery.update_layout(coloraxis_showscale=False, yaxis_range=[0, 1.05], height=520)
+                render_plotly(fig_delivery, chart_kind="bar", use_container_width=True)
+                st.caption("Higher feasibility scores indicate fewer delivery/manufacturing/regulatory barriers under current assumptions.")
+
+                # Transparent score construction so each dashboard number is auditable.
+                if pop.total_patients_per_year >= 10000:
+                    population_points = 25.0
+                elif pop.total_patients_per_year >= 5000:
+                    population_points = 20.0
+                elif pop.total_patients_per_year >= 1000:
+                    population_points = 15.0
+                elif pop.total_patients_per_year >= 100:
+                    population_points = 10.0
+                else:
+                    population_points = 5.0
+
+                ti = report.therapeutic_index
+                if ti.sequence_identity >= 98:
+                    identity_points = 15.0
+                elif ti.sequence_identity >= 95:
+                    identity_points = 10.0
+                elif ti.sequence_identity >= 92:
+                    identity_points = 5.0
+                else:
+                    identity_points = 0.0
+
+                window_points = 10.0 if ti.therapeutic_window == "wide" else (5.0 if ti.therapeutic_window == "moderate" else 0.0)
+                best_delivery = report.delivery_options[0] if report.delivery_options else None
+                delivery_points = float(best_delivery.feasibility_score * 25.0) if best_delivery else 0.0
+                immuno_points = float(25.0 - report.immunogenicity.risk_score * 25.0)
+
+                breakdown_df = pd.DataFrame(
+                    [
+                        {
+                            "Component": "Patient population",
+                            "Value": f"{pop.total_patients_per_year:,} US patients/year",
+                            "Points": f"{population_points:.1f}/25",
+                            "Computation": "Tiered rule from annual US patient count",
+                        },
+                        {
+                            "Component": "Sequence identity",
+                            "Value": f"{ti.sequence_identity:.1f}%",
+                            "Points": f"{identity_points:.1f}/15",
+                            "Computation": ">=98%=15, >=95%=10, >=92%=5, else 0",
+                        },
+                        {
+                            "Component": "Therapeutic window",
+                            "Value": ti.therapeutic_window,
+                            "Points": f"{window_points:.1f}/10",
+                            "Computation": "wide=10, moderate=5, narrow=0",
+                        },
+                        {
+                            "Component": "Best delivery option",
+                            "Value": best_delivery.method if best_delivery else "n/a",
+                            "Points": f"{delivery_points:.1f}/25",
+                            "Computation": "best feasibility score x 25",
+                        },
+                        {
+                            "Component": "Immunogenicity",
+                            "Value": f"risk={report.immunogenicity.risk_score:.2f}",
+                            "Points": f"{immuno_points:.1f}/25",
+                            "Computation": "25 - (risk_score x 25)",
+                        },
+                    ]
+                )
+                with st.expander("How each clinical number is computed"):
+                    st.markdown(
+                        f"""
+                        - `US annual patients` = sum over cancer types of:
+                          `incidence x p53 mutation rate x mutation frequency` for `{report.cancer_mutation}`.
+                        - `Global estimate` = `US annual patients x 3` (rough multiplier used by this model).
+                        - `Clinical score` = sum of component points shown below (clipped to 0-100).
+                        - `Viability` thresholds: high >=70, moderate >=50, low >=30, else not viable.
+                        """
+                    )
+                    st.dataframe(breakdown_df, hide_index=True, use_container_width=True)
+
+                st.success(report.recommended_development_path)
+                export_data = {
+                    "name": report.rescue_name,
+                    "clinical_score": report.overall_clinical_score,
+                    "viability": report.clinical_viability,
+                    "recommendation": report.recommended_development_path,
+                }
+                st.download_button(
+                    "Download Clinical Report (JSON)",
+                    data=json.dumps(export_data, indent=2),
+                    file_name=f"{report.rescue_name}_clinical.json",
+                    mime="application/json",
+                    use_container_width=True,
+                )
+            else:
+                st.info("Run clinical assessment to populate feasibility and population charts.")
+    else:
+        st.warning("Clinical impact module is unavailable in this environment.")
+        clinical_reason = MODULE_IMPORT_ERRORS.get("clinical")
+        if clinical_reason:
+            with st.expander("Clinical module import details"):
+                st.code(clinical_reason, language=None)
 # --- FOOTER ---
 st.markdown("""
 <div class="footer">

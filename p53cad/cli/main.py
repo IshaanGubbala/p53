@@ -11,13 +11,22 @@ from p53cad.core.logging import setup_logging, get_logger
 @click.group()
 def cli():
     """p53CAD: Generative Protein Design Platform"""
-    setup_logging()
+    log_path = setup_logging()
+    get_logger("p53cad.cli").info("Workflow log file: %s", log_path)
 
 @cli.command()
 @click.option('--dms', type=click.Path(exists=True), default="data/raw/p53_DMS_Giacomelli_2018.csv", help="Path to DMS data")
 @click.option('--epochs', default=5, help="Training epochs")
 @click.option('--output', type=click.Path(), default="data/models", help="Output directory")
-def train(dms, epochs, output):
+@click.option('--val-split', default=0.1, show_default=True, type=float, help="Validation split fraction (0 disables).")
+@click.option('--patience', default=8, show_default=True, type=int, help="Early stopping patience (validation epochs).")
+@click.option('--min-delta', default=1e-4, show_default=True, type=float, help="Minimum validation improvement to reset patience.")
+@click.option('--batch-size', default=32, show_default=True, type=int, help="Training batch size.")
+@click.option('--seed', default=42, show_default=True, type=int, help="Random seed used for train/validation split.")
+@click.option('--hidden-dim', default=128, show_default=True, type=int, help="Oracle first hidden layer width.")
+@click.option('--num-layers', default=2, show_default=True, type=int, help="Number of oracle hidden layers.")
+@click.option('--dropout', default=0.2, show_default=True, type=float, help="Dropout probability between hidden layers.")
+def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed, hidden_dim, num_layers, dropout):
     """Train the Functional Oracle on DMS data."""
     logger = get_logger("p53cad.cli.train")
     logger.info("Starting training pipeline...")
@@ -29,7 +38,12 @@ def train(dms, epochs, output):
     # Logic ported from run_functional_training.py
     df = load_dms_data(dms)
     embedder = ManifoldEmbedder()
-    oracle = FunctionalOracle(input_dim=320)
+    oracle = FunctionalOracle(
+        input_dim=320,
+        hidden_dim=hidden_dim,
+        num_layers=num_layers,
+        dropout=dropout,
+    )
     
     # Hydrate sequences from mutation names
     if "sequence" not in df.columns:
@@ -42,7 +56,17 @@ def train(dms, epochs, output):
     out_dir.mkdir(parents=True, exist_ok=True)
     save_path = out_dir / "functional_oracle.pt"
     
-    oracle.train(df, embedder, epochs=epochs, save_path=save_path)
+    oracle.train(
+        df,
+        embedder,
+        epochs=epochs,
+        save_path=save_path,
+        val_split=val_split,
+        early_stopping_patience=patience,
+        min_delta=min_delta,
+        batch_size=batch_size,
+        seed=seed,
+    )
 
 @cli.command()
 @click.argument('targets', nargs=-1)

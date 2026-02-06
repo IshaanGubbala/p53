@@ -524,8 +524,9 @@ class PrimeEditingDesigner:
         pam_sites = find_pam_sites(genomic_context)
 
         if not pam_sites:
-            # No PAM found - return dummy guide
-            return self._create_dummy_guide(mutation, edit_type)
+            raise ValueError(
+                f"No PAM site found near {mutation}; strict mode does not return dummy pegRNA guides."
+            )
 
         # Select best PAM (closest to edit site, on either strand)
         edit_position = len(genomic_context) // 2  # Assume mutation is centered
@@ -652,25 +653,9 @@ class PrimeEditingDesigner:
         return top, bottom
 
     def _create_dummy_guide(self, mutation: str, edit_type: str) -> PrimeEditingGuide:
-        """Create placeholder guide when design fails."""
-        return PrimeEditingGuide(
-            target_mutation=mutation,
-            edit_type=edit_type,
-            spacer_sequence="N" * 20,
-            pam_sequence="NGG",
-            pbs_sequence="N" * 13,
-            rt_template="N" * 15,
-            nick_spacer="N" * 20,
-            nick_pam="NGG",
-            nick_distance=70,
-            spacer_gc_content=0.5,
-            pbs_gc_content=0.5,
-            predicted_efficiency=0.0,
-            off_target_score=0.0,
-            pegRNA_oligo_top="DESIGN_FAILED",
-            pegRNA_oligo_bottom="DESIGN_FAILED",
-            nick_oligo_top="DESIGN_FAILED",
-            nick_oligo_bottom="DESIGN_FAILED"
+        """Dummy guides are disabled in strict mode."""
+        raise RuntimeError(
+            f"Guide design failed for {mutation}; dummy guide generation is disabled."
         )
 
     def batch_design(self, mutations: List[str],

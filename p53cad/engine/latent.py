@@ -30,7 +30,18 @@ class ManifoldEmbedder:
         self.logger.info(f"Loading ESM-2 model {model_name} on {self.device}...")
         try:
             self.tokenizer = EsmTokenizer.from_pretrained(model_name)
-            self.model = EsmForMaskedLM.from_pretrained(model_name).to(self.device)
+            try:
+                # Explainability requires attention tensors; SDPA often omits them.
+                self.model = EsmForMaskedLM.from_pretrained(
+                    model_name,
+                    attn_implementation="eager",
+                ).to(self.device)
+            except TypeError:
+                self.logger.warning(
+                    "Current transformers build does not support attn_implementation arg; "
+                    "loading default attention backend."
+                )
+                self.model = EsmForMaskedLM.from_pretrained(model_name).to(self.device)
             # Ensure hidden states are always returned to avoid NoneType errors during navigation
             self.model.config.output_hidden_states = True 
             self.model.eval()

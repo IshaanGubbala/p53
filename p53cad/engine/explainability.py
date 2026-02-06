@@ -22,6 +22,10 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
+class ExplainabilityDependencyError(RuntimeError):
+    """Raised when explainability is requested without required real dependencies."""
+
+
 # ============================================================================
 # DATA CLASSES
 # ============================================================================
@@ -178,8 +182,14 @@ class AttentionExtractor:
         Returns:
             Attention matrix [n_heads, seq_len, seq_len]
         """
-        if not TORCH_AVAILABLE or self.model is None:
-            return self._synthetic_attention(len(sequence))
+        if not TORCH_AVAILABLE:
+            raise ExplainabilityDependencyError(
+                "PyTorch is required for attention extraction."
+            )
+        if self.model is None or self.tokenizer is None:
+            raise ExplainabilityDependencyError(
+                "Attention extraction requires a loaded model and tokenizer."
+            )
 
         cache_key = f"{sequence}_{layer}"
         if cache_key in self._attention_cache:
@@ -187,14 +197,65 @@ class AttentionExtractor:
 
         # Tokenize
         inputs = self.tokenizer(sequence, return_tensors="pt")
+        try:
+            model_device = next(self.model.parameters()).device
+        except StopIteration:
+            model_device = torch.device("cpu")
+        inputs = {k: v.to(model_device) for k, v in inputs.items()}
 
         # Forward with attention output
-        with torch.no_grad():
-            outputs = self.model(**inputs, output_attentions=True)
+        try:
+            with torch.no_grad():
+                outputs = self.model(**inputs, output_attentions=True, return_dict=True)
+        except RuntimeError as err:
+            # MPS can intermittently fail on attention ops for this workload.
+            # Retry once on CPU with the same real model and inputs.
+            err_text = str(err)
+            if model_device.type == "mps" and "Placeholder storage has not been allocated on MPS device" in err_text:
+                warnings.warn(
+                    "MPS attention execution failed; retrying explainability attention on CPU.",
+                    RuntimeWarning,
+                )
+                self.model = self.model.to("cpu")
+                inputs = {k: v.to("cpu") for k, v in inputs.items()}
+                with torch.no_grad():
+                    outputs = self.model(**inputs, output_attentions=True, return_dict=True)
+            else:
+                raise
 
         # Get attention from specified layer
         attentions = outputs.attentions
-        layer_attention = attentions[layer].squeeze(0).cpu().numpy()  # [n_heads, seq_len, seq_len]
+        if attentions is None or len(attentions) == 0:
+            # Some HF/torch attention backends silently drop attention tensors.
+            # Retry on CPU with explicit attention flags before failing closed.
+            try:
+                if hasattr(self.model, "config"):
+                    self.model.config.output_attentions = True
+                    self.model.config.return_dict = True
+                esm_module = getattr(self.model, "esm", None)
+                if esm_module is not None and hasattr(esm_module, "config"):
+                    esm_module.config.output_attentions = True
+                    esm_module.config.return_dict = True
+
+                self.model = self.model.to("cpu")
+                cpu_inputs = {k: v.to("cpu") for k, v in inputs.items()}
+                with torch.no_grad():
+                    retry_outputs = self.model(
+                        **cpu_inputs,
+                        output_attentions=True,
+                        return_dict=True,
+                    )
+                attentions = retry_outputs.attentions
+            except Exception as retry_err:
+                raise ExplainabilityDependencyError(
+                    "Model did not return attention tensors for explainability."
+                ) from retry_err
+
+        if attentions is None or len(attentions) == 0:
+            raise ExplainabilityDependencyError(
+                "Model did not return attention tensors for explainability."
+            )
+        layer_attention = attentions[layer].squeeze(0).detach().cpu().numpy()  # [n_heads, seq_len, seq_len]
 
         self._attention_cache[cache_key] = layer_attention
         return layer_attention
@@ -268,27 +329,10 @@ class AttentionExtractor:
 
         return paths
 
-    def _synthetic_attention(self, seq_len: int) -> np.ndarray:
-        """Generate synthetic attention for demo purposes."""
-        # Create attention that focuses on functional sites
-        n_heads = 6
-        attention = np.random.rand(n_heads, seq_len, seq_len) * 0.1
-
-        # Add higher attention to functional sites
-        for site_name, positions in P53_FUNCTIONAL_SITES.items():
-            for pos in positions:
-                if pos < seq_len:
-                    # Self-attention at functional sites
-                    attention[:, pos, pos] += 0.3
-                    # Cross-attention between functional sites
-                    for other_pos in positions:
-                        if other_pos < seq_len:
-                            attention[:, pos, other_pos] += 0.2
-
-        # Normalize
-        attention = attention / attention.sum(axis=-1, keepdims=True)
-
-        return attention
+    def _synthetic_attention(self, seq_len: int, sequence: str = None) -> np.ndarray:
+        raise ExplainabilityDependencyError(
+            "Synthetic attention fallback is disabled in strict mode."
+        )
 
 
 # ============================================================================
@@ -315,7 +359,9 @@ class GradientAttributor:
             Gradient array [L, D]
         """
         if not TORCH_AVAILABLE:
-            return np.random.randn(*embedding.shape[1:]) * 0.1
+            raise ExplainabilityDependencyError(
+                "Gradient attribution requires PyTorch."
+            )
 
         emb_tensor = torch.tensor(embedding, requires_grad=True, dtype=torch.float32)
 
@@ -328,6 +374,29 @@ class GradientAttributor:
         gradients = emb_tensor.grad.numpy().squeeze(0)  # [L, D]
         return gradients
 
+    def _approximate_gradients(self, embedding: np.ndarray) -> np.ndarray:
+        """
+        Approximate gradients using embedding variance when autograd unavailable.
+
+        Higher variance positions are likely more important for the model.
+        """
+        emb = embedding.squeeze(0)  # [L, D]
+        L, D = emb.shape
+
+        # Use embedding variance as importance proxy
+        # Positions with distinct embeddings are likely more important
+        mean_emb = emb.mean(axis=0, keepdims=True)
+        deviation = emb - mean_emb
+
+        # Magnitude of deviation indicates importance
+        importance = np.linalg.norm(deviation, axis=1)  # [L]
+
+        # Normalize and expand to embedding dimension
+        importance = importance / (importance.max() + 1e-10)
+        gradients = deviation * importance[:, np.newaxis]
+
+        return gradients
+
     def compute_integrated_gradients(self, embedding: np.ndarray,
                                      baseline: np.ndarray,
                                      target_fn: callable,
@@ -338,14 +407,15 @@ class GradientAttributor:
         IG = (x - baseline) * integral(gradient(baseline + alpha*(x-baseline)), alpha=0..1)
         """
         if not TORCH_AVAILABLE:
-            return np.random.randn(*embedding.shape[1:]) * 0.1
+            raise ExplainabilityDependencyError(
+                "Integrated gradients require PyTorch."
+            )
 
         # Interpolate between baseline and input
         scaled_inputs = []
         for alpha in np.linspace(0, 1, n_steps):
             scaled = baseline + alpha * (embedding - baseline)
             scaled_inputs.append(scaled)
-
         # Compute gradients at each interpolation point
         gradients = []
         for scaled_input in scaled_inputs:
@@ -447,30 +517,13 @@ class OcclusionAttributor:
     def _get_score(self, sequence: str) -> float:
         """Get functional score for sequence."""
         if self.oracle is None or self.embedder is None:
-            # Synthetic score based on sequence composition
-            return self._synthetic_score(sequence)
+            raise ExplainabilityDependencyError(
+                "Occlusion scoring requires both oracle and embedder."
+            )
 
         # Use actual oracle
         embedding = self.embedder.encode(sequence)
         return float(self.oracle.predict(embedding.mean(axis=1)))
-
-    def _synthetic_score(self, sequence: str) -> float:
-        """Generate synthetic score for demo."""
-        # Penalize X (masked) positions
-        x_count = sequence.count('X')
-        base = 0.5
-
-        # Check key residues
-        key_residues = {175: 'R', 248: 'R', 273: 'R', 220: 'Y'}
-        for pos, expected in key_residues.items():
-            if pos < len(sequence):
-                if sequence[pos] == expected:
-                    base += 0.1
-                elif sequence[pos] != 'X':
-                    base -= 0.05
-
-        return max(0, base - x_count * 0.02)
-
 
 # ============================================================================
 # COUNTERFACTUAL ANALYSIS
@@ -577,25 +630,13 @@ class CounterfactualAnalyzer:
 
     def _get_score(self, sequence: str) -> float:
         """Get functional score."""
-        if self.oracle is None:
-            return self._synthetic_score(sequence)
+        if self.oracle is None or self.embedder is None:
+            raise ExplainabilityDependencyError(
+                "Counterfactual scoring requires both oracle and embedder."
+            )
 
         embedding = self.embedder.encode(sequence)
         return float(self.oracle.predict(embedding.mean(axis=1)))
-
-    def _synthetic_score(self, sequence: str) -> float:
-        """Synthetic scoring for demo."""
-        score = 0.5
-
-        # Reward hydrophobic residues in core
-        core_positions = P53_FUNCTIONAL_SITES.get("hydrophobic_core", [])
-        hydrophobic = set("AILMFVWY")
-
-        for pos in core_positions:
-            if pos < len(sequence) and sequence[pos] in hydrophobic:
-                score += 0.02
-
-        return score
 
     def _generate_explanation(self, original_aa: str, alternative_aa: str,
                              position: int, delta: float,
@@ -1177,6 +1218,8 @@ class ExplainabilityEngine:
         Returns:
             Dict with all explanation components
         """
+        self._validate_dependencies()
+
         # 1. Attention analysis
         attention_scores = self.attention_extractor.get_residue_attention_scores(
             rescue_sequence,
@@ -1253,6 +1296,25 @@ class ExplainabilityEngine:
                 cancer_mutation, rescue_mutations, mechanism, energy
             )
         }
+
+    def _validate_dependencies(self) -> None:
+        """Fail closed if explainability dependencies are unavailable."""
+        if not TORCH_AVAILABLE:
+            raise ExplainabilityDependencyError(
+                "PyTorch is required for explainability analysis."
+            )
+        if self.attention_extractor.model is None or self.attention_extractor.tokenizer is None:
+            raise ExplainabilityDependencyError(
+                "ESM model/tokenizer not available for attention attribution."
+            )
+        if self.occlusion_attributor.oracle is None or self.occlusion_attributor.embedder is None:
+            raise ExplainabilityDependencyError(
+                "Oracle/embedder not available for occlusion scoring."
+            )
+        if self.counterfactual_analyzer.oracle is None or self.counterfactual_analyzer.embedder is None:
+            raise ExplainabilityDependencyError(
+                "Oracle/embedder not available for counterfactual scoring."
+            )
 
     def _build_composite_attributions(self, sequence: str,
                                      attention: Dict[int, float],
