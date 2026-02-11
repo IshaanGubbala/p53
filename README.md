@@ -766,15 +766,48 @@ print(f"Identity: {best['Identity']:.1f}%")
 ### Command Line
 
 ```bash
-# Design rescue for specific mutation
-p53cad design --target R175H --output rescued.fasta
+# Runtime capability matrix
+p53cad doctor
 
-# Batch processing
-p53cad batch --targets R175H,R248Q,R273H --output results/
+# Train oracle
+p53cad train --dms data/raw/p53_DMS_Giacomelli_2018.csv --epochs 50 --output data/models
 
-# Generate validation report
-p53cad report --input results/ --output report.pdf
+# Single target rescue generation
+p53cad design R175H --samples 30 --lock 175,248,273
+
+# Results-first campaign (Big-8 singles+pairs x delivery methods)
+p53cad campaign-run --budget high --seed 42 --shortlist-n 30
+
+# List campaign runs and regenerate shortlist summary
+p53cad campaign-list
+p53cad campaign-report --run-id <run_id> --shortlist-n 30
 ```
+
+### Results-First Campaign Workflow
+
+The campaign pipeline persists durable artifacts so Streamlit can present results without rerunning optimization.
+
+Artifact layout:
+
+```text
+data/campaigns/<run_id>/
+  manifest.json
+  scenarios.parquet
+  candidates.parquet
+  trajectories.parquet
+  clinical.parquet
+  top30.parquet
+  top30.csv
+  summary.md
+data/campaigns/index.json
+```
+
+Streamlit presentation mode now supports:
+- Local campaign artifacts (auto latest)
+- Live session generation
+- Uploaded run bundle (`.zip`)
+
+The source toggle is in `p53cad/app/main.py` under **Result Source** in the Design Studio tab.
 
 ---
 
@@ -788,12 +821,19 @@ p53cad/
 ├── engine/
 │   ├── latent.py                  # ESM-2 embedding & FMR algorithm
 │   ├── oracle.py                  # Functional prediction model
+│   ├── campaign.py                # Results-first multi-scenario campaign runner
 │   ├── explain.py                 # Basic saliency attribution
 │   ├── explainability.py          # Advanced explainability engine
 │   ├── drug_generator.py          # De novo drug generation
 │   ├── multi_target.py            # Multi-target platform
 │   ├── experimental.py            # Experimental validation pipeline
 │   └── md_validation.py           # MD simulation scripts
+│
+├── results/
+│   ├── schema.py                  # Campaign scenario/artifact schema
+│   ├── store.py                   # Durable artifact persistence + index
+│   ├── visualization.py           # Interpretable plotting data builders
+│   └── presentation.py            # Artifact -> Streamlit candidate hydration
 │
 ├── analysis/
 │   ├── grassmann.py               # Attention geometry metrics
@@ -815,6 +855,9 @@ p53cad/
 │   ├── p53.yaml                   # Protein configuration
 │   ├── optimizer.yaml             # Algorithm parameters
 │   └── scoring.yaml               # Scoring weights
+│
+├── scripts/
+│   └── organize_workspace.py      # Non-destructive generated-file organizer
 │
 └── tests/
     └── test_*.py                  # Unit tests

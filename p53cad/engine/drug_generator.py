@@ -22,6 +22,8 @@ import subprocess
 import tempfile
 import os
 
+from p53cad.core.logging import get_logger
+
 # Conditional imports for optional dependencies
 try:
     from rdkit import Chem
@@ -590,8 +592,10 @@ class DrugGeneratorEngine:
     5. Docking+MD: Docking with MD readiness diagnostics
     """
 
-    def __init__(self, device: str = 'cpu'):
+    def __init__(self, device: str = "cpu", allow_wt_receptor_fallback: bool = False):
+        self.logger = get_logger(__name__)
         self.device = device
+        self.allow_wt_receptor_fallback = bool(allow_wt_receptor_fallback)
         self.prop_calc = MolecularPropertyCalculator()
         self.affinity_predictor = BindingAffinityPredictor()
         self.pockets = P53_BINDING_POCKETS
@@ -607,6 +611,7 @@ class DrugGeneratorEngine:
         n_candidates: int = 20,
         method: str = "template",
         protein_context: Optional[Dict[str, Any]] = None,
+        allow_wt_receptor_fallback: Optional[bool] = None,
     ) -> List[DrugCandidate]:
         """Generate drug candidates for a specific pocket.
 
@@ -622,6 +627,11 @@ class DrugGeneratorEngine:
 
         pocket = self.pockets[pocket_name]
         context_adjustment = self._compute_context_adjustment(pocket, protein_context)
+        allow_wt_fallback = (
+            self.allow_wt_receptor_fallback
+            if allow_wt_receptor_fallback is None
+            else bool(allow_wt_receptor_fallback)
+        )
 
         if method == "template":
             return self._template_based_generation(pocket, n_candidates, context_adjustment=context_adjustment)
@@ -636,6 +646,7 @@ class DrugGeneratorEngine:
                 n_candidates,
                 context_adjustment=context_adjustment,
                 require_md=False,
+                allow_wt_receptor_fallback=allow_wt_fallback,
             )
         elif method == "docking_md":
             return self._docking_generation(
@@ -644,6 +655,7 @@ class DrugGeneratorEngine:
                 n_candidates,
                 context_adjustment=context_adjustment,
                 require_md=True,
+                allow_wt_receptor_fallback=allow_wt_fallback,
             )
         else:
             raise ValueError(f"Unknown method: {method}")
@@ -690,6 +702,7 @@ class DrugGeneratorEngine:
                     confidence=confidence,
                     metadata={
                         'template': template,
+                        "selection_reason": "ranked_by_predicted_affinity",
                         **self._context_metadata(context_adjustment),
                     }
                 )
@@ -827,6 +840,7 @@ class DrugGeneratorEngine:
                             metadata={
                                 'iteration': iteration,
                                 'reward': reward,
+                                "selection_reason": "ranked_by_reinforce_reward",
                                 **self._context_metadata(context_adjustment),
                             }
                         )
@@ -841,9 +855,14 @@ class DrugGeneratorEngine:
         n_candidates: int,
         context_adjustment: Optional[Dict[str, float]] = None,
         require_md: bool = False,
+        allow_wt_receptor_fallback: bool = False,
     ) -> List[DrugCandidate]:
         """Generate and score candidates using real docking when available."""
-        runtime = self._resolve_docking_runtime(pocket_key, pocket)
+        runtime = self._resolve_docking_runtime(
+            pocket_key,
+            pocket,
+            allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+        )
         if runtime["errors"]:
             raise RuntimeError(
                 "Docking mode is unavailable: "
@@ -853,7 +872,7 @@ class DrugGeneratorEngine:
 
         receptor_path = runtime["receptor_pdbqt"]
         method_name = "docking_md" if require_md else "docking"
-        md_probe = self._run_md_refinement("", require_md=require_md)
+        md_probe = self._run_md_refinement("CCO", require_md=require_md)
         if require_md and md_probe.get("status") == "unavailable":
             raise RuntimeError(
                 "docking_md mode is unavailable: "
@@ -908,11 +927,13 @@ class DrugGeneratorEngine:
                     "scoring_mode": "autodock_vina",
                     "docking_backend": docking["backend"],
                     "docking_receptor_pdbqt": str(receptor_path),
+                    "receptor_source": runtime.get("receptor_source", "unknown"),
                     "docking_raw_affinity": raw_affinity,
                     "docking_pose_count": int(docking["pose_count"]),
                     "docking_exhaustiveness": int(docking["exhaustiveness"]),
                     "md_status": md_meta["status"],
                     "md_detail": md_meta.get("detail", ""),
+                    "selection_reason": "ranked_by_binding_affinity",
                     **self._context_metadata(context_adjustment),
                 },
             )
@@ -923,7 +944,12 @@ class DrugGeneratorEngine:
 
         return self._rank_candidates(docked)
 
-    def _resolve_docking_runtime(self, pocket_key: str, pocket: BindingPocket) -> Dict[str, Any]:
+    def _resolve_docking_runtime(
+        self,
+        pocket_key: str,
+        pocket: BindingPocket,
+        allow_wt_receptor_fallback: bool = False,
+    ) -> Dict[str, Any]:
         errors: List[str] = []
         if not RDKIT_AVAILABLE:
             errors.append("RDKit is not installed")
@@ -932,30 +958,54 @@ class DrugGeneratorEngine:
         if not (VINA_PY_AVAILABLE or shutil.which("vina")):
             errors.append("AutoDock Vina backend not found")
 
-        receptor_pdbqt = self._resolve_receptor_pdbqt(pocket_key, pocket)
+        receptor_pdbqt = self._resolve_receptor_pdbqt(
+            pocket_key,
+            pocket,
+            allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+        )
         if receptor_pdbqt is None:
             receptor_pdbqt = self._prepare_receptor_pdbqt(pocket_key)
         if receptor_pdbqt is None:
             errors.append("No receptor PDBQT found (expected under data/raw/receptors or data/processed/receptors)")
 
+        receptor_source = self._categorize_receptor_source(receptor_pdbqt, pocket_key, pocket)
+
         return {
             "errors": errors,
             "receptor_pdbqt": receptor_pdbqt,
+            "receptor_source": receptor_source,
+            "allow_wt_receptor_fallback": bool(allow_wt_receptor_fallback),
         }
 
-    def _resolve_receptor_pdbqt(self, pocket_key: str, pocket: BindingPocket) -> Optional[Path]:
+    def _resolve_receptor_pdbqt(
+        self,
+        pocket_key: str,
+        pocket: BindingPocket,
+        allow_wt_receptor_fallback: bool = False,
+    ) -> Optional[Path]:
         pocket_slug = re.sub(r"[^a-z0-9]+", "_", pocket_key.lower()).strip("_")
         name_slug = re.sub(r"[^a-z0-9]+", "_", pocket.name.lower()).strip("_")
-        env_override = Path(str(Path.cwd() / os.environ["P53CAD_RECEPTOR_PDBQT"])) if "P53CAD_RECEPTOR_PDBQT" in os.environ else None
-        candidates = [
+        env_override = (
+            Path(str(Path.cwd() / os.environ["P53CAD_RECEPTOR_PDBQT"]))
+            if "P53CAD_RECEPTOR_PDBQT" in os.environ
+            else None
+        )
+        pocket_specific_candidates = [
             Path("data/raw/receptors") / f"{pocket_slug}.pdbqt",
             Path("data/raw/receptors") / f"{name_slug}.pdbqt",
             Path("data/processed/receptors") / f"{pocket_slug}.pdbqt",
             Path("data/processed/receptors") / f"{name_slug}.pdbqt",
+            Path("data/raw/receptors/custom_receptor.pdbqt"),
+        ]
+        shared_candidates = [
             Path("data/raw/p53_wt.pdbqt"),
             Path("data/processed/p53_wt.pdbqt"),
         ]
-        candidates.append(Path("data/raw/receptors/custom_receptor.pdbqt"))
+
+        candidates = list(pocket_specific_candidates)
+        if allow_wt_receptor_fallback:
+            candidates.extend(shared_candidates)
+
         if env_override is not None:
             candidates.insert(0, env_override)
 
@@ -963,6 +1013,97 @@ class DrugGeneratorEngine:
             if path.exists():
                 return path
         return None
+
+    def _categorize_receptor_source(
+        self,
+        receptor_path: Optional[Path],
+        pocket_key: str,
+        pocket: BindingPocket,
+    ) -> str:
+        if receptor_path is None:
+            return "missing"
+        receptor_name = receptor_path.name.lower()
+        pocket_slug = re.sub(r"[^a-z0-9]+", "_", pocket_key.lower()).strip("_")
+        name_slug = re.sub(r"[^a-z0-9]+", "_", pocket.name.lower()).strip("_")
+        if receptor_name in {f"{pocket_slug}.pdbqt", f"{name_slug}.pdbqt"}:
+            return "pocket_specific"
+        if receptor_name in {"p53_wt.pdbqt", "custom_receptor.pdbqt"}:
+            return "shared_receptor"
+        return "other"
+
+    def get_receptor_manifest(self, allow_wt_receptor_fallback: bool = False) -> Dict[str, Any]:
+        """
+        Build a pocket->receptor manifest and detect receptor reuse collisions.
+        """
+        mapping: Dict[str, str] = {}
+        reuse_index: Dict[str, List[str]] = {}
+        for pocket_key, pocket in self.pockets.items():
+            resolved = self._resolve_receptor_pdbqt(
+                pocket_key,
+                pocket,
+                allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+            )
+            resolved_str = str(resolved.resolve()) if resolved is not None else "missing"
+            mapping[pocket_key] = resolved_str
+            reuse_index.setdefault(resolved_str, []).append(pocket_key)
+
+        duplicates = {k: v for k, v in reuse_index.items() if k != "missing" and len(v) > 1}
+        return {
+            "allow_wt_receptor_fallback": bool(allow_wt_receptor_fallback),
+            "pocket_to_receptor": mapping,
+            "duplicate_receptor_paths": duplicates,
+            "duplicate_count": len(duplicates),
+        }
+
+    def get_mode_capabilities(
+        self,
+        pocket_key: str,
+        method: str,
+        allow_wt_receptor_fallback: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Return strict capability probe for a generation mode.
+        """
+        result: Dict[str, Any] = {
+            "method": method,
+            "pocket_key": pocket_key,
+            "ready": False,
+            "reason": "",
+            "receptor_path": None,
+            "receptor_source": "n/a",
+        }
+        if pocket_key not in self.pockets:
+            result["reason"] = f"Unknown pocket: {pocket_key}"
+            return result
+
+        pocket = self.pockets[pocket_key]
+        if method in {"template", "denovo", "reinforce"}:
+            result["ready"] = True
+            result["reason"] = "No docking runtime required."
+            return result
+
+        runtime = self._resolve_docking_runtime(
+            pocket_key,
+            pocket,
+            allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+        )
+        result["receptor_path"] = str(runtime.get("receptor_pdbqt")) if runtime.get("receptor_pdbqt") else None
+        result["receptor_source"] = runtime.get("receptor_source", "missing")
+
+        errors = list(runtime.get("errors", []))
+        if method == "docking_md":
+            md_probe = self._run_md_refinement("CCO", require_md=True)
+            if md_probe.get("status") != "ran":
+                errors.append(md_probe.get("detail", "MD stack unavailable"))
+
+        if errors:
+            result["ready"] = False
+            result["reason"] = "; ".join(errors)
+            return result
+
+        result["ready"] = True
+        result["reason"] = "Ready"
+        return result
 
     def _prepare_receptor_pdbqt(self, pocket_key: str) -> Optional[Path]:
         raw_pdb = Path("data/raw/p53_wt.pdb")
@@ -1032,7 +1173,8 @@ class DrugGeneratorEngine:
             raise RuntimeError(f"Could not embed 3D coordinates for ligand: {smiles}")
         AllChem.MMFFOptimizeMolecule(mol, maxIters=200)
 
-        prep = MoleculePreparation()
+        atom_params = self._resolve_meeko_atom_params()
+        prep = MoleculePreparation(load_atom_params=atom_params)
         setups = prep.prepare(mol)
         if not setups:
             raise RuntimeError("Meeko failed to prepare ligand setup")
@@ -1048,6 +1190,31 @@ class DrugGeneratorEngine:
             pdbqt_string = str(pdbqt_payload)
 
         output_path.write_text(pdbqt_string)
+
+    def _resolve_meeko_atom_params(self) -> str:
+        """Resolve Meeko atom parameter file, even when package data is missing."""
+        try:
+            import meeko  # type: ignore
+            params_dir = Path(meeko.__file__).resolve().parent / "data" / "params"
+            if params_dir.exists():
+                preferred = params_dir / "ad4_types.json"
+                if preferred.exists():
+                    # Newer Meeko builds accept explicit file token with suffix.
+                    return "ad4_types.json"
+                # Fallback to any bundled JSON file if package layout differs.
+                for candidate in sorted(params_dir.glob("*.json")):
+                    return candidate.name
+        except Exception:
+            pass
+
+        bundled = Path(__file__).resolve().parents[1] / "data" / "meeko" / "ad4_types.json"
+        if bundled.exists():
+            return str(bundled)
+
+        raise RuntimeError(
+            "Meeko atom params missing. Expected ad4_types.json in Meeko package data or "
+            f"bundled file at {bundled}."
+        )
 
     def _dock_with_vina_python(
         self,
@@ -1136,23 +1303,67 @@ class DrugGeneratorEngine:
             return {"status": "unavailable", "detail": "OpenMM is not installed"}
 
         try:
-            import openff.toolkit  # noqa: F401
-            import openmmforcefields  # noqa: F401
+            from openff.toolkit import ForceField, Molecule  # type: ignore
+            from openff.interchange import Interchange  # type: ignore
+            from openmm import LangevinMiddleIntegrator, unit  # type: ignore
+            from openmm.app import Simulation  # type: ignore
+            import openmmforcefields  # type: ignore  # noqa: F401
         except Exception:
             return {
                 "status": "unavailable",
-                "detail": "MD refinement requires openff-toolkit + openmmforcefields for ligand parameterization",
+                "detail": "MD refinement requires openff-toolkit + openff-interchange + openmmforcefields",
             }
 
-        # Real MD refinement requires full protein-ligand complex setup and force-field parameterization.
-        # Keep this explicit until the runtime provides the full stack.
-        return {
-            "status": "not_run",
-            "detail": (
-                "MD runtime detected but automated protein-ligand complex setup is not configured; "
-                "provide a prepared complex workflow to run production MD."
-            ),
-        }
+        if not RDKIT_AVAILABLE:
+            return {"status": "unavailable", "detail": "RDKit is required to generate ligand conformers for MD"}
+
+        if not smiles:
+            return {"status": "unavailable", "detail": "Ligand SMILES is required for docking_md refinement"}
+
+        try:
+            # Generate a physically valid ligand conformer via RDKit.
+            rdkit_mol = Chem.MolFromSmiles(smiles)
+            if rdkit_mol is None:
+                return {"status": "unavailable", "detail": "Invalid ligand SMILES for MD refinement"}
+            rdkit_mol = Chem.AddHs(rdkit_mol)
+            emb_status = AllChem.EmbedMolecule(rdkit_mol, randomSeed=42)
+            if emb_status != 0:
+                return {"status": "unavailable", "detail": "Failed to embed 3D ligand conformer for MD"}
+            AllChem.MMFFOptimizeMolecule(rdkit_mol, maxIters=200)
+
+            ligand = Molecule.from_rdkit(
+                rdkit_mol,
+                allow_undefined_stereo=True,
+                hydrogens_are_explicit=True,
+            )
+            topology = ligand.to_topology()
+            forcefield = ForceField("openff_unconstrained-2.1.0.offxml")
+            interchange = Interchange.from_smirnoff(
+                force_field=forcefield,
+                topology=topology,
+            )
+            system = interchange.to_openmm_system()
+            omm_top = interchange.to_openmm_topology()
+            positions = interchange.positions.to_openmm()
+
+            integrator = LangevinMiddleIntegrator(
+                300 * unit.kelvin,
+                1.0 / unit.picosecond,
+                0.002 * unit.picoseconds,
+            )
+            simulation = Simulation(omm_top, system, integrator)
+            simulation.context.setPositions(positions)
+            simulation.minimizeEnergy(maxIterations=250)
+            simulation.step(500)
+
+            state = simulation.context.getState(getEnergy=True)
+            energy = state.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
+            return {
+                "status": "ran",
+                "detail": f"Ligand-only OpenMM refinement completed (NVT 500 steps, E={energy:.2f} kcal/mol)",
+            }
+        except Exception as exc:
+            return {"status": "unavailable", "detail": f"MD refinement failed: {exc}"}
 
     def _generate_variations(self, template: str, n_per_template: int) -> List[str]:
         """Generate variations of a template SMILES."""
@@ -1514,12 +1725,22 @@ def main():
                        help="Output file path")
     parser.add_argument("--export-sdf", type=str, default=None,
                        help="Export to SDF file for docking")
+    parser.add_argument(
+        "--allow-wt-receptor-fallback",
+        action="store_true",
+        help="Allow fallback to shared WT receptor if pocket-specific receptor is missing (less realistic).",
+    )
 
     args = parser.parse_args()
 
     # Generate
-    engine = DrugGeneratorEngine()
-    candidates = engine.generate_for_pocket(args.pocket, args.n_candidates, args.method)
+    engine = DrugGeneratorEngine(allow_wt_receptor_fallback=args.allow_wt_receptor_fallback)
+    candidates = engine.generate_for_pocket(
+        args.pocket,
+        args.n_candidates,
+        args.method,
+        allow_wt_receptor_fallback=args.allow_wt_receptor_fallback,
+    )
 
     # Output
     results = {

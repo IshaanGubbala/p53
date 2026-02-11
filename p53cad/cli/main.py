@@ -1,10 +1,9 @@
 import click
 from pathlib import Path
-import os
+import json
+from p53cad.core.runtime import bootstrap_runtime, get_runtime_capabilities, log_runtime_capabilities
 
-# Fix for OpenMP and MPS errors on Mac
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+bootstrap_runtime()
 
 from p53cad.core.logging import setup_logging, get_logger
 
@@ -12,7 +11,172 @@ from p53cad.core.logging import setup_logging, get_logger
 def cli():
     """p53CAD: Generative Protein Design Platform"""
     log_path = setup_logging()
-    get_logger("p53cad.cli").info("Workflow log file: %s", log_path)
+    logger = get_logger("p53cad.cli")
+    logger.info("Workflow log file: %s", log_path)
+    log_runtime_capabilities("p53cad.cli.runtime")
+
+
+@cli.command()
+def doctor():
+    """Print runtime capability matrix and dependency readiness."""
+    logger = get_logger("p53cad.cli.doctor")
+    caps = get_runtime_capabilities()
+    logger.info("Runtime diagnostic report:")
+    for key in sorted(caps.keys()):
+        logger.info("  - %s: %s", key, caps[key])
+
+    # Optional docking diagnostics if module is available.
+    try:
+        from p53cad.engine.drug_generator import DrugGeneratorEngine, P53_BINDING_POCKETS
+
+        engine = DrugGeneratorEngine()
+        manifest = engine.get_receptor_manifest(allow_wt_receptor_fallback=False)
+        logger.info("Drug runtime diagnostics:")
+        logger.info("  - receptor_collisions: %s", manifest.get("duplicate_receptor_paths", {}))
+        for pocket_key in sorted(P53_BINDING_POCKETS.keys()):
+            mode = engine.get_mode_capabilities(
+                pocket_key=pocket_key,
+                method="docking",
+                allow_wt_receptor_fallback=False,
+            )
+            logger.info(
+                "  - %s: ready=%s receptor=%s reason=%s",
+                pocket_key,
+                mode.get("ready"),
+                mode.get("receptor_path"),
+                mode.get("reason", ""),
+            )
+    except Exception as exc:
+        logger.warning("Drug diagnostics unavailable: %s", exc)
+
+
+@cli.command("campaign-run")
+@click.option("--run-id", default=None, help="Optional run identifier. Auto-generated if omitted.")
+@click.option(
+    "--budget",
+    default="high",
+    show_default=True,
+    type=click.Choice(["fast", "medium", "high"]),
+    help="Campaign compute budget profile.",
+)
+@click.option("--seed", default=42, show_default=True, type=int, help="Base random seed.")
+@click.option("--resume/--no-resume", default=True, show_default=True, help="Resume an existing run id if present.")
+@click.option("--include-pairs/--no-include-pairs", default=True, show_default=True, help="Include hotspot pair scenarios.")
+@click.option("--max-scenarios", default=None, type=int, help="Cap scenario count for dry-runs.")
+@click.option("--shortlist-n", default=30, show_default=True, type=int, help="Top-N shortlist for presentation.")
+@click.option(
+    "--output-dir",
+    default="data/campaigns",
+    show_default=True,
+    type=click.Path(),
+    help="Campaign artifact base directory.",
+)
+@click.option("--no-clinical", is_flag=True, help="Skip clinical scoring pass.")
+def campaign_run(
+    run_id,
+    budget,
+    seed,
+    resume,
+    include_pairs,
+    max_scenarios,
+    shortlist_n,
+    output_dir,
+    no_clinical,
+):
+    """Run results-first campaign across hotspot scenarios and delivery methods."""
+    logger = get_logger("p53cad.cli.campaign_run")
+    from p53cad.engine.campaign import CampaignRunner
+    from p53cad.results.store import CampaignStore
+
+    store = CampaignStore(base_dir=Path(output_dir))
+    runner = CampaignRunner(store=store)
+    logger.info(
+        "Starting campaign run: run_id=%s budget=%s seed=%d include_pairs=%s max_scenarios=%s",
+        run_id or "auto",
+        budget,
+        int(seed),
+        bool(include_pairs),
+        max_scenarios if max_scenarios is not None else "all",
+    )
+    result = runner.run(
+        run_id=run_id,
+        seed=seed,
+        resume=resume,
+        include_pairs=include_pairs,
+        max_scenarios=max_scenarios,
+        shortlist_n=shortlist_n,
+        budget=budget,
+        with_clinical=not no_clinical,
+    )
+    logger.info(
+        "Campaign complete: run_id=%s scenarios=%d candidates=%d shortlist=%d run_dir=%s",
+        result.get("run_id"),
+        int(result.get("n_scenarios", 0)),
+        int(result.get("n_candidates", 0)),
+        int(result.get("n_shortlist", 0)),
+        result.get("run_dir"),
+    )
+
+
+@cli.command("campaign-report")
+@click.option("--run-id", default=None, help="Run identifier to report. Defaults to latest run.")
+@click.option("--shortlist-n", default=30, show_default=True, type=int, help="Top-N shortlist size.")
+@click.option(
+    "--output-dir",
+    default="data/campaigns",
+    show_default=True,
+    type=click.Path(),
+    help="Campaign artifact base directory.",
+)
+def campaign_report(run_id, shortlist_n, output_dir):
+    """Regenerate Top-N report artifacts from an existing campaign run."""
+    logger = get_logger("p53cad.cli.campaign_report")
+    from p53cad.engine.campaign import CampaignRunner
+    from p53cad.results.store import CampaignStore
+
+    store = CampaignStore(base_dir=Path(output_dir))
+    resolved_run_id = run_id or store.latest_run_id()
+    if not resolved_run_id:
+        logger.error("No campaign runs found in %s", output_dir)
+        return
+
+    runner = CampaignRunner(store=store)
+    report = runner.report_run(resolved_run_id, shortlist_n=shortlist_n)
+    logger.info(
+        "Campaign report written: run_id=%s shortlist=%d run_dir=%s",
+        report.get("run_id"),
+        int(report.get("n_shortlist", 0)),
+        report.get("run_dir"),
+    )
+
+
+@cli.command("campaign-list")
+@click.option(
+    "--output-dir",
+    default="data/campaigns",
+    show_default=True,
+    type=click.Path(),
+    help="Campaign artifact base directory.",
+)
+def campaign_list(output_dir):
+    """List campaign runs and statuses from artifact index."""
+    logger = get_logger("p53cad.cli.campaign_list")
+    from p53cad.results.store import CampaignStore
+
+    store = CampaignStore(base_dir=Path(output_dir))
+    runs = store.list_runs()
+    if runs.empty:
+        logger.info("No campaign runs found in %s", output_dir)
+        return
+    logger.info("Campaign runs (%d):", len(runs))
+    for _, row in runs.iterrows():
+        logger.info(
+            "  - %s | status=%s | updated=%s | path=%s",
+            row.get("run_id", "n/a"),
+            row.get("status", "n/a"),
+            row.get("updated_at_utc", "n/a"),
+            row.get("path", "n/a"),
+        )
 
 @cli.command()
 @click.option('--dms', type=click.Path(exists=True), default="data/raw/p53_DMS_Giacomelli_2018.csv", help="Path to DMS data")
@@ -230,6 +394,46 @@ def analyze():
         
     df.to_csv(input_path.with_name("candidates_analyzed.csv"), index=False)
     logger.info("Analysis complete.")
+
+
+@cli.command()
+@click.option("--pocket", default="Y220C_cavity", show_default=True, help="Target pocket key.")
+@click.option("--n-candidates", default=10, show_default=True, type=int, help="Number of drug candidates.")
+@click.option("--method", default="template", show_default=True, type=click.Choice(["template", "docking", "docking_md"]), help="Drug generation mode.")
+@click.option("--allow-wt-receptor-fallback", is_flag=True, help="Allow fallback to shared WT receptor if pocket-specific receptor is missing.")
+@click.option("--output", type=click.Path(), default="data/processed/drug_candidates.json", show_default=True, help="Output JSON path.")
+def drug(pocket, n_candidates, method, allow_wt_receptor_fallback, output):
+    """Generate drug candidates with strict capability checks."""
+    logger = get_logger("p53cad.cli.drug")
+    from p53cad.engine.drug_generator import DrugGeneratorEngine
+
+    engine = DrugGeneratorEngine(allow_wt_receptor_fallback=allow_wt_receptor_fallback)
+    caps = engine.get_mode_capabilities(
+        pocket_key=pocket,
+        method=method,
+        allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+    )
+    if not caps.get("ready", False):
+        logger.error("Drug mode unavailable: %s", caps.get("reason", "unknown reason"))
+        return
+
+    candidates = engine.generate_for_pocket(
+        pocket_name=pocket,
+        n_candidates=n_candidates,
+        method=method,
+        allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+    )
+    out_path = Path(output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "pocket": pocket,
+        "method": method,
+        "allow_wt_receptor_fallback": bool(allow_wt_receptor_fallback),
+        "count": len(candidates),
+        "candidates": [c.to_dict() for c in candidates],
+    }
+    out_path.write_text(json.dumps(payload, indent=2))
+    logger.info("Wrote %d candidates to %s", len(candidates), out_path)
 
 @cli.command()
 @click.option('--pdb', type=click.Path(exists=True), default="data/raw/p53_wt.pdb", help="Path to WT PDB")

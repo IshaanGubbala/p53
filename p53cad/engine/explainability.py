@@ -1209,6 +1209,19 @@ class ExplainabilityEngine:
         self.energy_decomposer = EnergyDecomposer()
         self.mechanism_classifier = RescueMechanismClassifier()
 
+    def probe_attention_backend(self, sequence: str) -> Dict[str, str]:
+        """
+        Probe whether attention tensors can be produced for strict-mode explainability.
+        """
+        try:
+            self._validate_dependencies()
+            self.attention_extractor.extract_attention(sequence)
+            return {"ready": "true", "reason": "Attention tensors available"}
+        except ExplainabilityDependencyError as err:
+            return {"ready": "false", "reason": str(err)}
+        except Exception as err:  # pragma: no cover - runtime defensive path
+            return {"ready": "false", "reason": f"Attention backend failed: {err}"}
+
     def explain_rescue(self, wt_sequence: str, mutant_sequence: str,
                       rescue_sequence: str, cancer_mutation: str,
                       rescue_mutations: List[str]) -> Dict:

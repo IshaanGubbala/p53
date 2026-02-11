@@ -55,3 +55,15 @@ logs/
 /tmp/
 *.tmp
 *.temp
+
+# Results-first campaign artifacts
+data/campaigns/
+data/processed/archive/
+data/processed/exports/
+results_raw.csv
+data/processed/candidates*.csv
+
+# Local lock snapshots
+requirements.lock.full.txt
+environment.full.lock.yml
+environment.lock.yml

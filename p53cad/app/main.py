@@ -1,3 +1,10 @@
+from p53cad.core.runtime import bootstrap_runtime, get_runtime_capabilities, log_runtime_capabilities
+from p53cad.core.logging import setup_logging
+
+bootstrap_runtime()
+setup_logging()
+_RUNTIME_CAPS = log_runtime_capabilities("p53cad.app.runtime")
+
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
@@ -12,6 +19,8 @@ import requests
 import time
 import json
 import logging
+import io
+import zipfile
 from typing import Any, Dict, Optional
 
 import importlib
@@ -21,6 +30,13 @@ from p53cad.engine.explain import SaliencyMap
 from p53cad.analysis.grassmann import GrassmannMetric
 from p53cad.data import dms as dms_module
 from p53cad.viz.pymol import PyMolGenerator
+from p53cad.results.store import CampaignStore
+from p53cad.results.presentation import hydrate_display_candidates
+from p53cad.results.visualization import (
+    build_candidate_position_heatmap,
+    build_multi_metric_frame,
+    build_loss_mesh,
+)
 
 # DMS core helpers (required)
 P53_WT = dms_module.P53_WT
@@ -108,7 +124,75 @@ ENHANCED_MODULES_AVAILABLE = any(
 )
 
 if MODULE_IMPORT_ERRORS:
-    print(f"Optional module import issues: {MODULE_IMPORT_ERRORS}")
+    logging.getLogger(__name__).warning("Optional module import issues: %s", MODULE_IMPORT_ERRORS)
+
+
+@st.cache_data(show_spinner=False)
+def get_runtime_capabilities_snapshot() -> Dict[str, Any]:
+    """Return lightweight runtime capability probe for dashboard diagnostics."""
+    return get_runtime_capabilities()
+
+
+def get_explainability_backend_status() -> Dict[str, Any]:
+    """
+    Probe explainability attention availability once per session.
+    Fail-closed: if attention tensors cannot be produced, mark unavailable.
+    """
+    cached = st.session_state.get("_attention_backend_status")
+    if isinstance(cached, dict):
+        return cached
+
+    status = {"ready": False, "reason": "Explainability module not loaded."}
+    if not EXPLAINABILITY_MODULE_AVAILABLE:
+        st.session_state["_attention_backend_status"] = status
+        return status
+
+    embedder_obj = globals().get("embedder")
+    oracle_obj = globals().get("oracle")
+    if embedder_obj is None or oracle_obj is None:
+        status["reason"] = "Oracle/embedder model stack is unavailable."
+        st.session_state["_attention_backend_status"] = status
+        return status
+
+    try:
+        engine = ExplainabilityEngine(
+            model=embedder_obj.model,
+            tokenizer=embedder_obj.tokenizer,
+            oracle=oracle_obj,
+            embedder=embedder_obj,
+        )
+        probe_seq = P53_WT[:80]
+        engine.attention_extractor.extract_attention(probe_seq)
+        status = {"ready": True, "reason": "Attention tensors available."}
+    except ExplainabilityDependencyError as err:
+        status = {"ready": False, "reason": str(err)}
+    except Exception as err:  # pragma: no cover - defensive runtime path
+        status = {"ready": False, "reason": f"Runtime probe failed: {err}"}
+
+    st.session_state["_attention_backend_status"] = status
+    return status
+
+
+def get_drug_mode_capability(
+    pocket_key: str,
+    method: str,
+    allow_wt_receptor_fallback: bool = False,
+) -> Dict[str, Any]:
+    """
+    Probe per-mode drug readiness for strict UI gating.
+    """
+    if not DRUG_MODULE_AVAILABLE:
+        return {"ready": False, "reason": MODULE_IMPORT_ERRORS.get("drug", "Drug module unavailable.")}
+    try:
+        engine = DrugGeneratorEngine()
+        return engine.get_mode_capabilities(
+            pocket_key=pocket_key,
+            method=method,
+            allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+        )
+    except Exception as err:
+        return {"ready": False, "reason": str(err)}
+
 
 # === LIVE SIMULATION FUNCTIONS ===
 def predict_structure_esmfold(sequence: str) -> str:
@@ -123,96 +207,22 @@ def predict_structure_esmfold(sequence: str) -> str:
     except Exception as e:
         return None
 
-def morph_pdb_for_mutations(pdb_string: str, mutation_positions: list, step: int, total_steps: int) -> str:
+
+def get_real_structure_checkpoint(sequence: str) -> Optional[str]:
     """
-    Morph a PDB structure to show conformational changes around mutation sites.
-    This creates a visual effect of the protein structure changing during optimization.
+    Get a real structure checkpoint from ESMFold API with per-session cache.
     """
-    if not pdb_string or not mutation_positions:
-        return pdb_string
+    if not sequence:
+        return None
+    cache = st.session_state.setdefault("_esmfold_checkpoint_cache", {})
+    if sequence in cache:
+        return cache[sequence]
 
-    lines = pdb_string.split('\n')
-    new_lines = []
-
-    # Calculate morph intensity based on optimization progress
-    progress = step / max(total_steps, 1)
-    wave_phase = step * 0.2  # Create wave-like motion
-
-    for line in lines:
-        if line.startswith('ATOM'):
-            try:
-                # Parse residue number
-                res_num = int(line[22:26].strip())
-                x = float(line[30:38])
-                y = float(line[38:46])
-                z = float(line[46:54])
-
-                # Calculate displacement based on proximity to mutations
-                displacement = 0.0
-                for mut_pos in mutation_positions:
-                    distance_to_mut = abs(res_num - mut_pos)
-                    if distance_to_mut < 15:  # Affect residues within 15 positions
-                        # Stronger effect closer to mutation
-                        effect = (15 - distance_to_mut) / 15.0
-                        # Wave-like displacement
-                        wave = np.sin(wave_phase + distance_to_mut * 0.3)
-                        displacement += effect * wave * 1.5 * progress
-
-                # Apply displacement (primarily in Y direction for visual effect)
-                new_x = x + displacement * 0.3 * np.cos(wave_phase)
-                new_y = y + displacement * np.sin(wave_phase * 0.7)
-                new_z = z + displacement * 0.2 * np.sin(wave_phase * 1.3)
-
-                new_line = f"{line[:30]}{new_x:8.3f}{new_y:8.3f}{new_z:8.3f}{line[54:]}"
-                new_lines.append(new_line)
-            except:
-                new_lines.append(line)
-        else:
-            new_lines.append(line)
-
-    return '\n'.join(new_lines)
-
-def generate_motion_frames(pdb_string: str, n_frames: int = 20) -> list:
-    """Generate pseudo-motion frames by perturbing coordinates (simplified NMA-like motion)."""
-    import re
-    frames = [pdb_string]
-
-    # Parse ATOM lines
-    lines = pdb_string.split('\n')
-    atom_lines = [l for l in lines if l.startswith('ATOM')]
-    other_lines = [l for l in lines if not l.startswith('ATOM')]
-
-    for frame_idx in range(1, n_frames):
-        # Sinusoidal breathing motion
-        scale = 0.3 * np.sin(2 * np.pi * frame_idx / n_frames)
-        new_atoms = []
-
-        for line in atom_lines:
-            try:
-                x = float(line[30:38])
-                y = float(line[38:46])
-                z = float(line[46:54])
-
-                # Add harmonic motion (simplified normal mode)
-                # Breathing mode - expand/contract from center
-                cx, cy, cz = 0, 0, 0  # Approximate center
-                dx, dy, dz = x - cx, y - cy, z - cz
-                dist = np.sqrt(dx**2 + dy**2 + dz**2) + 0.1
-
-                new_x = x + scale * dx / dist * 2
-                new_y = y + scale * dy / dist * 2
-                new_z = z + scale * dz / dist * 2
-
-                new_line = f"{line[:30]}{new_x:8.3f}{new_y:8.3f}{new_z:8.3f}{line[54:]}"
-                new_atoms.append(new_line)
-            except:
-                new_atoms.append(line)
-
-        frame_pdb = '\n'.join(other_lines[:2] + new_atoms + other_lines[2:])
-        frames.append(frame_pdb)
-
-    return frames
-
+    pdb = predict_structure_esmfold(sequence)
+    if pdb and "ATOM" in pdb:
+        cache[sequence] = pdb
+        return pdb
+    return None
 
 def get_optimization_stage(step: float, total_steps: int) -> dict:
     """Return stage metadata for the live optimization timeline."""
@@ -240,43 +250,6 @@ def get_optimization_stage(step: float, total_steps: int) -> dict:
         "description": "Locking in the final rescue architecture.",
         "color": "#F59E0B",
     }
-
-
-def build_morph_keyframes(
-    pdb_string: str,
-    mutation_positions: list,
-    start_step: float,
-    end_step: float,
-    total_steps: int,
-    n_frames: int = 12,
-) -> list:
-    """Interpolate several morph frames so the live viewer transitions smoothly."""
-    if not pdb_string:
-        return []
-
-    if start_step > end_step:
-        start_step, end_step = end_step, start_step
-
-    if n_frames < 2:
-        n_frames = 2
-
-    if not mutation_positions:
-        return [pdb_string]
-
-    frames = []
-    step_delta = end_step - start_step
-    denom = max(n_frames - 1, 1)
-    for frame_idx in range(n_frames):
-        interp_step = start_step + step_delta * (frame_idx / denom)
-        frames.append(
-            morph_pdb_for_mutations(
-                pdb_string,
-                mutation_positions=mutation_positions,
-                step=interp_step,
-                total_steps=total_steps,
-            )
-        )
-    return frames
 
 
 def compute_camera_focus_positions(
@@ -1067,7 +1040,13 @@ def style_plotly_figure(fig: go.Figure, chart_kind: str = "default") -> go.Figur
     if fig is None:
         return fig
 
-    fig.update_layout(template="p53cad", transition=dict(duration=250, easing="cubic-in-out"))
+    # Force light surfaces even if an external/default template is dark in the runtime.
+    fig.update_layout(
+        template="p53cad",
+        transition=dict(duration=250, easing="cubic-in-out"),
+        paper_bgcolor="rgba(248, 252, 255, 0.97)",
+        plot_bgcolor="rgba(241, 247, 255, 0.93)",
+    )
 
     # Consistent larger chart canvases for readability.
     if fig.layout.height is None:
@@ -1166,15 +1145,37 @@ def style_plotly_figure(fig: go.Figure, chart_kind: str = "default") -> go.Figur
             )
         )
 
+    # Dynamic margin guard: keep legends and long labels from overlapping plot/title.
+    has_visible_legend = any(getattr(trace, "showlegend", True) is not False for trace in fig.data)
+    if has_visible_legend:
+        current_margin = fig.layout.margin or go.layout.Margin()
+        min_top = 64
+        min_bottom = 86 if chart_kind in {"bar", "scatter", "pareto", "trajectory", "multiline", "mini"} else 32
+        fig.update_layout(
+            margin=dict(
+                l=max(int(getattr(current_margin, "l", 24) or 24), 20),
+                r=max(int(getattr(current_margin, "r", 20) or 20), 16),
+                t=max(int(getattr(current_margin, "t", min_top) or min_top), min_top),
+                b=max(int(getattr(current_margin, "b", min_bottom) or min_bottom), min_bottom),
+            )
+        )
+
     return fig
 
 
+def _normalize_plotly_kwargs(kwargs: dict) -> dict:
+    if "use_container_width" in kwargs:
+        use_container = bool(kwargs.pop("use_container_width"))
+        kwargs.setdefault("width", "stretch" if use_container else "content")
+    return kwargs
+
+
 def render_plotly(fig: go.Figure, chart_kind: str = "default", **kwargs):
-    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **kwargs)
+    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))
 
 
 def render_plotly_in(container, fig: go.Figure, chart_kind: str = "default", **kwargs):
-    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **kwargs)
+    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))
 
 
 def safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:
@@ -1427,6 +1428,101 @@ def sync_analysis_inputs_from_candidate(active_candidate: Optional[Dict[str, Any
     st.session_state["ci_rescue_main"] = rescue_text or "N239Y, T284R"
 
 
+@st.cache_data(show_spinner=False)
+def load_campaign_bundle_from_disk(run_id: str) -> Dict[str, Any]:
+    """Load a campaign artifact bundle from local storage."""
+    store = CampaignStore()
+    bundle = store.load_run_bundle(run_id)
+    bundle["run_id"] = str(run_id)
+    return bundle
+
+
+@st.cache_data(show_spinner=False)
+def load_campaign_bundle_from_zip(raw_bytes: bytes) -> Dict[str, Any]:
+    """Load a campaign artifact bundle from uploaded zip bytes."""
+    default_bundle: Dict[str, Any] = {
+        "manifest": {},
+        "scenarios": pd.DataFrame(),
+        "candidates": pd.DataFrame(),
+        "trajectories": pd.DataFrame(),
+        "clinical": pd.DataFrame(),
+        "top30": pd.DataFrame(),
+        "run_id": "uploaded_bundle",
+    }
+    if not raw_bytes:
+        return default_bundle
+
+    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+        names = zf.namelist()
+
+        def _member_for(filename: str) -> Optional[str]:
+            for name in names:
+                if name.endswith("/"):
+                    continue
+                if Path(name).name == filename:
+                    return name
+            return None
+
+        manifest_member = _member_for("manifest.json")
+        if manifest_member:
+            try:
+                default_bundle["manifest"] = json.loads(zf.read(manifest_member).decode("utf-8"))
+            except Exception:
+                default_bundle["manifest"] = {}
+
+        if default_bundle["manifest"].get("run_id"):
+            default_bundle["run_id"] = str(default_bundle["manifest"]["run_id"])
+        elif manifest_member:
+            parent = Path(manifest_member).parent
+            default_bundle["run_id"] = parent.name or "uploaded_bundle"
+
+        for key, filename in [
+            ("scenarios", "scenarios.parquet"),
+            ("candidates", "candidates.parquet"),
+            ("trajectories", "trajectories.parquet"),
+            ("clinical", "clinical.parquet"),
+            ("top30", "top30.parquet"),
+        ]:
+            member = _member_for(filename)
+            if not member:
+                continue
+            try:
+                default_bundle[key] = pd.read_parquet(io.BytesIO(zf.read(member)))
+            except Exception:
+                default_bundle[key] = pd.DataFrame()
+
+    return default_bundle
+
+
+def apply_campaign_bundle_to_session(bundle: Dict[str, Any], source_label: str) -> bool:
+    """Hydrate Streamlit candidate state from campaign artifact tables."""
+    candidates_df = bundle.get("candidates", pd.DataFrame())
+    trajectories_df = bundle.get("trajectories", pd.DataFrame())
+    top30_df = bundle.get("top30", pd.DataFrame())
+    display_candidates = hydrate_display_candidates(
+        candidates_df=candidates_df,
+        trajectories_df=trajectories_df,
+        top_df=top30_df,
+        max_candidates=30,
+    )
+    if not display_candidates:
+        return False
+
+    st.session_state["gd_candidates"] = display_candidates
+    st.session_state["gd_source_mode"] = "campaign_artifacts"
+    st.session_state["gd_artifact_source"] = str(source_label)
+    st.session_state["gd_artifact_manifest"] = bundle.get("manifest", {})
+    st.session_state["gd_artifact_run_id"] = str(bundle.get("run_id", source_label))
+    st.session_state["gd_artifact_scenarios"] = int(len(bundle.get("scenarios", pd.DataFrame())))
+
+    # Keep downstream analysis synced to a concrete selected candidate.
+    st.session_state["selected_candidate"] = display_candidates[0]
+    first_target = str(display_candidates[0].get("target_label", "")).strip()
+    if first_target:
+        st.session_state["target_mut_saved"] = first_target.split("+")[0]
+    return True
+
+
 def compute_target_baseline_metrics(target_mutation: str) -> Dict[str, float]:
     """Compute baseline oracle metrics for the target-only mutant."""
     if oracle is None:
@@ -1489,21 +1585,32 @@ def filter_candidate_set(
     target_mut = str(target_mutation).strip().upper()
     kept = []
     removed = 0
+    rejected_reasons: Dict[str, int] = {}
 
     for cand in candidates:
         muts = [str(m).strip().upper() for m in cand.get("mutations", []) if str(m).strip()]
         rescue_muts = [m for m in muts if m != target_mut]
         score_primary = float(cand.get("score_adjusted", cand.get("score", 0.0)))
         score_gain = score_primary - float(baseline_score)
-        is_baseline_like = (len(rescue_muts) < int(min_rescue_mutations)) or (score_gain < float(min_score_gain))
+        has_rescue_count = len(rescue_muts) >= int(min_rescue_mutations)
+        has_min_gain = score_gain >= float(min_score_gain)
+        is_baseline_like = (not has_rescue_count) or (not has_min_gain)
+        if not has_rescue_count:
+            rejection_reason = "insufficient_rescue_mutations"
+        elif not has_min_gain:
+            rejection_reason = "below_min_gain"
+        else:
+            rejection_reason = "passed_quality_filter"
 
         cand["score_for_selection"] = float(score_primary)
         cand["rescue_mutations"] = rescue_muts
         cand["score_gain_vs_target"] = score_gain
         cand["is_baseline_like"] = is_baseline_like
+        cand["selection_reason"] = rejection_reason
 
         if is_baseline_like:
             removed += 1
+            rejected_reasons[rejection_reason] = rejected_reasons.get(rejection_reason, 0) + 1
         else:
             kept.append(cand)
 
@@ -1511,6 +1618,7 @@ def filter_candidate_set(
     if not kept and candidates:
         fallback_used = True
         kept = sorted(candidates, key=lambda c: float(c.get("score", 0.0)), reverse=True)[:1]
+        kept[0]["selection_reason"] = "fallback_top_score_no_quality_pass"
 
     summary = {
         "total": len(candidates),
@@ -1519,6 +1627,7 @@ def filter_candidate_set(
         "fallback_used": fallback_used,
         "min_score_gain": float(min_score_gain),
         "baseline_score": float(baseline_score),
+        "rejection_reasons": rejected_reasons,
     }
     return kept, summary
 
@@ -1639,6 +1748,10 @@ def select_diverse_candidates(
         cand["selection_score"] = float(selection_score)
         cand["diversity_novelty"] = float(novelty)
         cand["max_mutation_overlap"] = float(max_overlap)
+        cand["selection_reason"] = (
+            f"diversity_rank_{rank}_utility={selection_score:.3f}_"
+            f"gain={row['score_gain']:.3f}_novelty={novelty:.3f}_overlap={max_overlap:.3f}"
+        )
         selected.append(cand)
 
     summary = {
@@ -1651,19 +1764,9 @@ def select_diverse_candidates(
     return selected, summary
 
 
-# Initialize models (NO CACHE - force fresh reload)
+# Initialize models with Streamlit resource cache to avoid repeated heavy reloads.
+@st.cache_resource(show_spinner=False)
 def load_models_v8():
-    # Force reload of core engine to bypass stale Streamlit modules
-    import sys
-    if 'p53cad.engine.latent' in sys.modules:
-        del sys.modules['p53cad.engine.latent']
-    if 'p53cad.engine.oracle' in sys.modules:
-        del sys.modules['p53cad.engine.oracle']
-    if 'p53cad.engine.explain' in sys.modules:
-        del sys.modules['p53cad.engine.explain']
-    if 'p53cad.analysis.grassmann' in sys.modules:
-        del sys.modules['p53cad.analysis.grassmann']
-    
     from p53cad.engine.latent import ManifoldEmbedder
     from p53cad.engine.oracle import FunctionalOracle
     from p53cad.engine.explain import SaliencyMap
@@ -1677,6 +1780,10 @@ def load_models_v8():
     grassmann = GrassmannMetric(embedder)
     viz = PyMolGenerator()
     return embedder, oracle, explainer, grassmann, viz
+
+
+def clear_model_cache() -> None:
+    load_models_v8.clear()
 
 embedder, oracle, explainer, grassmann, viz = load_models_v8()
 
@@ -2059,41 +2166,60 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
                                 n_steps: Optional[int] = None,
                                 progress_callback=None, structure_callback=None):
     """
-    Generative Design Mode with LIVE VISUALIZATION.
-    Like watching mechanical CAD topology optimization in real-time.
-
-    Yields intermediate states for real-time UI updates.
+    Batched generative design engine with:
+    - trust score cadence (reduced MC-dropout calls),
+    - per-batch early stopping,
+    - optional successive halving pre-screen,
+    - trial batching for faster throughput.
     """
-    target_mut = constraints.get('target_mutation', 'R175H')
-
+    target_mut = constraints.get("target_mutation", "R175H")
     cancer_seq = apply_mutation(P53_WT, target_mut)
     if cancer_seq is None:
         cancer_seq = P53_WT
 
     AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+    min_identity = float(constraints.get("min_identity", 90.0))
+    min_stability = float(constraints.get("min_stability", -0.3))
+    min_binding = float(constraints.get("min_binding", 5.0))
+    locked_positions = constraints.get("locked_positions", [248, 273])
+    delivery_method = constraints.get("delivery_method", "gene_therapy")
+    exploration_diversity = float(constraints.get("diversity", 0.5))
 
-    min_identity = constraints.get('min_identity', 90.0)
-    min_stability = constraints.get('min_stability', -0.3)
-    min_binding = constraints.get('min_binding', 5.0)
-    locked_positions = constraints.get('locked_positions', [248, 273])
-    delivery_method = constraints.get('delivery_method', 'gene_therapy')
-    exploration_diversity = constraints.get('diversity', 0.5)
     calibration_profile = get_score_calibration_profile()
+    clip_low = float(calibration_profile.get("clip_low", -3.0))
+    clip_high = float(calibration_profile.get("clip_high", 4.0))
     uncertainty_weight = float(constraints.get("uncertainty_penalty_weight", 0.8))
     ood_rank_weight = float(constraints.get("ood_rank_penalty_weight", 1.25))
     ood_radius = float(constraints.get("ood_trust_radius", 1.75))
     ood_loss_weight = float(constraints.get("ood_loss_weight", 12.0))
     mc_dropout_samples = int(max(2, constraints.get("mc_dropout_samples", 8)))
+    trust_eval_stride = int(max(5, constraints.get("trust_eval_stride", 20)))
+    early_stop_patience = int(max(1, constraints.get("early_stop_patience", 8)))
+    early_stop_min_delta = float(max(0.0, constraints.get("early_stop_min_delta", 1e-3)))
+    early_stop_warmup_steps = int(max(20, constraints.get("early_stop_warmup_steps", 40)))
+    batch_trial_size = int(max(1, constraints.get("batch_trial_size", 4)))
+    optimizer_lr = float(max(1e-3, constraints.get("optimizer_lr", 0.03)))
+
+    enable_successive_halving = bool(constraints.get("enable_successive_halving", True))
+    halving_keep_ratio = float(np.clip(constraints.get("successive_halving_keep_ratio", 0.5), 0.25, 1.0))
     if n_steps is None:
         n_steps = int(constraints.get("optimization_steps", 100))
     n_steps = int(np.clip(n_steps, 20, 500))
+    halving_warmup_steps = int(
+        np.clip(
+            constraints.get("successive_halving_warmup_steps", max(20, n_steps // 4)),
+            20,
+            n_steps,
+        )
+    )
+    capture_checkpoints = bool(constraints.get("capture_structure_checkpoints", False))
+    checkpoint_stride = int(max(10, constraints.get("structure_checkpoint_stride", 40)))
 
-    if delivery_method == 'protein_therapy':
+    if delivery_method == "protein_therapy":
         min_identity = max(min_identity, 95.0)
-    elif delivery_method == 'mrna_therapy':
+    elif delivery_method == "mrna_therapy":
         min_identity = max(min_identity, 92.0)
 
-    all_candidates = []
     emb_target_ref = embedder.get_embeddings(cancer_seq).detach()
     emb_wt = embedder.get_embeddings(P53_WT).detach()
     with torch.no_grad():
@@ -2102,185 +2228,427 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
         if pooled_target_ref.shape[-1] != 320:
             pooled_target_ref = pooled_target_ref[:, :320]
 
+    wt_aa_indices = []
+    for aa in P53_WT:
+        aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
+        if aa_id in AA_IDS:
+            wt_aa_indices.append(AA_IDS.index(aa_id))
+        else:
+            wt_aa_indices.append(0)
+    wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb_target_ref.device)
+    seq_len = len(P53_WT)
+    max_mutations = int(seq_len * (100 - min_identity) / 100)
+    locked_indices = [int(p) - 1 for p in locked_positions if p]
+
     weight_profiles = [
-        {'function': 4.0, 'stability': 8.0, 'binding': 2.5, 'name': 'Balanced', 'color': '#2563EB'},
-        {'function': 2.0, 'stability': 15.0, 'binding': 2.0, 'name': 'Stability-First', 'color': '#0EA5E9'},
-        {'function': 3.0, 'stability': 5.0, 'binding': 8.0, 'name': 'Binding-Optimized', 'color': '#10B981'},
-        {'function': 8.0, 'stability': 4.0, 'binding': 3.0, 'name': 'Function-Maximized', 'color': '#14B8A6'},
-        {'function': 5.0, 'stability': 10.0, 'binding': 5.0, 'name': 'Conservative', 'color': '#1D4ED8'},
-        {'function': 6.0, 'stability': 6.0, 'binding': 6.0, 'name': 'Experimental', 'color': '#0891B2'},
+        {"function": 4.0, "stability": 8.0, "binding": 2.5, "name": "Balanced", "color": "#2563EB"},
+        {"function": 2.0, "stability": 15.0, "binding": 2.0, "name": "Stability-First", "color": "#0EA5E9"},
+        {"function": 3.0, "stability": 5.0, "binding": 8.0, "name": "Binding-Optimized", "color": "#10B981"},
+        {"function": 8.0, "stability": 4.0, "binding": 3.0, "name": "Function-Maximized", "color": "#14B8A6"},
+        {"function": 5.0, "stability": 10.0, "binding": 5.0, "name": "Conservative", "color": "#1D4ED8"},
+        {"function": 6.0, "stability": 6.0, "binding": 6.0, "name": "Experimental", "color": "#0891B2"},
     ]
 
-    for candidate_idx in range(n_candidates):
-        torch.manual_seed(42 + candidate_idx * 17)
-        np.random.seed(42 + candidate_idx * 17)
+    profile_attempt_counts = {p["name"]: 0 for p in weight_profiles}
+    trial_specs = []
+    for trial_idx in range(int(max(n_candidates, 1))):
+        profile = weight_profiles[trial_idx % len(weight_profiles)]
+        profile_attempt_counts[profile["name"]] += 1
+        trial_specs.append(
+            {
+                "trial_idx": trial_idx + 1,
+                "orig_idx": trial_idx,
+                "seed": 42 + trial_idx * 17,
+                "restart": profile_attempt_counts[profile["name"]],
+                "profile": profile,
+            }
+        )
 
-        profile = weight_profiles[candidate_idx % len(weight_profiles)]
+    def _batch_dna_force(z_batch: torch.Tensor, probs_full: torch.Tensor) -> torch.Tensor:
+        hotspots = [119, 174, 240, 247, 272, 279]
+        hotspots = [i for i in hotspots if i < z_batch.shape[1]]
+        if not hotspots:
+            return torch.zeros(z_batch.shape[0], device=z_batch.device)
+        pos_charge_ids = [10, 15, 21]
+        latent_force = z_batch[:, hotspots, :].norm(dim=-1).mean(dim=-1)
+        charge_prob = probs_full[:, hotspots][:, :, pos_charge_ids].sum(dim=-1).mean(dim=-1)
+        return 0.5 * latent_force + 5.0 * charge_prob
 
-        emb = emb_target_ref.clone().detach().requires_grad_(True)
+    def _batch_hydrophobic_packing(probs_full: torch.Tensor) -> torch.Tensor:
+        hydro_ids = [4, 12, 7, 18, 22, 20]
+        core_res = [i for i in range(93, 312) if i < probs_full.shape[1]]
+        loops = set(range(111, 124)) | set(range(162, 195)) | set(range(235, 251))
+        true_core = [i for i in core_res if i not in loops]
+        if not true_core:
+            return torch.zeros(probs_full.shape[0], device=probs_full.device)
+        return probs_full[:, true_core][:, :, hydro_ids].sum(dim=-1).mean(dim=-1)
 
-        with torch.no_grad():
-            perturbation = torch.randn_like(emb) * 0.05 * exploration_diversity
-            emb.data += perturbation
+    def _init_batch_embeddings(batch_specs: list[Dict[str, Any]]) -> torch.Tensor:
+        emb = emb_target_ref.repeat(len(batch_specs), 1, 1).clone().detach()
+        noise_bank = []
+        for spec in batch_specs:
+            torch.manual_seed(int(spec["seed"]))
+            noise_bank.append(torch.randn_like(emb_target_ref) * 0.05 * exploration_diversity)
+        emb += torch.cat(noise_bank, dim=0)
+        return emb.requires_grad_(True)
 
-        optimizer = torch.optim.Adam([emb], lr=0.04)
-        locked_indices = [int(p) - 1 for p in locked_positions if p]
+    def _score_with_cached_uncertainty(
+        raw_score: float,
+        ood_distance: float,
+        cached_uncertainty: float,
+    ) -> Dict[str, float]:
+        calibrated = calibrate_oracle_score(raw_score, calibration_profile)
+        adjusted = calibrated - uncertainty_weight * cached_uncertainty - ood_rank_weight * max(
+            0.0, ood_distance - ood_radius
+        )
+        adjusted = float(np.clip(adjusted, clip_low, clip_high))
+        return {
+            "score_raw": float(raw_score),
+            "score_calibrated": float(calibrated),
+            "score_adjusted": float(adjusted),
+            "uncertainty": float(cached_uncertainty),
+            "ood_distance": float(ood_distance),
+        }
 
-        trajectory = []  # Store optimization trajectory
-        best_valid_state = None
-        best_valid_score = -float('inf')
+    def _screen_trial_specs(specs: list[Dict[str, Any]]) -> list[Dict[str, Any]]:
+        if not specs:
+            return specs
+        scored_rows = []
+        for batch_start in range(0, len(specs), batch_trial_size):
+            batch_specs = specs[batch_start: batch_start + batch_trial_size]
+            emb = _init_batch_embeddings(batch_specs)
+            batch_size = emb.shape[0]
+            emb_wt_batch = emb_wt.expand(batch_size, -1, -1)
+            pooled_ref_batch = pooled_target_ref.expand(batch_size, -1)
+            func_w = torch.tensor([s["profile"]["function"] for s in batch_specs], device=emb.device)
+            stab_w = torch.tensor([s["profile"]["stability"] for s in batch_specs], device=emb.device)
+            bind_w = torch.tensor([s["profile"]["binding"] for s in batch_specs], device=emb.device)
+            optimizer = torch.optim.Adam([emb], lr=optimizer_lr)
 
-        # Pre-compute WT AA indices
-        wt_aa_indices = []
-        for aa in P53_WT:
-            aa_id = embedder.tokenizer.convert_tokens_to_ids(aa)
-            if aa_id in AA_IDS:
-                wt_aa_indices.append(AA_IDS.index(aa_id))
-            else:
-                wt_aa_indices.append(0)
-        wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb.device)
+            for _ in range(halving_warmup_steps):
+                optimizer.zero_grad()
+                z, logits, _ = embedder.latent_forward_ascent(emb)
+                pooled = z.mean(dim=1)
+                if pooled.shape[-1] != 320:
+                    pooled = pooled[:, :320]
+                score = oracle.model(pooled).squeeze(-1)
+                probs_full = torch.softmax(logits, dim=-1)
+                logits_aa = logits[:, :, AA_IDS]
+                log_probs = F.log_softmax(logits_aa, dim=-1)
+                stability = log_probs.max(dim=-1).values.mean(dim=-1)
+                dna_force = _batch_dna_force(z, probs_full)
+                hydro_packing = _batch_hydrophobic_packing(probs_full)
+                ood_distance_t = torch.norm(pooled - pooled_ref_batch, p=2, dim=-1)
+
+                probs_aa = torch.softmax(logits_aa, dim=-1)
+                wt_probs = probs_aa[:, torch.arange(seq_len, device=emb.device), wt_aa_tensor]
+                expected_mutations = (1.0 - wt_probs).sum(dim=-1)
+                expected_identity = 100.0 * (1.0 - expected_mutations / float(seq_len))
+
+                loss_vec = -score * func_w
+                loss_vec -= stab_w * stability
+                loss_vec -= bind_w * dna_force
+                loss_vec -= 3.0 * hydro_packing
+                loss_vec += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
+                loss_vec += 50.0 * F.relu(expected_mutations - max_mutations)
+                loss_vec += 500.0 * F.relu((min_identity - 5.0) - expected_identity)
+                loss_vec += 100.0 * F.relu(min_stability - stability)
+                loss_vec += 80.0 * F.relu(min_binding - dna_force)
+                if locked_indices:
+                    lock_pen = (emb[:, locked_indices, :] - emb_wt_batch[:, locked_indices, :]).pow(2).mean(dim=(1, 2))
+                    loss_vec += 500.0 * lock_pen
+                loss_vec += 40.0 * (emb - emb_wt_batch).abs().mean(dim=(1, 2))
+
+                loss = loss_vec.mean()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_([emb], max_norm=1.0)
+                optimizer.step()
+
+            with torch.no_grad():
+                z, logits, _ = embedder.latent_forward_ascent(emb)
+                pooled = z.mean(dim=1)
+                if pooled.shape[-1] != 320:
+                    pooled = pooled[:, :320]
+                raw_scores = oracle.model(pooled).squeeze(-1)
+                ood_distances = torch.norm(pooled - pooled_ref_batch, p=2, dim=-1)
+                for i, spec in enumerate(batch_specs):
+                    calibrated = calibrate_oracle_score(float(raw_scores[i].item()), calibration_profile)
+                    screen_score = calibrated - ood_rank_weight * max(0.0, float(ood_distances[i].item()) - ood_radius)
+                    scored_rows.append((spec, float(screen_score)))
+
+        keep_count = max(1, int(np.ceil(len(specs) * halving_keep_ratio)))
+        sorted_rows = sorted(scored_rows, key=lambda x: x[1], reverse=True)
+
+        # Keep at least one seed per profile before filling by score.
+        kept: list[Dict[str, Any]] = []
+        seen_profiles = set()
+        for spec, sc in sorted_rows:
+            pname = spec["profile"]["name"]
+            if pname in seen_profiles:
+                continue
+            row = dict(spec)
+            row["screen_score"] = float(sc)
+            kept.append(row)
+            seen_profiles.add(pname)
+            if len(kept) >= keep_count:
+                break
+        if len(kept) < keep_count:
+            kept_ids = {k["trial_idx"] for k in kept}
+            for spec, sc in sorted_rows:
+                if spec["trial_idx"] in kept_ids:
+                    continue
+                row = dict(spec)
+                row["screen_score"] = float(sc)
+                kept.append(row)
+                kept_ids.add(spec["trial_idx"])
+                if len(kept) >= keep_count:
+                    break
+        return kept
+
+    effective_specs = list(trial_specs)
+    if enable_successive_halving and len(trial_specs) > 4 and halving_warmup_steps < n_steps:
+        effective_specs = _screen_trial_specs(trial_specs)
+        logger.info(
+            "Successive halving retained %d/%d trial plans (warmup steps=%d, keep_ratio=%.2f).",
+            len(effective_specs),
+            len(trial_specs),
+            halving_warmup_steps,
+            halving_keep_ratio,
+        )
+
+    effective_specs = sorted(effective_specs, key=lambda s: s["orig_idx"])
+    total_effective = len(effective_specs)
+    all_candidates = []
+
+    for batch_start in range(0, total_effective, batch_trial_size):
+        batch_specs = effective_specs[batch_start: batch_start + batch_trial_size]
+        emb = _init_batch_embeddings(batch_specs)
+        batch_size = emb.shape[0]
+        emb_wt_batch = emb_wt.expand(batch_size, -1, -1)
+        pooled_ref_batch = pooled_target_ref.expand(batch_size, -1)
+        func_w = torch.tensor([s["profile"]["function"] for s in batch_specs], device=emb.device)
+        stab_w = torch.tensor([s["profile"]["stability"] for s in batch_specs], device=emb.device)
+        bind_w = torch.tensor([s["profile"]["binding"] for s in batch_specs], device=emb.device)
+        optimizer = torch.optim.Adam([emb], lr=optimizer_lr)
+
+        trajectories = [[] for _ in range(batch_size)]
+        best_valid_states: list[Optional[Dict[str, Any]]] = [None for _ in range(batch_size)]
+        best_valid_scores = np.full(batch_size, -float("inf"), dtype=float)
+        cached_uncertainty = np.zeros(batch_size, dtype=float)
+        checks_without_improve = 0
 
         for step_idx in range(1, n_steps + 1):
             optimizer.zero_grad()
 
-            z, logits, probs = embedder.latent_forward_ascent(emb)
+            z, logits, _ = embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
             if pooled.shape[-1] != 320:
                 pooled = pooled[:, :320]
-
-            score = oracle.model(pooled)
-
+            raw_score_t = oracle.model(pooled).squeeze(-1)
+            probs_full = torch.softmax(logits, dim=-1)
             logits_aa = logits[:, :, AA_IDS]
             log_probs = F.log_softmax(logits_aa, dim=-1)
-            stability = log_probs.max(dim=-1).values.mean()
-            dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
-            hydro_packing = embedder.get_hydrophobic_packing(logits, probs=probs)
-            ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1).mean()
+            stability_t = log_probs.max(dim=-1).values.mean(dim=-1)
+            dna_force_t = _batch_dna_force(z, probs_full)
+            hydro_packing_t = _batch_hydrophobic_packing(probs_full)
+            ood_distance_t = torch.norm(pooled - pooled_ref_batch, p=2, dim=-1)
 
-            # Loss
-            loss = -score * profile['function']
-            loss -= profile['stability'] * stability
-            loss -= profile['binding'] * dna_force
-            loss -= 3.0 * hydro_packing
-            loss += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
+            probs_aa = torch.softmax(logits_aa, dim=-1)
+            wt_probs = probs_aa[:, torch.arange(seq_len, device=emb.device), wt_aa_tensor]
+            expected_mutations = (1.0 - wt_probs).sum(dim=-1)
+            expected_identity = 100.0 * (1.0 - expected_mutations / float(seq_len))
 
-            probs_aa = F.softmax(logits_aa[0], dim=-1)
-            wt_probs = probs_aa[torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
-            mutation_prob = 1.0 - wt_probs
-            expected_mutations = mutation_prob.sum()
-
-            with torch.no_grad():
-                decoded_ids = torch.argmax(probs_aa, dim=-1)
-                n_mutations = (decoded_ids != wt_aa_tensor).sum().item()
-                seq_identity = 100.0 * (1.0 - n_mutations / len(P53_WT))
-
-            max_mutations = int(len(P53_WT) * (100 - min_identity) / 100)
-            loss += 50.0 * F.relu(expected_mutations - max_mutations)
-
-            if seq_identity < min_identity - 5:
-                loss += 500.0 * (min_identity - 5 - seq_identity)
-            if stability.item() < min_stability:
-                loss += 100.0 * (min_stability - stability)
-            if dna_force.item() < min_binding:
-                loss += 80.0 * (min_binding - dna_force)
+            loss_vec = -raw_score_t * func_w
+            loss_vec -= stab_w * stability_t
+            loss_vec -= bind_w * dna_force_t
+            loss_vec -= 3.0 * hydro_packing_t
+            loss_vec += ood_loss_weight * F.relu(ood_distance_t - ood_radius)
+            loss_vec += 50.0 * F.relu(expected_mutations - max_mutations)
+            loss_vec += 500.0 * F.relu((min_identity - 5.0) - expected_identity)
+            loss_vec += 100.0 * F.relu(min_stability - stability_t)
+            loss_vec += 80.0 * F.relu(min_binding - dna_force_t)
             if locked_indices:
-                loss += 500.0 * F.mse_loss(emb[:, locked_indices, :], emb_wt[:, locked_indices, :])
+                lock_pen = (emb[:, locked_indices, :] - emb_wt_batch[:, locked_indices, :]).pow(2).mean(dim=(1, 2))
+                loss_vec += 500.0 * lock_pen
+            loss_vec += 40.0 * (emb - emb_wt_batch).abs().mean(dim=(1, 2))
 
-            dist_l1 = torch.norm(emb - emb_wt, p=1) / emb.numel()
-            loss += 40.0 * dist_l1
-
+            loss = loss_vec.mean()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_([emb], max_norm=1.0)
             optimizer.step()
 
-            # Record trajectory every 5 steps for visualization
             if step_idx % 5 == 0 or step_idx == n_steps:
+                improved_any = False
                 with torch.no_grad():
-                    top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
-                    top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
-                    tokens = embedder.tokenizer.convert_ids_to_tokens(top_ids)
-                    current_seq = "".join(tokens)[:len(P53_WT)]
-                    muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
+                    top_ids_aa_batch = torch.argmax(logits_aa, dim=-1)
 
-                    # Get mutation positions for visualization
-                    mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
-                    score_bundle = build_trust_adjusted_score(
-                        raw_score=float(score.item()),
-                        pooled=pooled,
-                        pooled_ref=pooled_target_ref,
-                        calibration_profile=calibration_profile,
-                        uncertainty_weight=uncertainty_weight,
-                        ood_rank_weight=ood_rank_weight,
-                        ood_radius=ood_radius,
-                        mc_samples=mc_dropout_samples,
+                    for i, spec in enumerate(batch_specs):
+                        aa_local = [AA_IDS[idx] for idx in top_ids_aa_batch[i].tolist()]
+                        tokens = embedder.tokenizer.convert_ids_to_tokens(aa_local)
+                        current_seq = "".join(tokens)[:seq_len]
+                        muts = [
+                            f"{P53_WT[j]}{j+1}{current_seq[j]}"
+                            for j in range(seq_len)
+                            if P53_WT[j] != current_seq[j]
+                        ]
+                        mut_positions = [int("".join(filter(str.isdigit, m))) for m in muts if m]
+                        seq_identity = 100.0 * (1.0 - len(muts) / float(seq_len))
+                        raw_score = float(raw_score_t[i].item())
+                        current_ood = float(ood_distance_t[i].item())
+                        do_full_trust_eval = (
+                            step_idx == n_steps
+                            or step_idx == 5
+                            or (step_idx % trust_eval_stride == 0)
+                        )
+                        if do_full_trust_eval:
+                            unc = estimate_oracle_uncertainty(pooled[i: i + 1], mc_samples=mc_dropout_samples)
+                            cached_uncertainty[i] = float(unc)
+                            score_bundle = _score_with_cached_uncertainty(
+                                raw_score=raw_score,
+                                ood_distance=current_ood,
+                                cached_uncertainty=float(cached_uncertainty[i]),
+                            )
+                        else:
+                            score_bundle = _score_with_cached_uncertainty(
+                                raw_score=raw_score,
+                                ood_distance=current_ood,
+                                cached_uncertainty=float(cached_uncertainty[i]),
+                            )
+
+                        structure_checkpoint = None
+                        first_capture_step = 5
+                        should_capture = (
+                            capture_checkpoints
+                            and (
+                                step_idx == n_steps
+                                or step_idx == first_capture_step
+                                or (step_idx % checkpoint_stride == 0)
+                            )
+                        )
+                        if should_capture:
+                            structure_checkpoint = get_real_structure_checkpoint(current_seq)
+
+                        state = {
+                            "step": step_idx,
+                            "score": float(score_bundle["score_adjusted"]),
+                            "score_raw": float(score_bundle["score_raw"]),
+                            "score_calibrated": float(score_bundle["score_calibrated"]),
+                            "stability": float(stability_t[i].item()),
+                            "binding": float(dna_force_t[i].item()),
+                            "identity": float(seq_identity),
+                            "n_mutations": int(len(muts)),
+                            "mutations": muts,
+                            "mut_positions": mut_positions,
+                            "sequence": current_seq,
+                            "uncertainty": float(score_bundle["uncertainty"]),
+                            "ood_distance": float(score_bundle["ood_distance"]),
+                            "lx": float(pooled[i, 0].item()),
+                            "ly": float(pooled[i, 1].item()),
+                            "lz": float(pooled[i, 2].item()) if pooled.shape[-1] > 2 else float(score_bundle["score_adjusted"]),
+                            "loss_total": float(loss_vec[i].item()),
+                            "structure_checkpoint": structure_checkpoint,
+                        }
+                        trajectories[i].append(state)
+
+                        is_valid = (
+                            seq_identity >= min_identity
+                            and float(stability_t[i].item()) >= min_stability
+                            and float(dna_force_t[i].item()) >= min_binding
+                        )
+                        if is_valid and state["score"] > (best_valid_scores[i] + early_stop_min_delta):
+                            best_valid_scores[i] = float(state["score"])
+                            best_valid_states[i] = state.copy()
+                            improved_any = True
+
+                        if progress_callback:
+                            progress_callback(
+                                {
+                                    "candidate_idx": int(spec["orig_idx"]),
+                                    "candidate_total": int(total_effective),
+                                    "profile": spec["profile"],
+                                    "step": int(step_idx),
+                                    "total_steps": int(n_steps),
+                                    "current_state": state,
+                                    "trajectory": trajectories[i],
+                                }
+                            )
+
+                if improved_any:
+                    checks_without_improve = 0
+                else:
+                    checks_without_improve += 1
+                if step_idx >= early_stop_warmup_steps and checks_without_improve >= early_stop_patience:
+                    break
+
+        for i, spec in enumerate(batch_specs):
+            trial_trajectory = trajectories[i]
+            final_state = best_valid_states[i] if best_valid_states[i] is not None else (trial_trajectory[-1] if trial_trajectory else None)
+            if final_state is None:
+                # Defensive fallback in case no checkpoint state was recorded.
+                with torch.no_grad():
+                    z, logits, _ = embedder.latent_forward_ascent(emb[i: i + 1])
+                    pooled = z.mean(dim=1)
+                    if pooled.shape[-1] != 320:
+                        pooled = pooled[:, :320]
+                    raw_score = float(oracle.model(pooled).item())
+                    tokens = embedder.tokenizer.convert_ids_to_tokens(
+                        [AA_IDS[idx] for idx in torch.argmax(logits[:, :, AA_IDS], dim=-1)[0].tolist()]
+                    )
+                    seq = "".join(tokens)[:seq_len]
+                    muts = [f"{P53_WT[j]}{j+1}{seq[j]}" for j in range(seq_len) if P53_WT[j] != seq[j]]
+                    final_state = _score_with_cached_uncertainty(
+                        raw_score=raw_score,
+                        ood_distance=float(torch.norm(pooled - pooled_target_ref, p=2, dim=-1).item()),
+                        cached_uncertainty=0.0,
+                    )
+                    final_state.update(
+                        {
+                            "step": 0,
+                            "stability": float(min_stability),
+                            "binding": float(min_binding),
+                            "identity": 100.0 * (1.0 - len(muts) / float(seq_len)),
+                            "n_mutations": len(muts),
+                            "mutations": muts,
+                            "mut_positions": [int("".join(filter(str.isdigit, m))) for m in muts if m],
+                            "sequence": seq,
+                            "lx": float(pooled[0, 0].item()),
+                            "ly": float(pooled[0, 1].item()),
+                            "lz": float(pooled[0, 2].item()) if pooled.shape[-1] > 2 else float(final_state["score_adjusted"]),
+                            "loss_total": float("nan"),
+                            "structure_checkpoint": None,
+                        }
                     )
 
-                    trajectory.append({
-                        'step': step_idx,
-                        'score': score_bundle['score_adjusted'],
-                        'score_raw': score_bundle['score_raw'],
-                        'score_calibrated': score_bundle['score_calibrated'],
-                        'stability': stability.item(),
-                        'binding': dna_force.item(),
-                        'identity': seq_identity,
-                        'n_mutations': n_mutations,
-                        'mutations': muts,
-                        'mut_positions': mut_positions,
-                        'sequence': current_seq,
-                        'uncertainty': score_bundle['uncertainty'],
-                        'ood_distance': score_bundle['ood_distance'],
-                        'lx': pooled[0, 0].item(),
-                        'ly': pooled[0, 1].item()
-                    })
+            candidate = {
+                "candidate_id": int(spec["trial_idx"]),
+                "profile": spec["profile"]["name"],
+                "color": spec["profile"]["color"],
+                "restart": int(spec["restart"]),
+                "trial_idx": int(spec["trial_idx"]),
+                "sequence": final_state["sequence"],
+                "score": float(final_state["score"]),
+                "score_raw": float(final_state.get("score_raw", final_state["score"])),
+                "score_calibrated": float(final_state.get("score_calibrated", final_state["score"])),
+                "stability": float(final_state["stability"]),
+                "binding": float(final_state["binding"]),
+                "identity": float(final_state["identity"]),
+                "n_mutations": int(final_state["n_mutations"]),
+                "mutations": final_state["mutations"],
+                "mut_positions": final_state.get("mut_positions", []),
+                "uncertainty": float(final_state.get("uncertainty", 0.0)),
+                "ood_distance": float(final_state.get("ood_distance", 0.0)),
+                "trajectory": trial_trajectory,
+                "meets_constraints": (
+                    float(final_state["identity"]) >= min_identity
+                    and float(final_state["stability"]) >= min_stability
+                    and float(final_state["binding"]) >= min_binding
+                ),
+            }
+            all_candidates.append(candidate)
 
-                    # Track best valid
-                    if (
-                        seq_identity >= min_identity
-                        and stability.item() >= min_stability
-                        and dna_force.item() >= min_binding
-                    ):
-                        if score_bundle['score_adjusted'] > best_valid_score:
-                            best_valid_score = score_bundle['score_adjusted']
-                            best_valid_state = trajectory[-1].copy()
-
-                    # YIELD for live visualization
-                    if progress_callback:
-                        progress_callback({
-                            'candidate_idx': candidate_idx,
-                            'candidate_total': n_candidates,
-                            'profile': profile,
-                            'step': step_idx,
-                            'total_steps': n_steps,
-                            'current_state': trajectory[-1],
-                            'trajectory': trajectory
-                        })
-
-        # Final candidate
-        final_state = best_valid_state if best_valid_state else trajectory[-1]
-        candidate = {
-            'candidate_id': candidate_idx + 1,
-            'profile': profile['name'],
-            'color': profile['color'],
-            'sequence': final_state['sequence'],
-            'score': final_state['score'],
-            'score_raw': final_state.get('score_raw', final_state['score']),
-            'score_calibrated': final_state.get('score_calibrated', final_state['score']),
-            'stability': final_state['stability'],
-            'binding': final_state['binding'],
-            'identity': final_state['identity'],
-            'n_mutations': final_state['n_mutations'],
-            'mutations': final_state['mutations'],
-            'mut_positions': final_state.get('mut_positions', []),
-            'uncertainty': float(final_state.get('uncertainty', 0.0)),
-            'ood_distance': float(final_state.get('ood_distance', 0.0)),
-            'trajectory': trajectory,
-            'meets_constraints': (
-                final_state['identity'] >= min_identity
-                and final_state['stability'] >= min_stability
-                and final_state['binding'] >= min_binding
-            )
-        }
-        all_candidates.append(candidate)
-
+    all_candidates.sort(key=lambda c: int(c.get("trial_idx", c.get("candidate_id", 0))))
+    for idx, cand in enumerate(all_candidates, start=1):
+        cand["candidate_id"] = idx
     return all_candidates
 
 
@@ -2622,6 +2990,64 @@ with tab1:
     """, unsafe_allow_html=True)
     st.markdown("---")
 
+    st.markdown("### 📦 Result Source")
+    result_source_mode = st.radio(
+        "Choose how to populate candidate results",
+        [
+            "Local campaign artifacts (auto latest)",
+            "Live session",
+            "Upload run bundle",
+        ],
+        horizontal=True,
+        key="gd_result_source_mode",
+    )
+
+    if result_source_mode == "Local campaign artifacts (auto latest)":
+        store = CampaignStore()
+        runs_df = store.list_runs()
+        if runs_df.empty:
+            st.info("No local campaign artifacts found yet in `data/campaigns`. Run `p53cad campaign-run` first.")
+        else:
+            run_options = runs_df["run_id"].astype(str).tolist()
+            default_idx = 0
+            previous_run = st.session_state.get("gd_artifact_run_id")
+            if previous_run in run_options:
+                default_idx = run_options.index(previous_run)
+            selected_run = st.selectbox(
+                "Campaign run",
+                options=run_options,
+                index=default_idx,
+                key="gd_selected_campaign_run",
+            )
+            load_now = st.button("Load selected campaign results", key="gd_load_campaign_results_btn")
+            if load_now or st.session_state.get("_gd_loaded_campaign_run") != selected_run:
+                try:
+                    bundle = load_campaign_bundle_from_disk(selected_run)
+                    if apply_campaign_bundle_to_session(bundle, source_label=f"local:{selected_run}"):
+                        st.session_state["_gd_loaded_campaign_run"] = selected_run
+                        st.success(f"Loaded campaign artifacts: `{selected_run}`")
+                    else:
+                        st.warning(f"Run `{selected_run}` contains no candidates to display.")
+                except Exception as err:
+                    st.error(f"Failed to load campaign artifacts: {err}")
+    elif result_source_mode == "Upload run bundle":
+        upload = st.file_uploader(
+            "Upload campaign run bundle (.zip)",
+            type=["zip"],
+            key="gd_upload_bundle",
+        )
+        if upload is not None and st.button("Load uploaded bundle", key="gd_load_uploaded_bundle_btn"):
+            try:
+                bundle = load_campaign_bundle_from_zip(upload.getvalue())
+                if apply_campaign_bundle_to_session(bundle, source_label=f"upload:{upload.name}"):
+                    st.success(f"Loaded bundle `{upload.name}` ({bundle.get('run_id', 'uploaded_bundle')}).")
+                else:
+                    st.warning("Uploaded bundle did not contain displayable candidates.")
+            except Exception as err:
+                st.error(f"Failed to parse uploaded bundle: {err}")
+    else:
+        st.caption("Live session mode uses in-memory candidates generated during this app run.")
+
     # === CONSTRAINT SPECIFICATION PANEL ===
     st.markdown("##  Define Design Constraints")
     st.markdown("*Specify what your design MUST achieve. The AI explores the solution space to find optimal rescue mutations.*")
@@ -2766,9 +3192,15 @@ with tab1:
     # === VISUALIZATION MODE ===
     gd_live_mode = st.toggle(" Watch Live Optimization", value=True,
                               help="Like watching CAD topology optimization - see proteins being built in real-time")
+    gd_structure_checkpoints = st.checkbox(
+        "Capture real structure checkpoints (slow, strict mode)",
+        value=False,
+        help="When enabled, the viewer requests real ESMFold checkpoints during optimization. "
+        "If unavailable, structure trajectory is hidden instead of using synthetic morphing.",
+    )
 
     # === GENERATE BUTTON ===
-    if st.button(" GENERATE CANDIDATE DESIGNS", type="primary", use_container_width=True):
+    if st.button(" GENERATE CANDIDATE DESIGNS", type="primary", width="stretch"):
         # Parse constraints
         delivery_map = {
             "Gene Therapy (AAV)": "gene_therapy",
@@ -2793,6 +3225,17 @@ with tab1:
             'ood_rank_penalty_weight': 1.25,
             'uncertainty_penalty_weight': 0.8,
             'mc_dropout_samples': 8,
+            'trust_eval_stride': 20,
+            'early_stop_patience': 8,
+            'early_stop_min_delta': 1e-3,
+            'early_stop_warmup_steps': 40,
+            'batch_trial_size': 4,
+            'optimizer_lr': 0.03,
+            'enable_successive_halving': True,
+            'successive_halving_warmup_steps': int(np.clip(max(20, gd_opt_steps // 4), 20, gd_opt_steps)),
+            'successive_halving_keep_ratio': 0.5,
+            'capture_structure_checkpoints': bool(gd_structure_checkpoints),
+            'structure_checkpoint_stride': 40,
         }
 
         if gd_live_mode:
@@ -2824,9 +3267,9 @@ with tab1:
 
                 initial_html = f"""
                 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-                <div id="init_viewer" style="width:100%; height:400px; border-radius:12px; border:2px solid #6366F1; background:#0F172A;"></div>
+                <div id="init_viewer" style="width:100%; height:400px; border-radius:12px; border:2px solid #6366F1; background:linear-gradient(135deg,#F8FCFF 0%,#EAF3FF 100%);"></div>
                 <script>
-                    let viewer = $3Dmol.createViewer('init_viewer', {{backgroundColor: '0x0F172A'}});
+                    let viewer = $3Dmol.createViewer('init_viewer', {{backgroundColor: '0xF8FCFF'}});
                     let pdb = `{initial_pdb.replace(chr(10), chr(92) + 'n').replace('`', '')}`;
                     viewer.addModel(pdb, 'pdb');
                     viewer.setStyle({{}}, {{cartoon: {{color: '0x64748B', opacity: 0.8}}}});
@@ -2865,6 +3308,12 @@ with tab1:
             ood_radius = float(constraints.get("ood_trust_radius", 1.75))
             ood_loss_weight = float(constraints.get("ood_loss_weight", 12.0))
             mc_dropout_samples = int(max(2, constraints.get("mc_dropout_samples", 8)))
+            trust_eval_stride = int(max(5, constraints.get("trust_eval_stride", 20)))
+            early_stop_patience = int(max(1, constraints.get("early_stop_patience", 8)))
+            early_stop_min_delta = float(max(0.0, constraints.get("early_stop_min_delta", 1e-3)))
+            early_stop_warmup_steps = int(max(20, constraints.get("early_stop_warmup_steps", 40)))
+            capture_checkpoints = bool(constraints.get("capture_structure_checkpoints", False))
+            checkpoint_stride = int(max(10, constraints.get("structure_checkpoint_stride", 40)))
             cancer_seq_base = apply_mutation(P53_WT, gd_target)
             if cancer_seq_base is None:
                 cancer_seq_base = P53_WT
@@ -2886,8 +3335,36 @@ with tab1:
                     wt_aa_indices.append(0)
             wt_aa_tensor = torch.tensor(wt_aa_indices, device=emb_target_ref.device)
 
+            trial_order = list(range(total_trials))
+            if constraints.get("enable_successive_halving", True) and total_trials > gd_n_candidates:
+                screen_steps = int(np.clip(max(20, gd_opt_steps // 4), 20, gd_opt_steps))
+                keep_ratio = float(np.clip(constraints.get("successive_halving_keep_ratio", 0.5), 0.25, 1.0))
+                keep_count = max(int(max(gd_n_candidates, 1)), int(np.ceil(total_trials * keep_ratio)))
+                screen_constraints = dict(constraints)
+                screen_constraints["capture_structure_checkpoints"] = False
+                screen_constraints["enable_successive_halving"] = False
+                screen_constraints["mc_dropout_samples"] = 2
+                with st.spinner(
+                    f"Speed pre-screen: evaluating {total_trials} trial plans for {screen_steps} warmup steps..."
+                ):
+                    screened = run_generative_design_live(
+                        screen_constraints,
+                        n_candidates=total_trials,
+                        n_steps=screen_steps,
+                    )
+                screened_sorted = sorted(screened, key=candidate_rank_value, reverse=True)
+                trial_order = sorted(
+                    max(0, int(c.get("trial_idx", c.get("candidate_id", 1))) - 1)
+                    for c in screened_sorted[:keep_count]
+                )
+                st.info(
+                    f"Successive halving kept {len(trial_order)}/{total_trials} trial plans "
+                    f"(warmup {screen_steps} steps, keep ratio {keep_ratio:.2f})."
+                )
+            active_trials = max(len(trial_order), 1)
+
             # Run generation with live updates
-            for trial_idx in range(total_trials):
+            for live_idx, trial_idx in enumerate(trial_order):
                 torch.manual_seed(42 + trial_idx * 17)
                 np.random.seed(42 + trial_idx * 17)
                 profile = weight_profiles[trial_idx % len(weight_profiles)]
@@ -2895,7 +3372,7 @@ with tab1:
                 restart_idx = profile_attempt_counts[profile["name"]]
 
                 status_placeholder.markdown(f"""
-                ###  Building Trial {trial_idx + 1}/{total_trials}
+                ###  Building Trial {live_idx + 1}/{active_trials}
                 **Strategy:** {profile['name']} | Restart {restart_idx}/{gd_restarts}
                 """)
 
@@ -2905,13 +3382,15 @@ with tab1:
                     perturbation = torch.randn_like(emb) * 0.05 * gd_diversity
                     emb.data += perturbation
 
-                optimizer = torch.optim.Adam([emb], lr=0.04)
+                optimizer = torch.optim.Adam([emb], lr=float(constraints.get("optimizer_lr", 0.03)))
                 locked_indices = [int(p) - 1 for p in gd_locked if p]
 
                 n_steps = int(np.clip(gd_opt_steps, 20, 500))
                 trajectory = []
                 best_valid_state = None
                 best_valid_score = -float('inf')
+                checks_without_improve = 0
+                cached_uncertainty = 0.0
                 mut_positions = []
                 previous_render_mut_positions = []
                 last_render_step = 0
@@ -2970,6 +3449,7 @@ with tab1:
 
                     # === LIVE UPDATE every 5 steps ===
                     if step_idx % 5 == 0 or step_idx == n_steps:
+                        improved_this_checkpoint = False
                         with torch.no_grad():
                             top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
                             top_ids = torch.tensor([AA_IDS[i] for i in top_ids_aa]).to(emb.device)
@@ -2977,16 +3457,47 @@ with tab1:
                             current_seq = "".join(tokens)[:len(P53_WT)]
                             muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
                             mut_positions = [int(''.join(filter(str.isdigit, m))) for m in muts if m]
-                            score_bundle = build_trust_adjusted_score(
-                                raw_score=float(score.item()),
-                                pooled=pooled,
-                                pooled_ref=pooled_target_ref,
-                                calibration_profile=score_calibration,
-                                uncertainty_weight=uncertainty_weight,
-                                ood_rank_weight=ood_rank_weight,
-                                ood_radius=ood_radius,
-                                mc_samples=mc_dropout_samples,
+                            do_full_trust_eval = (
+                                step_idx == n_steps
+                                or step_idx == 5
+                                or (step_idx % trust_eval_stride == 0)
                             )
+                            raw_score = float(score.item())
+                            current_ood = float(ood_distance_t.item())
+                            calibrated_score = calibrate_oracle_score(raw_score, score_calibration)
+                            if do_full_trust_eval:
+                                cached_uncertainty = estimate_oracle_uncertainty(
+                                    pooled,
+                                    mc_samples=mc_dropout_samples,
+                                )
+                            adjusted_score = calibrated_score - uncertainty_weight * cached_uncertainty - ood_rank_weight * max(
+                                0.0, current_ood - ood_radius
+                            )
+                            score_bundle = {
+                                "score_raw": raw_score,
+                                "score_calibrated": float(calibrated_score),
+                                "score_adjusted": float(
+                                    np.clip(
+                                        adjusted_score,
+                                        float(score_calibration.get("clip_low", -3.0)),
+                                        float(score_calibration.get("clip_high", 4.0)),
+                                    )
+                                ),
+                                "uncertainty": float(cached_uncertainty),
+                                "ood_distance": float(current_ood),
+                            }
+                            structure_checkpoint = None
+                            first_capture_step = 5  # first recorded step in this loop cadence
+                            should_capture = (
+                                capture_checkpoints
+                                and (
+                                    step_idx == n_steps
+                                    or step_idx == first_capture_step
+                                    or (step_idx % checkpoint_stride == 0)
+                                )
+                            )
+                            if should_capture:
+                                structure_checkpoint = get_real_structure_checkpoint(current_seq)
 
                             trajectory.append({
                                 'step': step_idx, 'score': score_bundle['score_adjusted'], 'stability': stability.item(),
@@ -2997,7 +3508,9 @@ with tab1:
                                 'uncertainty': score_bundle['uncertainty'],
                                 'ood_distance': score_bundle['ood_distance'],
                                 'lx': pooled[0, 0].item(), 'ly': pooled[0, 1].item(),
-                                'lz': pooled[0, 2].item() if pooled.shape[-1] > 2 else score.item()  # 3D latent
+                                'lz': pooled[0, 2].item() if pooled.shape[-1] > 2 else score.item(),  # 3D latent
+                                'loss_total': float(loss.item()),
+                                'structure_checkpoint': structure_checkpoint,
                             })
 
                             if (
@@ -3005,9 +3518,10 @@ with tab1:
                                 and stability.item() >= gd_min_stability
                                 and dna_force.item() >= gd_min_binding
                             ):
-                                if score_bundle['score_adjusted'] > best_valid_score:
+                                if score_bundle['score_adjusted'] > (best_valid_score + early_stop_min_delta):
                                     best_valid_score = score_bundle['score_adjusted']
                                     best_valid_state = trajectory[-1].copy()
+                                    improved_this_checkpoint = True
 
                             stage_meta = get_optimization_stage(step_idx, n_steps)
                             # Update live metrics display
@@ -3038,7 +3552,7 @@ with tab1:
                                     st.write(f"• {m}")
 
                             # Update progress
-                            overall_progress = (trial_idx * n_steps + step_idx) / (total_trials * n_steps)
+                            overall_progress = (live_idx * n_steps + step_idx) / (active_trials * n_steps)
                             progress_placeholder.progress(
                                 overall_progress,
                                 text=f"Overall: {overall_progress*100:.0f}% | {stage_meta['name']}",
@@ -3082,10 +3596,9 @@ with tab1:
                                     annotation_position='top left'
                                 )
                                 fig_traj.update_layout(
-                                    template='plotly_white',
-                                    height=240,
-                                    margin=dict(l=0, r=0, t=34, b=0),
-                                    title=f"Trial {trial_idx+1} Optimization",
+                                    height=320,
+                                    margin=dict(l=24, r=20, t=70, b=98),
+                                    title=f"Trial {live_idx+1} Optimization",
                                     xaxis_title="Step",
                                     yaxis_title="Score / Stability",
                                     yaxis2=dict(
@@ -3095,33 +3608,63 @@ with tab1:
                                         range=[75, 101],
                                         showgrid=False
                                     ),
-                                    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0)
+                                    legend=dict(orientation="h", yanchor="top", y=-0.2, x=0)
                                 )
-                                render_plotly_in(trajectory_placeholder, fig_traj, chart_kind="mini", use_container_width=True)
+                                render_plotly_in(trajectory_placeholder, fig_traj, chart_kind="mini", width="stretch")
 
-                # === 3D STRUCTURE - Update every render stride with smooth keyframes ===
+                        if improved_this_checkpoint:
+                            checks_without_improve = 0
+                        else:
+                            checks_without_improve += 1
+                        if step_idx >= early_stop_warmup_steps and checks_without_improve >= early_stop_patience:
+                            with metrics_placeholder.container():
+                                st.caption(
+                                    f"Early stop triggered after {checks_without_improve} non-improving checkpoints."
+                                )
+                            break
+
+                # === 3D STRUCTURE - strict mode: real checkpoint structures only ===
                 if step_idx % render_stride == 0 or step_idx == n_steps:
                     try:
-                        with open("data/raw/p53_wt.pdb", "r") as f:
-                            pdb_content = f.read()
-
                         stage_meta = get_optimization_stage(step_idx, n_steps)
                         progress_pct = int((step_idx / n_steps) * 100)
                         is_final = step_idx == n_steps
-                        frame_start = last_render_step if last_render_step > 0 else max(1, step_idx - render_stride)
-                        frame_count = min(12, max(6, (step_idx - frame_start) + 4))
-                        morph_frames = build_morph_keyframes(
-                            pdb_string=pdb_content,
-                            mutation_positions=mut_positions,
-                            start_step=frame_start,
-                            end_step=step_idx,
-                            total_steps=n_steps,
-                            n_frames=frame_count,
-                        )
-                        if not morph_frames:
-                            morph_frames = [pdb_content]
+                        checkpoint_frames = [
+                            row.get("structure_checkpoint")
+                            for row in trajectory
+                            if row.get("structure_checkpoint")
+                        ]
+                        # De-duplicate while preserving order.
+                        dedup_frames: list[str] = []
+                        seen_frames = set()
+                        for frame in checkpoint_frames:
+                            if frame and frame not in seen_frames:
+                                seen_frames.add(frame)
+                                dedup_frames.append(frame)
 
-                        frame_payload = json.dumps(morph_frames)
+                        if not dedup_frames:
+                            with structure_placeholder.container():
+                                if not capture_checkpoints:
+                                    st.info(
+                                        "Live structure trajectory is disabled in strict mode. "
+                                        "Enable `Capture real structure checkpoints` to render real frames."
+                                    )
+                                elif step_idx < 5:
+                                    st.info("Warming up optimization before first checkpoint capture...")
+                                elif step_idx < checkpoint_stride:
+                                    st.info(
+                                        f"Waiting for first real checkpoint (capturing every {checkpoint_stride} steps)."
+                                    )
+                                else:
+                                    st.warning(
+                                        "No real structure checkpoint returned yet. "
+                                        "Check ESMFold API/network access and keep checkpoint capture enabled."
+                                    )
+                            last_render_step = step_idx
+                            previous_render_mut_positions = list(mut_positions)
+                            continue
+
+                        frame_payload = json.dumps(dedup_frames)
                         mut_payload = json.dumps(mut_positions[:10])
                         focus_positions = compute_camera_focus_positions(
                             mut_positions,
@@ -3141,16 +3684,16 @@ with tab1:
                         live_3d_html = f"""
                         <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
-                            <div style="background:rgba(11,27,59,0.9); color:#DBEAFE; border-left:4px solid {stage_meta['color']};
+                        <div style="background:linear-gradient(135deg,#EEF5FF 0%,#DFF0FF 100%); color:#1E3A5F; border-left:4px solid {stage_meta['color']};
                                         padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700;">
                                 {stage_meta['name']}
-                            </div>
+                        </div>
                             <div style="color:#475569; font-size:12px; font-weight:600;">
                                 {stage_meta['description']}
                             </div>
                         </div>
-                        <div id="{viewer_id}" style="width:100%; height:382px; border-radius:12px; border:3px solid {profile["color"]}; background:#0F172A;"></div>
-                        <div style="height:10px; background:#334155; border-radius:6px; margin-top:8px; overflow:hidden;">
+                        <div id="{viewer_id}" style="width:100%; height:382px; border-radius:12px; border:3px solid {profile["color"]}; background:linear-gradient(135deg,#F8FCFF 0%,#EAF3FF 100%);"></div>
+                        <div style="height:10px; background:#D6E5F8; border-radius:6px; margin-top:8px; overflow:hidden;">
                             <div style="height:100%; width:{progress_pct}%; background:linear-gradient(90deg, {profile['color']} 0%, {stage_meta['color']} 100%);"></div>
                         </div>
                         <script>
@@ -3158,7 +3701,7 @@ with tab1:
                                 const frames = {frame_payload};
                                 const mutPositions = {mut_payload};
                                 const focusPositions = {focus_payload};
-                                const viewer = $3Dmol.createViewer('{viewer_id}', {{backgroundColor: '0x0F172A'}});
+                                const viewer = $3Dmol.createViewer('{viewer_id}', {{backgroundColor: '0xF8FCFF'}});
                                 const profileColor = '{profile["color"]}';
                                 const growRadius = {grow_radius:.3f};
                                 const baseOpacity = {base_opacity:.3f};
@@ -3218,7 +3761,7 @@ with tab1:
                             }})();
                         </script>
                         <p style="text-align:center; color:{profile['color']}; font-weight:600; margin-top:10px; font-size:14px;">
-                            {status_text} | {len(mut_positions)} active mutation sites
+                            {status_text} | {len(mut_positions)} active mutation sites | {len(dedup_frames)} real structure checkpoints
                         </p>
                         """
                         with structure_placeholder.container():
@@ -3231,7 +3774,7 @@ with tab1:
                 # Store final candidate
                 final_state = best_valid_state if best_valid_state else trajectory[-1]
                 candidate = {
-                    'candidate_id': trial_idx + 1,
+                    'candidate_id': live_idx + 1,
                     'profile': profile['name'],
                     'color': profile['color'],
                     'restart': restart_idx,
@@ -3258,18 +3801,118 @@ with tab1:
                 all_candidates.append(candidate)
 
             candidates = all_candidates
+            if not candidates:
+                logger.warning(
+                    "Live generation produced zero candidates; attempting non-live fallback. "
+                    "target=%s trials=%s steps=%s",
+                    gd_target,
+                    total_trials,
+                    gd_opt_steps,
+                )
+                st.warning(
+                    "Live pass returned zero candidates. Retrying once with robust fallback generation."
+                )
+                try:
+                    candidates = run_generative_design_live(
+                        constraints,
+                        n_candidates=total_trials,
+                        n_steps=gd_opt_steps,
+                    )
+                except Exception as fallback_exc:
+                    logger.exception("Fallback generation failed: %s", fallback_exc)
+                    candidates = []
+
+            if not candidates:
+                logger.error(
+                    "Generation fallback still produced zero candidates; emitting target baseline candidate."
+                )
+                baseline_for_emit = compute_target_baseline_metrics(gd_target)
+                fallback_seq = apply_mutation(P53_WT, gd_target) or P53_WT
+                fallback_muts = [
+                    f"{P53_WT[j]}{j+1}{fallback_seq[j]}"
+                    for j in range(len(P53_WT))
+                    if P53_WT[j] != fallback_seq[j]
+                ]
+                fallback_positions = [
+                    int("".join(filter(str.isdigit, m)))
+                    for m in fallback_muts
+                    if any(ch.isdigit() for ch in m)
+                ]
+                candidates = [
+                    {
+                        "candidate_id": 1,
+                        "profile": "Baseline",
+                        "color": "#64748B",
+                        "restart": 1,
+                        "trial_idx": 1,
+                        "sequence": fallback_seq,
+                        "score": float(baseline_for_emit.get("score", 0.0)),
+                        "score_raw": float(baseline_for_emit.get("score_raw", 0.0)),
+                        "score_calibrated": float(baseline_for_emit.get("score_calibrated", 0.0)),
+                        "stability": float(baseline_for_emit.get("stability", 0.0)),
+                        "binding": float(baseline_for_emit.get("binding", 0.0)),
+                        "identity": 100.0 * (1.0 - len(fallback_muts) / len(P53_WT)),
+                        "n_mutations": len(fallback_muts),
+                        "mutations": fallback_muts,
+                        "mut_positions": fallback_positions,
+                        "uncertainty": float(baseline_for_emit.get("uncertainty", 0.0)),
+                        "ood_distance": float(baseline_for_emit.get("ood_distance", 0.0)),
+                        "trajectory": [],
+                        "meets_constraints": False,
+                        "selection_reason": "baseline_emit_after_zero_candidate_failure",
+                    }
+                ]
+                st.error(
+                    "Both live and fallback generation returned no candidates. "
+                    "Showing target baseline only so downstream analysis remains visible."
+                )
+
             status_placeholder.success(f"Generated {len(candidates)} raw trial designs. Applying quality/diversity selection...")
 
         else:
-            # Non-live mode (faster)
-            with st.spinner(
-                f"Generating {gd_n_candidates * gd_restarts} trial designs ({gd_restarts} restarts/profile)..."
-            ):
-                candidates = run_generative_design_live(
-                    constraints,
-                    n_candidates=int(max(gd_n_candidates, 1) * max(gd_restarts, 1)),
-                    n_steps=gd_opt_steps,
+            # Non-live mode (faster): show compact numeric progress without live structure rendering.
+            total_trials = int(max(gd_n_candidates, 1) * max(gd_restarts, 1))
+            compact_status = st.empty()
+            compact_progress = st.progress(
+                0.0,
+                text=f"Generating {total_trials} trial designs ({gd_restarts} restarts/profile)...",
+            )
+            compact_metrics = st.empty()
+
+            def _non_live_progress(update: Dict[str, Any]) -> None:
+                cand_idx = int(update.get("candidate_idx", 0)) + 1
+                cand_total = int(update.get("candidate_total", total_trials))
+                step_idx = int(update.get("step", 0))
+                total_steps = int(update.get("total_steps", max(gd_opt_steps, 1)))
+                state = update.get("current_state", {}) or {}
+                profile = (update.get("profile") or {}).get("name", "Unknown")
+
+                denom = max(cand_total * total_steps, 1)
+                overall = ((cand_idx - 1) * total_steps + step_idx) / denom
+                compact_progress.progress(
+                    float(np.clip(overall, 0.0, 1.0)),
+                    text=(
+                        f"Candidate {cand_idx}/{cand_total} ({profile}) "
+                        f"- step {step_idx}/{total_steps}"
+                    ),
                 )
+                compact_status.markdown(
+                    f"**Progress:** candidate {cand_idx}/{cand_total} | profile `{profile}` | step {step_idx}/{total_steps}"
+                )
+                with compact_metrics.container():
+                    m1, m2, m3, m4 = st.columns(4)
+                    m1.metric("Score", f"{float(state.get('score', 0.0)):.3f}")
+                    m2.metric("Identity", f"{float(state.get('identity', 0.0)):.1f}%")
+                    m3.metric("Stability", f"{float(state.get('stability', 0.0)):.3f}")
+                    m4.metric("Uncertainty", f"{float(state.get('uncertainty', 0.0)):.3f}")
+
+            candidates = run_generative_design_live(
+                constraints,
+                n_candidates=total_trials,
+                n_steps=gd_opt_steps,
+                progress_callback=_non_live_progress,
+            )
+            compact_progress.progress(1.0, text="Generation complete.")
 
         baseline_metrics = compute_target_baseline_metrics(gd_target)
         candidates, filter_summary = filter_candidate_set(
@@ -3309,6 +3952,21 @@ with tab1:
             "Scores shown below are trust-adjusted: calibrated to DMS range, then penalized by MC-dropout "
             "uncertainty and latent OOD distance."
         )
+        rejection_reason_text = ", ".join(
+            f"{k}={v}" for k, v in filter_summary.get("rejection_reasons", {}).items()
+        ) or "none"
+        debug_df = pd.DataFrame(
+            [
+                {
+                    "Baseline trust score": f"{baseline_metrics['score']:.3f}",
+                    "Min gain threshold": f"+{gd_min_gain:.2f}",
+                    "Filtered kept/total": f"{filter_summary['kept']}/{filter_summary['total']}",
+                    "Fallback used": "yes" if filter_summary["fallback_used"] else "no",
+                    "Rejected reasons": rejection_reason_text,
+                }
+            ]
+        )
+        st.dataframe(debug_df, hide_index=True, width="stretch")
 
         # Store in session state
         st.session_state['gd_candidates'] = candidates
@@ -3336,6 +3994,15 @@ with tab1:
         sum_col2.metric("Avg Trust Score", f"{avg_score:.3f}")
         sum_col3.metric("Avg Identity", f"{avg_identity:.1f}%")
         sum_col4.metric("Design Space Coverage", f"{len(set(c['profile'] for c in candidates))} profiles")
+
+        if st.session_state.get("gd_source_mode") == "campaign_artifacts":
+            run_id = st.session_state.get("gd_artifact_run_id", "unknown")
+            source = st.session_state.get("gd_artifact_source", "local")
+            scenario_count = st.session_state.get("gd_artifact_scenarios", "n/a")
+            st.caption(
+                f"Artifact-backed presentation mode: run `{run_id}` from `{source}` "
+                f"(scenarios logged: {scenario_count})."
+            )
 
         filter_summary = st.session_state.get("gd_filter_summary")
         target_baseline = st.session_state.get("gd_target_baseline")
@@ -3450,16 +4117,16 @@ with tab1:
         ))
 
         fig_pareto.update_layout(
-            template="plotly_white",
             title="Design Space Exploration (Size = DNA Binding, Green = Feasible Region)",
             xaxis_title="Sequence Identity (%)",
             yaxis_title="Trust-Adjusted Rescue Score",
-            height=400,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            height=520,
+            margin=dict(l=24, r=20, t=70, b=96),
+            legend=dict(orientation="h", yanchor="top", y=-0.2, x=0),
             xaxis=dict(range=[max(79, pareto_df['identity'].min() - 1), min(100, x_right)]),
             yaxis=dict(range=[min(min_function_gate - 0.15, pareto_df['score'].min() - 0.08), y_top])
         )
-        render_plotly(fig_pareto, chart_kind="pareto", use_container_width=True)
+        render_plotly(fig_pareto, chart_kind="pareto", width="stretch")
 
         # === 3D STRUCTURE GALLERY ===
         st.markdown("### ️ 3D Structure Gallery")
@@ -3513,7 +4180,7 @@ with tab1:
                             badge_text = "" if cand['meets_constraints'] else "️"
 
                             st.markdown(f"""
-                            <div style="text-align:center; padding:5px; background:linear-gradient(135deg, #1e2130 0%, #0e1117 100%);
+                            <div style="text-align:center; padding:5px; background:linear-gradient(135deg, #EEF5FF 0%, #E0EEFF 100%);
                                         border-radius:10px; border:2px solid {profile_color}; margin-bottom:5px;">
                                 <span style="color:{profile_color}; font-weight:bold; font-size:1.1em;">
                                     #{cand['candidate_id']} {cand['profile']} {badge_text}
@@ -3590,89 +4257,88 @@ with tab1:
 
             # === MUTATION COMPARISON HEATMAP ===
             st.markdown("###  Mutation Comparison Heatmap")
-            st.markdown("*Which positions are mutated by each candidate? Brighter = more candidates mutate this position.*")
+            st.markdown("*Rows are candidates, columns are informative residue positions; darker cells indicate mutation presence.*")
 
-            # Build mutation matrix
-            all_positions = set()
-            for c in sorted_candidates:
-                muts = c.get('mut_positions', [])
-                if not muts and c.get('mutations'):
-                    muts = [int(''.join(filter(str.isdigit, m))) for m in c['mutations'] if any(ch.isdigit() for ch in m)]
-                all_positions.update(muts)
+            matrix_df, freq_df = build_candidate_position_heatmap(sorted_candidates, max_positions=60)
+            if not matrix_df.empty:
+                pos_cols = [c for c in matrix_df.columns if c.startswith("pos_")]
+                positions = [int(col.split("_", 1)[1]) for col in pos_cols]
+                z_matrix = matrix_df[pos_cols].to_numpy(dtype=float)
+                heat_hover = np.where(z_matrix > 0.5, "Yes", "No")
 
-            if all_positions:
-                positions_sorted = sorted(all_positions)
-                matrix = []
-                for c in sorted_candidates:
-                    row = []
-                    c_muts = set(c.get('mut_positions', []))
-                    if not c_muts and c.get('mutations'):
-                        c_muts = set(int(''.join(filter(str.isdigit, m))) for m in c['mutations'] if any(ch.isdigit() for ch in m))
-                    for pos in positions_sorted:
-                        row.append(1 if pos in c_muts else 0)
-                    matrix.append(row)
-
-                mut_yesno = [["Yes" if v == 1 else "No" for v in row] for row in matrix]
-                fig_heatmap = go.Figure(data=go.Heatmap(
-                    z=matrix,
-                    x=[f"Pos {p}" for p in positions_sorted],
-                    y=[f"#{c['candidate_id']} {c['profile']}" for c in sorted_candidates],
-                    customdata=mut_yesno,
-                    colorscale=[[0, '#EDF4FF'], [1, '#1D4ED8']],
-                    zmin=0,
-                    zmax=1,
-                    showscale=True,
-                    colorbar=dict(
-                        title="Mutated",
-                        tickvals=[0, 1],
-                        ticktext=["No", "Yes"],
-                        len=0.72
-                    ),
-                    hovertemplate="Candidate: %{y}<br>Position: %{x}<br>Mutated: %{customdata}<extra></extra>"
-                ))
+                fig_heatmap = go.Figure(
+                    data=go.Heatmap(
+                        z=z_matrix,
+                        x=[f"Pos {p}" for p in positions],
+                        y=matrix_df["candidate_label"].tolist(),
+                        customdata=heat_hover,
+                        colorscale=[[0, "#EDF4FF"], [1, "#1D4ED8"]],
+                        zmin=0,
+                        zmax=1,
+                        showscale=True,
+                        colorbar=dict(
+                            title="Mutated",
+                            tickvals=[0, 1],
+                            ticktext=["No", "Yes"],
+                            len=0.72,
+                        ),
+                        hovertemplate="Candidate: %{y}<br>Position: %{x}<br>Mutated: %{customdata}<extra></extra>",
+                    )
+                )
                 fig_heatmap.update_layout(
-                    template='plotly_white',
-                    height=280,
-                    margin=dict(l=0, r=0, t=30, b=0),
-                    title="Mutation Positions by Candidate",
-                    xaxis_title="Position",
-                    yaxis_title=""
+                    height=max(420, 58 + 36 * len(matrix_df)),
+                    margin=dict(l=16, r=16, t=64, b=96),
+                    title="Mutation Presence Matrix",
+                    xaxis_title="Residue Position",
+                    yaxis_title="Candidate",
                 )
                 fig_heatmap.update_xaxes(tickangle=-45)
-                render_plotly(fig_heatmap, chart_kind="heatmap", use_container_width=True)
+                render_plotly(fig_heatmap, chart_kind="heatmap", width="stretch")
+                st.caption(
+                    "Interpretation: vertical bands indicate convergent hotspot positions repeatedly selected across candidates."
+                )
 
-                # Frequency plot to reveal consensus hotspots across candidates
-                pos_counts = np.sum(np.array(matrix), axis=0)
-                fig_hotspots = go.Figure(go.Bar(
-                    x=[f"Pos {p}" for p in positions_sorted],
-                    y=pos_counts,
-                    marker=dict(
-                        color=pos_counts,
-                        colorscale='Blues',
-                        line=dict(width=0.8, color='rgba(255,255,255,0.8)')
-                    ),
-                    hovertemplate="Position: %{x}<br>Candidates mutating: %{y}<extra></extra>"
-                ))
+                # Frequency summary highlights consensus positions and mutation prevalence.
+                freq_sorted = freq_df.sort_values(["count", "position"], ascending=[False, True]).copy()
+                top_freq = freq_sorted.head(25)
+                fig_hotspots = go.Figure(
+                    go.Bar(
+                        x=[f"Pos {int(p)}" for p in top_freq["position"]],
+                        y=top_freq["count"],
+                        marker=dict(
+                            color=top_freq["frequency"],
+                            colorscale="Blues",
+                            line=dict(width=0.8, color="rgba(255,255,255,0.8)"),
+                            colorbar=dict(title="Frequency", tickformat=".0%"),
+                        ),
+                        text=[f"{v:.0%}" for v in top_freq["frequency"]],
+                        textposition="outside",
+                        hovertemplate=(
+                            "Position: %{x}<br>"
+                            "Candidates mutating: %{y}<br>"
+                            "Frequency: %{marker.color:.1%}<extra></extra>"
+                        ),
+                    )
+                )
                 fig_hotspots.update_layout(
-                    template='plotly_white',
-                    height=220,
-                    margin=dict(l=0, r=0, t=26, b=0),
-                    title="Consensus Mutation Frequency",
+                    height=380,
+                    margin=dict(l=24, r=20, t=64, b=96),
+                    title="Consensus Mutation Frequency (Top informative positions)",
                     xaxis_title="Residue Position",
-                    yaxis_title="Count"
+                    yaxis_title="Mutating Candidates",
                 )
                 fig_hotspots.update_xaxes(tickangle=-45)
-                render_plotly(fig_hotspots, chart_kind="bar", use_container_width=True)
+                render_plotly(fig_hotspots, chart_kind="bar", width="stretch")
+                st.caption(
+                    "Interpretation: higher bars are stronger consensus loci; prioritize these for mechanism and wet-lab follow-up."
+                )
 
-                # Consensus mutations (positions mutated by multiple candidates)
-                position_counts = {}
-                for pos in all_positions:
-                    count = sum(1 for c in sorted_candidates if pos in set(c.get('mut_positions', [])))
-                    position_counts[pos] = count
-
-                consensus = {k: v for k, v in position_counts.items() if v >= 2}
+                consensus = top_freq[top_freq["count"] >= 2]["position"].astype(int).tolist()
                 if consensus:
-                    st.success(f"** Consensus positions** (mutated by 2+ candidates): {', '.join(str(p) for p in sorted(consensus.keys()))}")
+                    st.success(
+                        "**Consensus positions (mutated by 2+ candidates):** "
+                        + ", ".join(str(p) for p in consensus)
+                    )
 
         # Candidate cards
         st.markdown("### Candidate Details")
@@ -3710,6 +4376,8 @@ with tab1:
                         muts_display = ", ".join(cand['mutations'][:5])
                         if len(cand['mutations']) > 5:
                             muts_display += f" (+{len(cand['mutations']) - 5} more)"
+                        if not muts_display:
+                            muts_display = "None (no sequence change from baseline)"
                         st.caption(f"**Mutations:** {muts_display}")
 
                         # Physics scores
@@ -3721,11 +4389,21 @@ with tab1:
                             f"OOD dist: {float(cand.get('ood_distance', 0.0)):.3f}"
                         )
                         if "selection_score" in cand:
+                            def _fmt_optional_metric(raw_value, precision):
+                                try:
+                                    value = float(raw_value)
+                                except Exception:
+                                    return "n/a"
+                                if not np.isfinite(value):
+                                    return "n/a"
+                                return f"{value:.{precision}f}"
+
                             st.caption(
-                                f"Selection score: {float(cand.get('selection_score', 0.0)):.3f} | "
-                                f"Novelty: {float(cand.get('diversity_novelty', 0.0)):.2f} | "
-                                f"Max overlap: {float(cand.get('max_mutation_overlap', 0.0)):.2f}"
+                                f"Selection score: {_fmt_optional_metric(cand.get('selection_score'), 3)} | "
+                                f"Novelty: {_fmt_optional_metric(cand.get('diversity_novelty'), 2)} | "
+                                f"Max overlap: {_fmt_optional_metric(cand.get('max_mutation_overlap'), 2)}"
                             )
+                        st.caption(f"Selection reason: {cand.get('selection_reason', 'n/a')}")
 
                         # Action buttons
                         btn_col1, btn_col2 = st.columns(2)
@@ -3768,13 +4446,14 @@ with tab1:
             'Binding': f"{c['binding']:.2f}",
             'Identity': f"{c['identity']:.1f}%",
             'Mutations': c['n_mutations'],
+            'Selection Reason': str(c.get('selection_reason', 'n/a')),
             'Valid': '' if c['meets_constraints'] else ''
         } for c in sorted_candidates])
 
         st.dataframe(
             compare_df,
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 "ID": st.column_config.NumberColumn("Candidate"),
                 "Profile": st.column_config.TextColumn("Strategy"),
@@ -3787,7 +4466,7 @@ with tab1:
             " Export All Candidates (CSV)",
             pd.DataFrame(candidates).to_csv(index=False),
             file_name="generative_design_candidates.csv",
-            use_container_width=True
+            width="stretch"
         )
 
         # === BEST PERFORMING PROTEIN RESULTS ===
@@ -3918,9 +4597,8 @@ with tab1:
                 )
 
                 fig_result.update_layout(
-                    template='plotly_white',
-                    height=300,
-                    margin=dict(l=0, r=0, t=30, b=0),
+                    height=420,
+                    margin=dict(l=24, r=20, t=70, b=96),
                     title=f"Candidate #{best_candidate['candidate_id']} Evolution",
                     xaxis_title="Optimization Step",
                     yaxis_title="Score / Stability / Binding (scaled)",
@@ -3931,9 +4609,12 @@ with tab1:
                         range=[75, 101],
                         showgrid=False
                     ),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="left", x=0.0)
                 )
-                render_plotly(fig_result, chart_kind="trajectory", use_container_width=True)
+                render_plotly(fig_result, chart_kind="trajectory", width="stretch")
+                st.caption(
+                    "Rescue score should trend upward while stability stays above the floor and identity remains above the identity line."
+                )
             else:
                 st.info("No trajectory data available")
 
@@ -3946,13 +4627,13 @@ with tab1:
         if best_candidate.get('mut_positions'):
             mut_positions = set(best_candidate['mut_positions'])
             # Build colored sequence HTML
-            seq_html = '<div style="font-family: monospace; font-size: 12px; line-height: 1.8; background: #1e2130; padding: 15px; border-radius: 8px; overflow-x: auto;">'
+            seq_html = '<div style="font-family: monospace; font-size: 12px; line-height: 1.8; background: #F4F8FF; padding: 15px; border-radius: 8px; overflow-x: auto; border:1px solid #D5E5F7;">'
             for i, aa in enumerate(seq):
                 pos = i + 1  # 1-indexed
                 if pos in mut_positions:
                     seq_html += f'<span style="color: #F43F5E; font-weight: bold; background: rgba(244,63,94,0.18); padding: 2px 1px; border-radius: 3px;">{aa}</span>'
                 else:
-                    seq_html += f'<span style="color: #94A3B8;">{aa}</span>'
+                    seq_html += f'<span style="color: #3A5C84;">{aa}</span>'
                 # Add line break every 60 residues
                 if (i + 1) % 60 == 0:
                     seq_html += '<br>'
@@ -3975,7 +4656,7 @@ with tab1:
                 "⬇️ Download Best Protein (FASTA)",
                 fasta_best,
                 file_name=f"best_rescue_{best_candidate['candidate_id']}.fasta",
-                use_container_width=True
+                width="stretch"
             )
 
         # === ADVANCED VISUALIZATIONS ===
@@ -3990,244 +4671,329 @@ with tab1:
             with viz_col1:
                 # === 3D LATENT SPACE PLOT ===
                 st.markdown("### 🌐 3D Latent Space Trajectory")
-                st.caption("*Watch how the protein moves through ESM-2 embedding space during optimization*")
+                st.caption("*Surface = estimated loss landscape from sampled optimization states; line = actual optimization path.*")
 
-                # Create 3D scatter with trajectory line
                 fig_3d = go.Figure()
+                mesh = build_loss_mesh(traj_df, grid_size=40)
+                if mesh is not None:
+                    grid_x, grid_y, grid_z = mesh
+                    fig_3d.add_trace(
+                        go.Surface(
+                            x=grid_x,
+                            y=grid_y,
+                            z=grid_z,
+                            colorscale="Blues",
+                            opacity=0.55,
+                            name="Estimated loss surface",
+                            showscale=False,
+                            hovertemplate="Latent X: %{x:.2f}<br>Latent Y: %{y:.2f}<br>Loss: %{z:.3f}<extra></extra>",
+                        )
+                    )
+                else:
+                    st.info(
+                        "Loss surface mesh unavailable for this trajectory (need enough points with `loss_total`). "
+                        "Showing path-only view."
+                    )
 
-                # Add trajectory line
-                fig_3d.add_trace(go.Scatter3d(
-                    x=traj_df['lx'], y=traj_df['ly'],
-                    z=traj_df.get('lz', traj_df['score']),
-                    mode='lines',
-                    line=dict(color='rgba(37,99,235,0.55)', width=4),
-                    name='Path',
-                    showlegend=False
-                ))
+                traj_z = pd.to_numeric(traj_df.get("loss_total", traj_df.get("score")), errors="coerce")
+                if traj_z.isna().all():
+                    traj_z = pd.to_numeric(traj_df.get("lz", traj_df.get("score")), errors="coerce")
 
-                # Add points colored by step (time)
-                fig_3d.add_trace(go.Scatter3d(
-                    x=traj_df['lx'], y=traj_df['ly'],
-                    z=traj_df.get('lz', traj_df['score']),
-                    mode='markers',
-                    marker=dict(
-                        size=6,
-                        color=traj_df['step'],
-                        colorscale=[
-                            [0.0, '#1D4ED8'],
-                            [0.5, '#0EA5E9'],
-                            [1.0, '#10B981']
+                fig_3d.add_trace(
+                    go.Scatter3d(
+                        x=traj_df["lx"],
+                        y=traj_df["ly"],
+                        z=traj_z,
+                        mode="lines+markers",
+                        line=dict(color="#0EA5E9", width=6),
+                        marker=dict(
+                            size=5,
+                            color=traj_df["step"],
+                            colorscale=[[0.0, "#1D4ED8"], [0.5, "#0EA5E9"], [1.0, "#10B981"]],
+                            colorbar=dict(title="Step", x=1.02, thickness=12),
+                            opacity=0.95,
+                        ),
+                        text=[
+                            f"Step {s}<br>Score: {sc:.3f}<br>Loss: {lz:.3f}<br>Identity: {ident:.1f}%"
+                            for s, sc, lz, ident in zip(
+                                traj_df["step"],
+                                traj_df["score"],
+                                traj_z,
+                                traj_df["identity"],
+                            )
                         ],
-                        colorbar=dict(title='Step', x=1.02, thickness=12),
-                        opacity=0.9
-                    ),
-                    text=[
-                        f"Step {s}<br>Score: {sc:.3f}<br>Identity: {ident:.1f}%"
-                        for s, sc, ident in zip(traj_df['step'], traj_df['score'], traj_df['identity'])
-                    ],
-                    hoverinfo='text',
-                    name='Optimization Path'
-                ))
-
-                # Mark start (red) and end (green)
-                fig_3d.add_trace(go.Scatter3d(
-                    x=[traj_df['lx'].iloc[0]], y=[traj_df['ly'].iloc[0]],
-                    z=[traj_df.get('lz', traj_df['score']).iloc[0]],
-                    mode='markers', marker=dict(size=12, color='#DC2626', symbol='diamond', line=dict(color='white', width=1)),
-                    name='Start (Cancer)'
-                ))
-                fig_3d.add_trace(go.Scatter3d(
-                    x=[traj_df['lx'].iloc[-1]], y=[traj_df['ly'].iloc[-1]],
-                    z=[traj_df.get('lz', traj_df['score']).iloc[-1]],
-                    mode='markers', marker=dict(size=13, color='#059669', symbol='diamond', line=dict(color='white', width=1)),
-                    name='End (Rescued)'
-                ))
-
-                fig_3d.update_layout(
-                    template='plotly_white',
-                    height=400,
-                    margin=dict(l=0, r=0, t=30, b=0),
-                    scene=dict(
-                        xaxis_title='Latent X',
-                        yaxis_title='Latent Y',
-                        zaxis_title='Latent Z',
-                        camera=dict(eye=dict(x=1.5, y=1.5, z=1.2))
-                    ),
-                    legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5)
+                        hoverinfo="text",
+                        name="Optimization trajectory",
+                    )
                 )
-                render_plotly(fig_3d, chart_kind="3d", use_container_width=True)
+                fig_3d.add_trace(
+                    go.Scatter3d(
+                        x=[traj_df["lx"].iloc[0]],
+                        y=[traj_df["ly"].iloc[0]],
+                        z=[traj_z.iloc[0]],
+                        mode="markers",
+                        marker=dict(size=13, color="#DC2626", symbol="diamond", line=dict(color="white", width=1)),
+                        name="Start (cancer)",
+                    )
+                )
+                fig_3d.add_trace(
+                    go.Scatter3d(
+                        x=[traj_df["lx"].iloc[-1]],
+                        y=[traj_df["ly"].iloc[-1]],
+                        z=[traj_z.iloc[-1]],
+                        mode="markers",
+                        marker=dict(size=14, color="#059669", symbol="diamond", line=dict(color="white", width=1)),
+                        name="End (selected)",
+                    )
+                )
+                fig_3d.update_layout(
+                    height=560,
+                    margin=dict(l=24, r=20, t=64, b=100),
+                    scene=dict(
+                        xaxis_title="Latent X",
+                        yaxis_title="Latent Y",
+                        zaxis_title="Loss (lower is better)",
+                        camera=dict(eye=dict(x=1.4, y=1.35, z=1.1)),
+                    ),
+                    legend=dict(orientation="h", yanchor="top", y=-0.24, xanchor="left", x=0.0),
+                )
+                render_plotly(fig_3d, chart_kind="3d", width="stretch")
+                st.caption("Interpretation: good runs move toward lower-surface basins while preserving identity and constraints.")
 
             with viz_col2:
                 # === MULTI-METRIC COMPARISON ===
                 st.markdown("### 📈 Multi-Metric Evolution")
-                st.caption("*All optimization objectives normalized to [0,1] scale*")
-
-                # Normalize metrics to 0-1 for comparison
-                def normalize(series):
-                    min_val, max_val = series.min(), series.max()
-                    if max_val - min_val < 1e-6:
-                        return series * 0 + 0.5
-                    return (series - min_val) / (max_val - min_val)
+                normalize_metrics = st.toggle(
+                    "Normalize metrics to thresholds",
+                    value=True,
+                    key=f"metric_norm_toggle_{best_candidate['candidate_id']}",
+                    help="Normalized mode maps each metric relative to its acceptance threshold.",
+                )
+                metric_df = build_multi_metric_frame(
+                    traj_df,
+                    normalize=normalize_metrics,
+                    min_function=float(constraints.get("min_function", -0.2)),
+                    min_stability=float(constraints.get("min_stability", -0.2)),
+                    min_binding=float(constraints.get("min_binding", 5.0)),
+                    min_identity=float(constraints.get("min_identity", 90.0)),
+                )
 
                 fig_multi = go.Figure()
-
-                # Score (main objective)
-                fig_multi.add_trace(go.Scatter(
-                    x=traj_df['step'], y=normalize(traj_df['score']),
-                    mode='lines+markers', name='Rescue Score',
-                    line=dict(color='#0EA5E9', width=3, shape='spline', smoothing=0.6),
-                    marker=dict(size=4)
-                ))
-
-                # Stability
-                fig_multi.add_trace(go.Scatter(
-                    x=traj_df['step'], y=normalize(traj_df['stability']),
-                    mode='lines', name='Stability',
-                    line=dict(color='#38BDF8', width=2, shape='spline', smoothing=0.6)
-                ))
-
-                # DNA Binding
-                fig_multi.add_trace(go.Scatter(
-                    x=traj_df['step'], y=normalize(traj_df['binding']),
-                    mode='lines', name='DNA Binding',
-                    line=dict(color='#10B981', width=2, shape='spline', smoothing=0.6)
-                ))
-
-                # Identity (inverse - lower mutations = higher identity)
-                fig_multi.add_trace(go.Scatter(
-                    x=traj_df['step'], y=normalize(traj_df['identity']),
-                    mode='lines', name='Identity',
-                    line=dict(color='#1D4ED8', width=2, dash='dot')
-                ))
-
-                fig_multi.add_hline(
-                    y=0.5,
-                    line_dash='dot',
-                    line_color='rgba(59,130,246,0.5)',
-                    line_width=1.1,
-                    annotation_text='Midline'
+                fig_multi.add_trace(
+                    go.Scatter(
+                        x=metric_df["step"],
+                        y=metric_df["score"],
+                        mode="lines+markers",
+                        name="Rescue Score",
+                        line=dict(color="#0EA5E9", width=3),
+                        marker=dict(size=4),
+                    )
                 )
-                fig_multi.add_hline(
-                    y=0.8,
-                    line_dash='dot',
-                    line_color='rgba(16,185,129,0.55)',
-                    line_width=1.1,
-                    annotation_text='Target band'
+                fig_multi.add_trace(
+                    go.Scatter(
+                        x=metric_df["step"],
+                        y=metric_df["stability"],
+                        mode="lines",
+                        name="Stability",
+                        line=dict(color="#38BDF8", width=2),
+                    )
                 )
-                fig_multi.add_vline(
-                    x=float(traj_df['step'].max()),
-                    line_dash='dash',
-                    line_color='rgba(30,64,175,0.45)',
-                    line_width=1.2
+                fig_multi.add_trace(
+                    go.Scatter(
+                        x=metric_df["step"],
+                        y=metric_df["binding"],
+                        mode="lines",
+                        name="DNA Binding",
+                        line=dict(color="#10B981", width=2),
+                    )
                 )
+                fig_multi.add_trace(
+                    go.Scatter(
+                        x=metric_df["step"],
+                        y=metric_df["identity"],
+                        mode="lines",
+                        name="Identity",
+                        line=dict(color="#1D4ED8", width=2, dash="dot"),
+                        yaxis="y" if normalize_metrics else "y2",
+                    )
+                )
+
+                if normalize_metrics:
+                    fig_multi.add_hline(y=0.0, line_dash="dot", line_color="rgba(239,68,68,0.45)", line_width=1.1)
+                    fig_multi.add_hline(y=0.8, line_dash="dot", line_color="rgba(16,185,129,0.55)", line_width=1.1)
+                    fig_multi.update_layout(
+                        yaxis_title="Threshold-anchored normalized value [0,1]",
+                        yaxis=dict(range=[-0.05, 1.05]),
+                    )
+                else:
+                    fig_multi.add_hline(
+                        y=float(constraints.get("min_function", -0.2)),
+                        line_dash="dot",
+                        line_color="#F59E0B",
+                        line_width=1.1,
+                        annotation_text="Function floor",
+                    )
+                    fig_multi.add_hline(
+                        y=float(constraints.get("min_stability", -0.2)),
+                        line_dash="dot",
+                        line_color="#0EA5E9",
+                        line_width=1.1,
+                        annotation_text="Stability floor",
+                    )
+                    fig_multi.add_hline(
+                        y=float(constraints.get("min_binding", 5.0)),
+                        line_dash="dot",
+                        line_color="#10B981",
+                        line_width=1.1,
+                        annotation_text="Binding floor",
+                    )
+                    fig_multi.update_layout(
+                        yaxis_title="Raw score / stability / binding",
+                        yaxis2=dict(
+                            title="Identity (%)",
+                            overlaying="y",
+                            side="right",
+                            range=[75, 101],
+                            showgrid=False,
+                        ),
+                    )
 
                 fig_multi.update_layout(
-                    template='plotly_white',
-                    height=400,
-                    margin=dict(l=0, r=0, t=30, b=0),
-                    xaxis_title='Optimization Step',
-                    yaxis_title='Normalized Value (0-1)',
-                    yaxis=dict(range=[-0.05, 1.05]),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                    height=500,
+                    margin=dict(l=24, r=20, t=64, b=100),
+                    xaxis_title="Optimization Step",
+                    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="left", x=0.0),
                 )
-                render_plotly(fig_multi, chart_kind="multiline", use_container_width=True)
+                render_plotly(fig_multi, chart_kind="multiline", width="stretch")
+                st.caption(
+                    "Interpretation: upward score with stable/above-threshold constraints indicates improving rescue quality; "
+                    "oscillation early is expected from exploration before convergence."
+                )
 
             # === RESIDUE CONTRIBUTION HEATMAP ===
             st.markdown("### 🧬 Position-wise Mutation Impact")
-            st.caption("*Heatmap showing which residue positions were modified and their functional regions*")
+            st.caption("*Tracks mutation persistence across optimization checkpoints (not generic chunk colors).*")
 
-            # Create position data
-            seq_len = len(best_candidate['sequence'])
-            mut_positions = set(best_candidate.get('mut_positions', []))
+            def _region_label(pos: int) -> str:
+                if pos in set(range(112, 125)) | set(range(164, 175)) | set(range(236, 252)):
+                    return "DNA loop"
+                if pos in {176, 179, 238, 242}:
+                    return "Zinc site"
+                if pos in set(range(325, 355)):
+                    return "Dimer interface"
+                return "Other"
 
-            # Define functional regions
-            DNA_BINDING_L1 = set(range(112, 125))  # L1 loop
-            DNA_BINDING_L2 = set(range(164, 175))  # L2 loop
-            DNA_BINDING_L3 = set(range(236, 252))  # L3 loop
-            ZINC_BINDING = {176, 179, 238, 242}    # Zinc coordination
-            DIMER_INTERFACE = set(range(325, 355)) # Tetramerization
+            pos_stats: Dict[int, Dict[str, Any]] = {}
+            for _, row in traj_df.iterrows():
+                step_val = int(row.get("step", 0) or 0)
+                mut_pos = row.get("mut_positions", [])
+                if isinstance(mut_pos, str):
+                    try:
+                        mut_pos = json.loads(mut_pos)
+                    except Exception:
+                        mut_pos = []
+                for p in mut_pos or []:
+                    try:
+                        pos = int(p)
+                    except Exception:
+                        continue
+                    entry = pos_stats.setdefault(pos, {"count": 0, "first_step": step_val})
+                    entry["count"] += 1
+                    entry["first_step"] = min(int(entry["first_step"]), step_val)
 
-            # Build heatmap data (chunked by 50 residues for visibility)
-            chunk_size = 50
-            n_chunks = (seq_len + chunk_size - 1) // chunk_size
+            # Fallback for sparse trajectories: use final selected mutations.
+            if not pos_stats:
+                for p in best_candidate.get("mut_positions", []):
+                    pos = int(p)
+                    pos_stats[pos] = {"count": 1, "first_step": int(traj_df["step"].max() if not traj_df.empty else 0)}
 
-            heatmap_data = []
-            region_labels = []
+            if pos_stats:
+                total_steps = max(int(traj_df["step"].max()), 1) if "step" in traj_df.columns and not traj_df.empty else 1
+                impact_df = pd.DataFrame(
+                    [
+                        {
+                            "position": int(pos),
+                            "count": int(meta["count"]),
+                            "frequency": float(meta["count"] / total_steps),
+                            "first_step": int(meta["first_step"]),
+                            "region": _region_label(int(pos)),
+                        }
+                        for pos, meta in sorted(pos_stats.items(), key=lambda kv: kv[0])
+                    ]
+                )
+                impact_df = impact_df.sort_values(["frequency", "position"], ascending=[False, True]).reset_index(drop=True)
+                top_impact = impact_df.head(40).sort_values("position")
 
-            for chunk_idx in range(min(n_chunks, 8)):  # Max 8 rows
-                start = chunk_idx * chunk_size + 1
-                end = min((chunk_idx + 1) * chunk_size, seq_len)
-                row = []
-                row_labels = []
-                for pos in range(start, end + 1):
-                    if pos in mut_positions:
-                        value = 3  # Mutation
-                        label = "Mutation"
-                    elif pos in DNA_BINDING_L1 or pos in DNA_BINDING_L2 or pos in DNA_BINDING_L3:
-                        value = 2  # DNA binding region
-                        label = "DNA-binding loop"
-                    elif pos in ZINC_BINDING:
-                        value = 2.5  # Zinc binding
-                        label = "Zinc-binding site"
-                    elif pos in DIMER_INTERFACE:
-                        value = 1  # Dimer interface
-                        label = "Dimer interface"
-                    else:
-                        value = 0  # Normal
-                        label = "Other region"
-                    row.append(value)
-                    row_labels.append(label)
-                # Pad if needed
-                while len(row) < chunk_size:
-                    row.append(-1)  # Empty
-                    row_labels.append("N/A")
-                heatmap_data.append(row)
-                region_labels.append(row_labels)
+                fig_heatmap_pos = go.Figure(
+                    data=go.Heatmap(
+                        z=[top_impact["frequency"].to_numpy(dtype=float)],
+                        x=[f"Pos {int(p)}" for p in top_impact["position"]],
+                        y=["Mutation persistence"],
+                        customdata=np.array(top_impact[["region", "first_step"]]),
+                        colorscale="YlOrRd",
+                        zmin=0.0,
+                        zmax=max(1e-6, float(top_impact["frequency"].max())),
+                        colorbar=dict(title="Step frequency", tickformat=".0%"),
+                        hovertemplate=(
+                            "Position: %{x}<br>"
+                            "Persistence: %{z:.1%}<br>"
+                            "Region: %{customdata[0]}<br>"
+                            "First seen step: %{customdata[1]}<extra></extra>"
+                        ),
+                    )
+                )
+                fig_heatmap_pos.update_layout(
+                    height=300,
+                    margin=dict(l=16, r=16, t=64, b=90),
+                    xaxis_title="Residue position",
+                    yaxis_title="",
+                )
+                render_plotly(fig_heatmap_pos, chart_kind="heatmap", width="stretch")
 
-            fig_heatmap_pos = go.Figure(data=go.Heatmap(
-                z=heatmap_data,
-                x=[str(i) for i in range(1, chunk_size + 1)],
-                y=[f"{i*chunk_size+1}-{min((i+1)*chunk_size, seq_len)}" for i in range(len(heatmap_data))],
-                customdata=region_labels,
-                colorscale=[
-                    [0.00, '#F8FAFC'],   # N/A
-                    [0.25, '#D6E4F7'],   # Other
-                    [0.50, '#3B82F6'],   # Dimer interface
-                    [0.75, '#10B981'],   # DNA loop
-                    [0.875, '#F59E0B'],  # Zinc site
-                    [1.00, '#EF4444']    # Mutation
-                ],
-                zmin=-1,
-                zmax=3,
-                showscale=True,
-                colorbar=dict(
-                    title="Region Type",
-                    tickvals=[-1, 0, 1, 2, 2.5, 3],
-                    ticktext=["N/A", "Other", "Dimer", "DNA Loop", "Zinc", "Mutation"],
-                    len=0.8
-                ),
-                hovertemplate='Chunk Position: %{x}<br>Residue Range: %{y}<br>Type: %{customdata}<extra></extra>'
-            ))
+                fig_first_seen = go.Figure(
+                    go.Bar(
+                        x=[f"Pos {int(p)}" for p in top_impact["position"]],
+                        y=top_impact["first_step"],
+                        marker=dict(
+                            color=top_impact["frequency"],
+                            colorscale="Blues",
+                            line=dict(width=0.8, color="rgba(255,255,255,0.8)"),
+                            colorbar=dict(title="Persistence", tickformat=".0%"),
+                        ),
+                        hovertemplate=(
+                            "Position: %{x}<br>"
+                            "First seen step: %{y}<br>"
+                            "Persistence: %{marker.color:.1%}<extra></extra>"
+                        ),
+                    )
+                )
+                fig_first_seen.update_layout(
+                    height=330,
+                    margin=dict(l=24, r=20, t=64, b=96),
+                    title="Mutation appearance timing (lower is earlier)",
+                    xaxis_title="Residue position",
+                    yaxis_title="First optimization step observed",
+                )
+                fig_first_seen.update_xaxes(tickangle=-45)
+                render_plotly(fig_first_seen, chart_kind="bar", width="stretch")
 
-            fig_heatmap_pos.update_layout(
-                template='plotly_white',
-                height=250,
-                margin=dict(l=0, r=0, t=30, b=0),
-                xaxis_title='Position (within chunk)',
-                yaxis_title='Residue Range'
-            )
-            render_plotly(fig_heatmap_pos, chart_kind="heatmap", use_container_width=True)
-
-            # Legend for heatmap
-            st.markdown("""
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:-6px;">
-                <span style="padding:4px 10px; border-radius:999px; background:#FEE2E2; color:#991B1B; font-weight:600; font-size:12px;">Mutation</span>
-                <span style="padding:4px 10px; border-radius:999px; background:#DCFCE7; color:#166534; font-weight:600; font-size:12px;">DNA Loop</span>
-                <span style="padding:4px 10px; border-radius:999px; background:#FEF3C7; color:#92400E; font-weight:600; font-size:12px;">Zinc Site</span>
-                <span style="padding:4px 10px; border-radius:999px; background:#DBEAFE; color:#1E40AF; font-weight:600; font-size:12px;">Dimer Interface</span>
-                <span style="padding:4px 10px; border-radius:999px; background:#E2E8F0; color:#334155; font-weight:600; font-size:12px;">Other</span>
-            </div>
-            """, unsafe_allow_html=True)
+                st.caption(
+                    "Interpretation: persistent/high-frequency positions are stronger optimization anchors; "
+                    "early-appearing positions tend to be core drivers."
+                )
+                st.dataframe(
+                    top_impact.rename(
+                        columns={
+                            "position": "Position",
+                            "count": "Observed checkpoints",
+                            "frequency": "Step frequency",
+                            "first_step": "First step",
+                            "region": "Functional region",
+                        }
+                    ),
+                    hide_index=True,
+                    width="stretch",
+                )
 
         else:
             st.info("Run optimization to see advanced visualizations")
@@ -4294,6 +5060,35 @@ with tab2:
     active_target = st.session_state.get("target_mut_saved", target_mut)
     active_candidate = get_active_analysis_candidate(active_target)
     sync_analysis_inputs_from_candidate(active_candidate)
+    runtime_caps = get_runtime_capabilities_snapshot()
+
+    with st.expander("Runtime Capabilities", expanded=False):
+        cap1, cap2, cap3, cap4 = st.columns(4)
+        cap1.metric("Torch", runtime_caps.get("torch_version", "n/a"))
+        cap2.metric("MPS", "yes" if runtime_caps.get("mps_available") else "no")
+        cap3.metric("Vina CLI", "yes" if runtime_caps.get("vina_cli_available") else "no")
+        md_ready = bool(runtime_caps.get("openmm_installed") and runtime_caps.get("openff_installed"))
+        cap4.metric("MD stack", "ready" if md_ready else "missing")
+
+        explain_status = get_explainability_backend_status()
+        st.caption(
+            "Explainability attention backend: "
+            + ("ready" if explain_status.get("ready") else "unavailable")
+            + f" ({explain_status.get('reason', 'n/a')})"
+        )
+        if DRUG_MODULE_AVAILABLE:
+            try:
+                manifest = DrugGeneratorEngine().get_receptor_manifest(allow_wt_receptor_fallback=False)
+                dup_map = manifest.get("duplicate_receptor_paths", {})
+                if dup_map:
+                    st.warning(
+                        "Pocket receptor manifest warning: one receptor file is reused by multiple pockets "
+                        f"({dup_map})."
+                    )
+                else:
+                    st.caption("Pocket receptor manifest: unique receptor mapping per pocket.")
+            except Exception as err:
+                st.caption(f"Drug runtime manifest probe unavailable: {err}")
 
     if active_candidate:
         c1, c2, c3, c4, c5 = st.columns(5)
@@ -4520,7 +5315,7 @@ with tab2:
                     )
                     fig_dms.update_traces(texttemplate="%{text}", textposition="outside")
                     fig_dms.update_layout(height=540, yaxis_title="Number of rescue mutations")
-                render_plotly(fig_dms, chart_kind="bar", use_container_width=True)
+                render_plotly(fig_dms, chart_kind="bar", width="stretch")
                 st.caption(
                     "Interpretation: bars above 0 indicate rescue mutations predicted/measured to outperform the target mutation; "
                     "bar color indicates whether evidence is direct DMS measurement or fallback mode."
@@ -4547,7 +5342,7 @@ with tab2:
                 )
             )
             gauge.update_layout(height=440, margin=dict(l=20, r=20, t=58, b=12))
-            render_plotly(gauge, chart_kind="default", use_container_width=True)
+            render_plotly(gauge, chart_kind="default", width="stretch")
             st.caption("Evidence score combines model quality, measurement confidence, and rescue improvement signal (0-100).")
 
             physics_breakdown = pd.DataFrame(
@@ -4569,7 +5364,7 @@ with tab2:
             )
             fig_phy.update_traces(texttemplate="%{text:.2f}", textposition="outside")
             fig_phy.update_layout(coloraxis_showscale=False, yaxis_range=[0, 1.05], height=440)
-            render_plotly(fig_phy, chart_kind="bar", use_container_width=True)
+            render_plotly(fig_phy, chart_kind="bar", width="stretch")
             st.caption("Each component is normalized to [0,1]; higher bars contribute more strongly to the physics subscore.")
 
         if not dms_eval_df.empty:
@@ -4583,7 +5378,7 @@ with tab2:
             show_df["Confidence"] = show_df["Confidence"].map(lambda x: f"{x*100:.0f}%")
             # Select columns to display
             display_cols = ["Mutation", "Position", "DMS Score", "Physics Score", "Delta vs target", "Method", "Confidence", "Support"]
-            st.dataframe(show_df[display_cols], hide_index=True, use_container_width=True)
+            st.dataframe(show_df[display_cols], hide_index=True, width="stretch")
 
             # Add data source info
             with st.expander("📊 About DMS Coverage & Physics Fallback"):
@@ -4638,8 +5433,18 @@ with tab2:
                 "Rescue mutations (comma-separated)",
                 key="exp_rescue_main",
             )
+            explain_status = get_explainability_backend_status()
+            explain_ready = bool(explain_status.get("ready"))
+            explain_block_reason = explain_status.get("reason", "Explainability dependencies are unavailable.")
+            if not explain_ready:
+                st.warning(f"Explainability strict mode blocked: {explain_block_reason}")
 
-            if st.button("Run Explainability Analysis", key="btn_explain_main", use_container_width=True):
+            if st.button(
+                "Run Explainability Analysis",
+                key="btn_explain_main",
+                width="stretch",
+                disabled=not explain_ready,
+            ):
                 if parse_single_mutation(exp_cancer_mut) is None:
                     st.error("Invalid cancer mutation format. Use format like `R175H`.")
                 else:
@@ -4690,6 +5495,12 @@ with tab2:
             if "explanation" in st.session_state:
                 exp = st.session_state["explanation"]
                 mech = exp["mechanism"]
+                explain_status = get_explainability_backend_status()
+                st.caption(
+                    "Explainability backend: "
+                    + ("strict-attention" if explain_status.get("ready") else "unavailable")
+                    + f" ({explain_status.get('reason', 'n/a')})"
+                )
 
                 st.info(exp["summary"])
                 em1, em2, em3, em4 = st.columns(4)
@@ -4728,7 +5539,7 @@ with tab2:
                 fig_energy.update_traces(texttemplate="%{text:.2f}", textposition="outside")
                 fig_energy.add_hline(y=0, line_dash="dot", line_color="#64748B", line_width=1.3)
                 fig_energy.update_layout(height=520)
-                render_plotly(fig_energy, chart_kind="bar", use_container_width=True)
+                render_plotly(fig_energy, chart_kind="bar", width="stretch")
                 st.caption(
                     "Negative contributions are stabilizing, positive contributions are destabilizing; the total ddG summarizes net rescue energetics."
                 )
@@ -4753,7 +5564,7 @@ with tab2:
                         color_discrete_sequence=["#1D4ED8", "#0284C7", "#06B6D4", "#0F766E", "#64748B"],
                     )
                     fig_attr.update_layout(height=540)
-                    render_plotly(fig_attr, chart_kind="bar", use_container_width=True)
+                    render_plotly(fig_attr, chart_kind="bar", width="stretch")
                     st.caption(
                         "Residue attribution combines attention and occlusion terms; larger bars indicate stronger influence on the rescue prediction."
                     )
@@ -4781,7 +5592,7 @@ with tab2:
                     fig_cf.update_traces(texttemplate="%{text:.2f}", textposition="outside")
                     fig_cf.add_hline(y=0, line_dash="dot", line_color="#64748B", line_width=1.2)
                     fig_cf.update_layout(height=500)
-                    render_plotly(fig_cf, chart_kind="bar", use_container_width=True)
+                    render_plotly(fig_cf, chart_kind="bar", width="stretch")
                     st.caption(
                         "Counterfactual delta compares each suggested substitute against the selected rescue mutation at the same site."
                     )
@@ -4825,13 +5636,36 @@ with tab2:
             n_candidates = st.slider("Number of candidates", 5, 30, 15, key="n_drug_cand")
             gen_method = st.selectbox(
                 "Generation method",
-                ["template", "denovo", "docking", "docking_md"],
+                ["template", "docking", "docking_md"],
                 key="drug_method",
             )
+            allow_wt_receptor_fallback = st.checkbox(
+                "Allow WT receptor fallback (less realistic)",
+                value=False,
+                key="allow_wt_receptor_fallback",
+            )
+            mode_cap = get_drug_mode_capability(
+                selected_pocket,
+                gen_method,
+                allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+            )
+            if not mode_cap.get("ready", False):
+                st.warning(f"{gen_method} blocked: {mode_cap.get('reason', 'runtime unavailable')}")
+            if mode_cap.get("receptor_path"):
+                st.caption(
+                    f"Receptor: {mode_cap.get('receptor_path')} ({mode_cap.get('receptor_source', 'unknown')})"
+                )
 
-            if st.button("Generate Drug Candidates", key="btn_gen_drugs", use_container_width=True):
+            if st.button(
+                "Generate Drug Candidates",
+                key="btn_gen_drugs",
+                width="stretch",
+                disabled=not mode_cap.get("ready", False),
+            ):
                 with st.spinner("Generating drug candidates..."):
-                    engine = DrugGeneratorEngine()
+                    engine = DrugGeneratorEngine(
+                        allow_wt_receptor_fallback=allow_wt_receptor_fallback,
+                    )
                     protein_context = None
                     if active_candidate:
                         protein_context = {
@@ -4845,6 +5679,7 @@ with tab2:
                             n_candidates,
                             gen_method,
                             protein_context=protein_context,
+                            allow_wt_receptor_fallback=allow_wt_receptor_fallback,
                         )
                     except Exception as e:
                         st.session_state.pop("drug_candidates", None)
@@ -4923,7 +5758,7 @@ with tab2:
                 preview["Drug-likeness"] = preview["Drug-likeness"].map(lambda x: f"{x:.2f}")
                 preview["MW"] = preview["MW"].map(lambda x: f"{x:.0f}")
                 preview["LogP"] = preview["LogP"].map(lambda x: f"{x:.2f}")
-                st.dataframe(preview, hide_index=True, use_container_width=True)
+                st.dataframe(preview, hide_index=True, width="stretch")
 
                 props_plot_df = props_df.copy()
                 props_plot_df["dup_count"] = props_plot_df.groupby(["MW", "LogP"])["Name"].transform("size")
@@ -4987,7 +5822,7 @@ with tab2:
                 fig_props.update_xaxes(title="Molecular weight (Da)", range=[x_min, x_max])
                 fig_props.update_yaxes(title="LogP", range=[y_min, y_max])
                 fig_props.update_layout(height=580)
-                render_plotly(fig_props, chart_kind="scatter", use_container_width=True)
+                render_plotly(fig_props, chart_kind="scatter", width="stretch")
                 st.caption(
                     "Each point is a candidate; size tracks affinity magnitude, and dashed thresholds mark Lipinski-style MW/LogP cutoffs."
                 )
@@ -5013,7 +5848,7 @@ with tab2:
                 fig_rank.update_traces(texttemplate="%{text:.2f}", textposition="outside")
                 fig_rank.update_xaxes(categoryorder="array", categoryarray=rank_df["Name"].tolist(), tickangle=-20)
                 fig_rank.update_layout(height=540, yaxis_title="Binding affinity (kcal/mol)")
-                render_plotly(fig_rank, chart_kind="bar", use_container_width=True)
+                render_plotly(fig_rank, chart_kind="bar", width="stretch")
                 if docking_run:
                     st.caption(
                         "More negative bars indicate stronger AutoDock Vina docking scores (or context-adjusted scores if rescue context is active)."
@@ -5028,10 +5863,10 @@ with tab2:
                 with drug_col1:
                     drug_3d_html = f"""
                     <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-                    <div id="drug_viewer" style="width:100%; height:390px; border-radius:14px; border:2px solid #10B981; background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);"></div>
+                    <div id="drug_viewer" style="width:100%; height:390px; border-radius:14px; border:2px solid #10B981; background:linear-gradient(135deg,#F8FCFF 0%,#EAF3FF 100%);"></div>
                     <script>
                         (async function() {{
-                            let viewer = $3Dmol.createViewer('drug_viewer', {{backgroundColor: '0x0F172A'}});
+                            let viewer = $3Dmol.createViewer('drug_viewer', {{backgroundColor: '0xF8FCFF'}});
                             let smiles = "{top.smiles}";
                             try {{
                                 let response = await fetch(
@@ -5096,7 +5931,7 @@ with tab2:
             ci_cancer = st.text_input("Cancer mutation", key="ci_cancer_main").strip().upper()
             ci_rescue_text = st.text_input("Rescue mutations (comma-separated)", key="ci_rescue_main")
 
-            if st.button("Assess Clinical Impact", key="btn_clinical_main", use_container_width=True):
+            if st.button("Assess Clinical Impact", key="btn_clinical_main", width="stretch"):
                 if parse_single_mutation(ci_cancer) is None:
                     st.error("Invalid cancer mutation format. Use format like `R175H`.")
                 else:
@@ -5143,7 +5978,7 @@ with tab2:
                 )
                 show_delivery = delivery_df.copy()
                 show_delivery["Feasibility"] = show_delivery["Feasibility"].map(lambda x: f"{x:.0%}")
-                st.dataframe(show_delivery, hide_index=True, use_container_width=True)
+                st.dataframe(show_delivery, hide_index=True, width="stretch")
 
                 fig_delivery = px.bar(
                     delivery_df.sort_values("Feasibility", ascending=False),
@@ -5156,7 +5991,7 @@ with tab2:
                 )
                 fig_delivery.update_traces(texttemplate="%{text:.0%}", textposition="outside")
                 fig_delivery.update_layout(coloraxis_showscale=False, yaxis_range=[0, 1.05], height=520)
-                render_plotly(fig_delivery, chart_kind="bar", use_container_width=True)
+                render_plotly(fig_delivery, chart_kind="bar", width="stretch")
                 st.caption("Higher feasibility scores indicate fewer delivery/manufacturing/regulatory barriers under current assumptions.")
 
                 # Transparent score construction so each dashboard number is auditable.
@@ -5230,7 +6065,7 @@ with tab2:
                         - `Viability` thresholds: high >=70, moderate >=50, low >=30, else not viable.
                         """
                     )
-                    st.dataframe(breakdown_df, hide_index=True, use_container_width=True)
+                    st.dataframe(breakdown_df, hide_index=True, width="stretch")
 
                 st.success(report.recommended_development_path)
                 export_data = {
@@ -5244,7 +6079,7 @@ with tab2:
                     data=json.dumps(export_data, indent=2),
                     file_name=f"{report.rescue_name}_clinical.json",
                     mime="application/json",
-                    use_container_width=True,
+                    width="stretch",
                 )
             else:
                 st.info("Run clinical assessment to populate feasibility and population charts.")

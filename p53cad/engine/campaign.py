@@ -1,0 +1,1058 @@
+from __future__ import annotations
+
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn.functional as F
+
+from p53cad.analysis.clinical_impact import ClinicalImpactEngine
+from p53cad.core.logging import get_logger
+from p53cad.data.dms import P53_WT, apply_mutation, get_dms_data, parse_single_mutation
+from p53cad.engine.latent import ManifoldEmbedder
+from p53cad.engine.oracle import FunctionalOracle
+from p53cad.results.schema import (
+    BIG8_HOTSPOTS,
+    DEFAULT_DELIVERY_METHODS,
+    build_run_id,
+    build_scenario_matrix,
+    scenarios_to_frame,
+    select_presentation_shortlist,
+)
+from p53cad.results.store import CampaignStore
+
+
+logger = get_logger(__name__)
+
+
+@contextmanager
+def _prevent_sleep():
+    """Prevent macOS idle/system sleep during long campaigns via caffeinate."""
+    proc = None
+    if platform.system() == "Darwin" and shutil.which("caffeinate"):
+        try:
+            proc = subprocess.Popen(
+                ["caffeinate", "-is"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            logger.info("Sleep prevention enabled (caffeinate PID %d)", proc.pid)
+        except OSError:
+            logger.debug("Failed to start caffeinate, continuing without sleep prevention")
+    try:
+        yield
+    finally:
+        if proc is not None:
+            proc.terminate()
+            proc.wait(timeout=5)
+            logger.info("Sleep prevention disabled")
+
+
+AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+
+WEIGHT_PROFILES = [
+    {"function": 4.0, "stability": 8.0, "binding": 2.5, "name": "Balanced", "color": "#2563EB"},
+    {"function": 2.0, "stability": 15.0, "binding": 2.0, "name": "Stability-First", "color": "#0EA5E9"},
+    {"function": 3.0, "stability": 5.0, "binding": 8.0, "name": "Binding-Optimized", "color": "#10B981"},
+    {"function": 8.0, "stability": 4.0, "binding": 3.0, "name": "Function-Maximized", "color": "#14B8A6"},
+    {"function": 5.0, "stability": 10.0, "binding": 5.0, "name": "Conservative", "color": "#1D4ED8"},
+    {"function": 6.0, "stability": 6.0, "binding": 6.0, "name": "Experimental", "color": "#0891B2"},
+]
+
+
+@dataclass
+class ScenarioRuntime:
+    scenario_id: str
+    target_label: str
+    targets: List[str]
+    delivery_method: str
+
+
+class CampaignRunner:
+    def __init__(
+        self,
+        *,
+        store: Optional[CampaignStore] = None,
+        oracle_path: str | Path = "data/models/functional_oracle.pt",
+        device: Optional[str] = None,
+    ):
+        self.store = store or CampaignStore()
+        self.oracle_path = Path(oracle_path)
+        self.device = device
+
+        self.embedder: Optional[ManifoldEmbedder] = None
+        self.oracle: Optional[FunctionalOracle] = None
+        self.clinical: Optional[ClinicalImpactEngine] = None
+
+        self.calibration_profile = self._score_calibration_profile()
+        self.uncertainty_weight = 0.8
+        self.ood_rank_weight = 1.25
+        self.ood_radius = 1.75
+        self.ood_loss_weight = 12.0
+
+        # ── Performance caches (populated lazily, cleared between runs) ──
+        self._emb_cache: Dict[str, torch.Tensor] = {}
+        self._baseline_cache: Dict[str, Dict[str, float]] = {}
+
+    def _load_models(self) -> None:
+        if self.embedder is not None and self.oracle is not None and self.clinical is not None:
+            return
+        self.embedder = ManifoldEmbedder(device=self.device)
+        self.oracle = FunctionalOracle(model_path=self.oracle_path)
+        self.clinical = ClinicalImpactEngine()
+
+    def _get_cached_embedding(self, seq: str) -> torch.Tensor:
+        """Return detached embedding for *seq*, using cache to avoid redundant ESM-2 passes."""
+        if seq not in self._emb_cache:
+            assert self.embedder is not None
+            self._emb_cache[seq] = self.embedder.get_embeddings(seq).detach()
+        return self._emb_cache[seq]
+
+    def _get_cached_baseline(
+        self, target_seq: str, pooled_target_ref: torch.Tensor, mc_samples: int
+    ) -> Dict[str, float]:
+        """Return baseline metrics for *target_seq*, using cache for shared targets."""
+        if target_seq not in self._baseline_cache:
+            self._baseline_cache[target_seq] = self._compute_baseline_metrics(
+                target_seq, pooled_target_ref, mc_samples=mc_samples
+            )
+        return self._baseline_cache[target_seq]
+
+    def run(
+        self,
+        *,
+        run_id: Optional[str] = None,
+        seed: int = 42,
+        resume: bool = True,
+        include_pairs: bool = True,
+        hotspots: Sequence[str] | None = None,
+        delivery_methods: Sequence[str] | None = None,
+        max_scenarios: Optional[int] = None,
+        shortlist_n: int = 30,
+        budget: str = "high",
+        with_clinical: bool = True,
+    ) -> Dict[str, Any]:
+        with _prevent_sleep():
+            return self._run_inner(
+                run_id=run_id, seed=seed, resume=resume,
+                include_pairs=include_pairs, hotspots=hotspots,
+                delivery_methods=delivery_methods,
+                max_scenarios=max_scenarios, shortlist_n=shortlist_n,
+                budget=budget, with_clinical=with_clinical,
+            )
+
+    def _run_inner(
+        self,
+        *,
+        run_id: Optional[str] = None,
+        seed: int = 42,
+        resume: bool = True,
+        include_pairs: bool = True,
+        hotspots: Sequence[str] | None = None,
+        delivery_methods: Sequence[str] | None = None,
+        max_scenarios: Optional[int] = None,
+        shortlist_n: int = 30,
+        budget: str = "high",
+        with_clinical: bool = True,
+    ) -> Dict[str, Any]:
+        self._load_models()
+        assert self.embedder is not None
+        assert self.oracle is not None
+        assert self.clinical is not None
+
+        # Clear per-run caches
+        self._emb_cache.clear()
+        self._baseline_cache.clear()
+
+        run_id = run_id or build_run_id("campaign")
+        scenarios = build_scenario_matrix(
+            hotspots=hotspots or BIG8_HOTSPOTS,
+            delivery_methods=delivery_methods or DEFAULT_DELIVERY_METHODS,
+            include_pairs=include_pairs,
+        )
+        if max_scenarios is not None:
+            scenarios = scenarios[: int(max_scenarios)]
+
+        config = {
+            "seed": int(seed),
+            "budget": budget,
+            "include_pairs": bool(include_pairs),
+            "hotspots": list(hotspots or BIG8_HOTSPOTS),
+            "delivery_methods": list(delivery_methods or DEFAULT_DELIVERY_METHODS),
+            "max_scenarios": int(max_scenarios) if max_scenarios is not None else None,
+            "shortlist_n": int(shortlist_n),
+            "with_clinical": bool(with_clinical),
+            "pass_a": self._pass_a_config(budget),
+            "pass_b": self._pass_b_config(budget),
+        }
+
+        runtime_caps = {
+            "device": str(self.embedder.device),
+            "oracle_path": str(self.oracle_path),
+        }
+        paths = self.store.init_run(run_id, config=config, runtime_caps=runtime_caps, resume=resume)
+        self.store.update_manifest(run_id, {"status": "running"})
+
+        ckpt_dir = paths.checkpoint_state_path.parent
+        candidates_jsonl = ckpt_dir / "candidates.jsonl"
+        trajectories_jsonl = ckpt_dir / "trajectories.jsonl"
+        clinical_jsonl = ckpt_dir / "clinical.jsonl"
+        scenarios_jsonl = ckpt_dir / "scenario_metrics.jsonl"
+
+        done_df = self.store.load_scenario_checkpoints(run_id)
+        done_pairs = set()
+        if not done_df.empty:
+            for _, row in done_df.iterrows():
+                if str(row.get("status", "")) == "done":
+                    done_pairs.add((str(row.get("scenario_id")), str(row.get("pass_name"))))
+
+        pass_a_cfg = self._pass_a_config(budget)
+        pass_b_cfg = self._pass_b_config(budget)
+
+        scenario_objs = [
+            ScenarioRuntime(
+                scenario_id=s.scenario_id,
+                target_label=s.target_label,
+                targets=list(s.targets),
+                delivery_method=s.delivery_method,
+            )
+            for s in scenarios
+        ]
+
+        # Pass A screening
+        pass_a_best: Dict[str, float] = {}
+        for idx, sc in enumerate(scenario_objs, start=1):
+            key = (sc.scenario_id, "screen")
+            if resume and key in done_pairs:
+                continue
+            logger.info("Pass A [%d/%d] %s", idx, len(scenario_objs), sc.scenario_id)
+            out = self._run_scenario(sc, pass_name="screen", config=pass_a_cfg, seed=seed)
+            self._append_rows(candidates_jsonl, out["candidates"])
+            self._append_rows(trajectories_jsonl, out["trajectories"])
+            self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
+            pass_a_best[sc.scenario_id] = float(out["scenario_metrics"].get("best_score", -np.inf))
+            self.store.append_scenario_checkpoint(
+                run_id,
+                {
+                    "scenario_id": sc.scenario_id,
+                    "pass_name": "screen",
+                    "status": "done",
+                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
+        # Load pass A from checkpoint to select pass B scenarios.
+        screen_df = self._read_jsonl(scenarios_jsonl)
+        if screen_df.empty:
+            raise RuntimeError("No screen metrics found; campaign cannot continue.")
+        screen_df = screen_df[screen_df["pass_name"] == "screen"].copy()
+        screen_df["best_score"] = pd.to_numeric(screen_df["best_score"], errors="coerce").fillna(-np.inf)
+        screen_df = screen_df.sort_values("best_score", ascending=False)
+        top_count = max(1, int(np.ceil(len(screen_df) * 0.4)))
+
+        # Delivery diversity floor: ensure at least top-2 per delivery method
+        # reach Pass B, then fill remaining with global top scores.
+        delivery_floor = 2
+        selected_pass_b: set[str] = set()
+        if "scenario_id" in screen_df.columns:
+            dm_col = screen_df["scenario_id"].astype(str).str.rsplit("__", n=1)
+            screen_df["_delivery"] = dm_col.str[-1]
+            for dm in DEFAULT_DELIVERY_METHODS:
+                dm_rows = screen_df[screen_df["_delivery"] == dm]
+                for sid in dm_rows.head(delivery_floor)["scenario_id"].astype(str):
+                    selected_pass_b.add(sid)
+            # Fill remaining slots from global ranking
+            for sid in screen_df["scenario_id"].astype(str):
+                if len(selected_pass_b) >= top_count:
+                    break
+                selected_pass_b.add(sid)
+            screen_df.drop(columns=["_delivery"], inplace=True)
+        else:
+            selected_pass_b = set(screen_df.head(top_count)["scenario_id"].astype(str).tolist())
+
+        # Profile pruning: pick top-3 profiles per scenario from Pass A candidates.
+        screen_cands = self._read_jsonl(candidates_jsonl)
+        profile_map: Dict[str, Optional[List[str]]] = {}
+        if not screen_cands.empty and "profile" in screen_cands.columns and "score" in screen_cands.columns:
+            sc_screen = screen_cands[screen_cands["pass_name"] == "screen"].copy() if "pass_name" in screen_cands.columns else screen_cands.copy()
+            sc_screen["score"] = pd.to_numeric(sc_screen["score"], errors="coerce").fillna(-np.inf)
+            for sid in selected_pass_b:
+                sc_rows = sc_screen[sc_screen["scenario_id"] == sid]
+                if sc_rows.empty:
+                    profile_map[sid] = None  # fallback: all profiles
+                else:
+                    top_profiles = (
+                        sc_rows.groupby("profile")["score"]
+                        .max()
+                        .sort_values(ascending=False)
+                        .head(3)
+                        .index.tolist()
+                    )
+                    profile_map[sid] = top_profiles if len(top_profiles) >= 1 else None
+        logger.info(
+            "Pass B: %d scenarios selected (%.0f%%), profiles pruned to top-3 per scenario",
+            len(selected_pass_b),
+            100.0 * len(selected_pass_b) / max(len(screen_df), 1),
+        )
+
+        # Pass B deep refinement on top scenarios only.
+        selected_objs = [sc for sc in scenario_objs if sc.scenario_id in selected_pass_b]
+        for idx, sc in enumerate(selected_objs, start=1):
+            key = (sc.scenario_id, "deep")
+            if resume and key in done_pairs:
+                continue
+            prune = profile_map.get(sc.scenario_id)
+            logger.info("Pass B [%d/%d] %s  profiles=%s", idx, len(selected_objs), sc.scenario_id, prune or "all")
+            out = self._run_scenario(sc, pass_name="deep", config=pass_b_cfg, seed=seed, allowed_profiles=prune)
+            self._append_rows(candidates_jsonl, out["candidates"])
+            self._append_rows(trajectories_jsonl, out["trajectories"])
+            self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
+
+            if with_clinical:
+                clinical_rows = self._run_clinical_for_scenario(out["candidates"]) 
+                self._append_rows(clinical_jsonl, clinical_rows)
+
+            self.store.append_scenario_checkpoint(
+                run_id,
+                {
+                    "scenario_id": sc.scenario_id,
+                    "pass_name": "deep",
+                    "status": "done",
+                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
+        # Build final parquet artifacts from checkpoints.
+        scenario_df = self._read_jsonl(scenarios_jsonl)
+        candidate_df = self._read_jsonl(candidates_jsonl)
+        trajectory_df = self._read_jsonl(trajectories_jsonl)
+        clinical_df = self._read_jsonl(clinical_jsonl)
+
+        if not candidate_df.empty and not clinical_df.empty and "candidate_uid" in candidate_df.columns:
+            clinical_agg = clinical_df.sort_values("clinical_score", ascending=False).drop_duplicates("candidate_uid")
+            clinical_agg = clinical_agg[["candidate_uid", "clinical_score", "clinical_viability"]]
+            candidate_df = candidate_df.merge(clinical_agg, on="candidate_uid", how="left")
+
+        self.store.write_tables(
+            run_id,
+            scenarios_df=scenario_df,
+            candidates_df=candidate_df,
+            trajectories_df=trajectory_df,
+            clinical_df=clinical_df,
+        )
+
+        top30 = select_presentation_shortlist(
+            candidate_df[candidate_df["pass_name"] == "deep"].copy() if "pass_name" in candidate_df.columns else candidate_df,
+            top_n=shortlist_n,
+            max_per_target=4,
+            delivery_methods=delivery_methods or DEFAULT_DELIVERY_METHODS,
+        )
+        self.store.write_top30(run_id, top30)
+
+        summary = self._build_summary(run_id, scenario_df, candidate_df, top30)
+        self.store.write_summary(run_id, summary)
+        self.store.update_manifest(
+            run_id,
+            {
+                "status": "completed",
+                "n_scenarios": int(len(scenario_objs)),
+                "n_candidates": int(len(candidate_df)),
+                "n_trajectories": int(len(trajectory_df)),
+                "n_shortlist": int(len(top30)),
+            },
+        )
+
+        return {
+            "run_id": run_id,
+            "run_dir": str(paths.run_dir),
+            "n_scenarios": int(len(scenario_objs)),
+            "n_candidates": int(len(candidate_df)),
+            "n_shortlist": int(len(top30)),
+            "selected_pass_b": int(len(selected_objs)),
+        }
+
+    def report_run(self, run_id: str, shortlist_n: int = 30) -> Dict[str, Any]:
+        bundle = self.store.load_run_bundle(run_id)
+        candidate_df = bundle["candidates"]
+        if candidate_df.empty:
+            raise RuntimeError(f"No candidates found for run {run_id}")
+
+        top30 = select_presentation_shortlist(
+            candidate_df[candidate_df["pass_name"] == "deep"].copy() if "pass_name" in candidate_df.columns else candidate_df,
+            top_n=shortlist_n,
+            max_per_target=4,
+            delivery_methods=DEFAULT_DELIVERY_METHODS,
+        )
+        self.store.write_top30(run_id, top30)
+        summary = self._build_summary(run_id, bundle["scenarios"], candidate_df, top30)
+        self.store.write_summary(run_id, summary)
+        self.store.update_manifest(run_id, {"status": "reported", "n_shortlist": int(len(top30))})
+        return {
+            "run_id": run_id,
+            "n_candidates": int(len(candidate_df)),
+            "n_shortlist": int(len(top30)),
+            "run_dir": str(bundle["run_dir"]),
+        }
+
+    def _pass_a_config(self, budget: str) -> Dict[str, Any]:
+        if budget == "fast":
+            return {"steps": 40, "restarts": 1, "repeats": 1, "mc_samples": 2}
+        if budget == "medium":
+            return {"steps": 60, "restarts": 1, "repeats": 1, "mc_samples": 3}
+        return {"steps": 80, "restarts": 1, "repeats": 1, "mc_samples": 4}
+
+    def _pass_b_config(self, budget: str) -> Dict[str, Any]:
+        if budget == "fast":
+            return {"steps": 120, "restarts": 1, "repeats": 1, "mc_samples": 4}
+        if budget == "medium":
+            return {"steps": 200, "restarts": 2, "repeats": 2, "mc_samples": 8}
+        # High: reduced from 3×3=9 to 2×2=4 trials per profile (55% fewer trials)
+        return {"steps": 280, "restarts": 2, "repeats": 2, "mc_samples": 12}
+
+    def _run_scenario(
+        self,
+        scenario: ScenarioRuntime,
+        *,
+        pass_name: str,
+        config: Dict[str, int],
+        seed: int,
+        allowed_profiles: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        assert self.embedder is not None
+        assert self.oracle is not None
+
+        target_seq = self._build_target_sequence(scenario.targets)
+        emb_target_ref = self._get_cached_embedding(target_seq)
+        emb_wt = self._get_cached_embedding(P53_WT)
+        with torch.no_grad():
+            z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref)
+            pooled_target_ref = z_target_ref.mean(dim=1)
+            if pooled_target_ref.shape[-1] != 320:
+                pooled_target_ref = pooled_target_ref[:, :320]
+
+        wt_aa_tensor = self._wt_aa_tensor(device=emb_target_ref.device)
+
+        min_identity = self._delivery_identity_floor(scenario.delivery_method)
+        min_stability = -0.2
+        min_binding = 5.0
+        lock_positions: set[int] = set()
+        for target in scenario.targets:
+            pos = self._mutation_pos(target)
+            if pos is not None:
+                lock_positions.add(int(pos))
+        lock_positions.update([175, 248, 273])
+        lock_positions_sorted = sorted(lock_positions)
+        max_mutations = int(len(P53_WT) * (100 - min_identity) / 100)
+        locked_indices = [p - 1 for p in lock_positions_sorted]
+
+        baseline = self._get_cached_baseline(target_seq, pooled_target_ref, mc_samples=config["mc_samples"])
+
+        candidates: List[Dict[str, Any]] = []
+        trajectories: List[Dict[str, Any]] = []
+
+        profiles = WEIGHT_PROFILES
+        if allowed_profiles is not None:
+            allowed_set = set(allowed_profiles)
+            profiles = [p for p in WEIGHT_PROFILES if p["name"] in allowed_set]
+
+        trial_counter = 0
+        for repeat_idx in range(int(config["repeats"])):
+            for profile in profiles:
+                for restart_idx in range(int(config["restarts"])):
+                    trial_counter += 1
+                    trial_seed = int(seed + (repeat_idx * 1000) + (restart_idx * 100) + trial_counter)
+                    cand, traj_rows = self._run_single_trial(
+                        scenario=scenario,
+                        target_seq=target_seq,
+                        emb_target_ref=emb_target_ref,
+                        emb_wt=emb_wt,
+                        pooled_target_ref=pooled_target_ref,
+                        wt_aa_tensor=wt_aa_tensor,
+                        profile=profile,
+                        pass_name=pass_name,
+                        repeat_idx=repeat_idx + 1,
+                        restart_idx=restart_idx + 1,
+                        trial_idx=trial_counter,
+                        trial_seed=trial_seed,
+                        n_steps=int(config["steps"]),
+                        mc_samples=int(config["mc_samples"]),
+                        min_identity=min_identity,
+                        min_stability=min_stability,
+                        min_binding=min_binding,
+                        max_mutations=max_mutations,
+                        locked_indices=locked_indices,
+                        baseline_score=float(baseline["score"]),
+                    )
+                    candidates.append(cand)
+                    trajectories.extend(traj_rows)
+
+        best_score = max((float(c.get("score", -np.inf)) for c in candidates), default=-np.inf)
+        metrics = {
+            "scenario_id": scenario.scenario_id,
+            "target_label": scenario.target_label,
+            "targets": json.dumps(scenario.targets),
+            "delivery_method": scenario.delivery_method,
+            "pass_name": pass_name,
+            "n_candidates": int(len(candidates)),
+            "best_score": float(best_score),
+            "baseline_score": float(baseline["score"]),
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        }
+
+        return {"candidates": candidates, "trajectories": trajectories, "scenario_metrics": metrics}
+
+    def _run_single_trial(
+        self,
+        *,
+        scenario: ScenarioRuntime,
+        target_seq: str,
+        emb_target_ref: torch.Tensor,
+        emb_wt: torch.Tensor,
+        pooled_target_ref: torch.Tensor,
+        wt_aa_tensor: torch.Tensor,
+        profile: Dict[str, Any],
+        pass_name: str,
+        repeat_idx: int,
+        restart_idx: int,
+        trial_idx: int,
+        trial_seed: int,
+        n_steps: int,
+        mc_samples: int,
+        min_identity: float,
+        min_stability: float,
+        min_binding: float,
+        max_mutations: int,
+        locked_indices: List[int],
+        baseline_score: float,
+    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        assert self.embedder is not None
+        assert self.oracle is not None
+
+        torch.manual_seed(trial_seed)
+        np.random.seed(trial_seed)
+
+        emb = emb_target_ref.clone().detach().requires_grad_(True)
+        with torch.no_grad():
+            emb.data += torch.randn_like(emb) * 0.05
+
+        optimizer = torch.optim.Adam([emb], lr=0.03)
+
+        trajectory: List[Dict[str, Any]] = []
+        best_valid_state: Optional[Dict[str, Any]] = None
+        best_valid_score = -float("inf")
+        checks_without_improve = 0
+        cached_uncertainty = 0.0
+
+        for step_idx in range(1, int(n_steps) + 1):
+            optimizer.zero_grad()
+            z, logits, _ = self.embedder.latent_forward_ascent(emb)
+            pooled = z.mean(dim=1)
+            if pooled.shape[-1] != 320:
+                pooled = pooled[:, :320]
+            raw_score_t = self.oracle.model(pooled).squeeze(-1)
+
+            probs_full = torch.softmax(logits, dim=-1)
+            logits_aa = logits[:, :, AA_IDS]
+            log_probs = F.log_softmax(logits_aa, dim=-1)
+            stability_t = log_probs.max(dim=-1).values.mean(dim=-1)
+            dna_force_t = self._batch_dna_force(z, probs_full)
+            hydro_packing_t = self._batch_hydrophobic_packing(probs_full)
+            ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1)
+
+            probs_aa = torch.softmax(logits_aa, dim=-1)
+            wt_probs = probs_aa[:, torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
+            expected_mutations = (1.0 - wt_probs).sum(dim=-1)
+            expected_identity = 100.0 * (1.0 - expected_mutations / float(len(P53_WT)))
+
+            score_term = -raw_score_t * float(profile["function"])
+            stability_term = -float(profile["stability"]) * stability_t
+            binding_term = -float(profile["binding"]) * dna_force_t
+            hydro_term = -3.0 * hydro_packing_t
+            ood_penalty = self.ood_loss_weight * F.relu(ood_distance_t - self.ood_radius)
+            mutation_penalty = 50.0 * F.relu(expected_mutations - max_mutations)
+            identity_penalty = 500.0 * F.relu((min_identity - 5.0) - expected_identity)
+            stability_penalty = 100.0 * F.relu(min_stability - stability_t)
+            binding_penalty = 80.0 * F.relu(min_binding - dna_force_t)
+            if locked_indices:
+                lock_penalty = 800.0 * (emb[:, locked_indices, :] - emb_target_ref[:, locked_indices, :]).pow(2).mean(dim=(1, 2))
+            else:
+                lock_penalty = torch.zeros_like(raw_score_t)
+            if locked_indices:
+                l1_mask = torch.ones(emb.size(1), device=emb.device, dtype=torch.bool)
+                for li in locked_indices:
+                    l1_mask[li] = False
+                l1_penalty = 40.0 * (emb[:, l1_mask, :] - emb_wt[:, l1_mask, :]).abs().mean(dim=(1, 2))
+            else:
+                l1_penalty = 40.0 * (emb - emb_wt).abs().mean(dim=(1, 2))
+
+            loss_vec = (
+                score_term
+                + stability_term
+                + binding_term
+                + hydro_term
+                + ood_penalty
+                + mutation_penalty
+                + identity_penalty
+                + stability_penalty
+                + binding_penalty
+                + lock_penalty
+                + l1_penalty
+            )
+
+            loss = loss_vec.mean()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_([emb], max_norm=1.0)
+            optimizer.step()
+
+            if step_idx % 5 != 0 and step_idx != n_steps:
+                continue
+
+            with torch.no_grad():
+                raw_score = float(raw_score_t[0].item())
+                ood_distance = float(ood_distance_t[0].item())
+                if step_idx == 5 or step_idx == n_steps or step_idx % 40 == 0:
+                    # Use fewer MC samples for intermediate checks; full count only at final step
+                    intermediate_mc = min(mc_samples, 4)
+                    unc_samples = mc_samples if step_idx == n_steps else intermediate_mc
+                    cached_uncertainty = self._estimate_uncertainty(pooled, mc_samples=unc_samples)
+
+                score_bundle = self._build_trust_adjusted_score(
+                    raw_score=raw_score,
+                    pooled=pooled,
+                    pooled_ref=pooled_target_ref,
+                    cached_uncertainty=cached_uncertainty,
+                )
+
+                current_seq = self._decode_sequence(logits_aa)
+                muts = [f"{P53_WT[j]}{j+1}{current_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != current_seq[j]]
+                mut_positions = [self._mutation_pos(m) for m in muts]
+                mut_positions = [int(p) for p in mut_positions if p is not None]
+                seq_identity = 100.0 * (1.0 - len(muts) / float(len(P53_WT)))
+
+                state = {
+                    "step": int(step_idx),
+                    "score": float(score_bundle["score_adjusted"]),
+                    "score_raw": float(score_bundle["score_raw"]),
+                    "score_calibrated": float(score_bundle["score_calibrated"]),
+                    "stability": float(stability_t[0].item()),
+                    "binding": float(dna_force_t[0].item()),
+                    "identity": float(seq_identity),
+                    "n_mutations": int(len(muts)),
+                    "mutations_json": json.dumps(muts),
+                    "mut_positions_json": json.dumps(mut_positions),
+                    "sequence": current_seq,
+                    "uncertainty": float(score_bundle["uncertainty"]),
+                    "ood_distance": float(score_bundle["ood_distance"]),
+                    "lx": float(pooled[0, 0].item()),
+                    "ly": float(pooled[0, 1].item()),
+                    "lz": float(pooled[0, 2].item()) if pooled.shape[-1] > 2 else float(score_bundle["score_adjusted"]),
+                    "loss_total": float(loss_vec[0].item()),
+                    "loss_score_term": float(score_term[0].item()),
+                    "loss_stability_term": float(stability_term[0].item()),
+                    "loss_binding_term": float(binding_term[0].item()),
+                    "loss_hydrophobic_term": float(hydro_term[0].item()),
+                    "loss_ood_penalty": float(ood_penalty[0].item()),
+                    "loss_mutation_penalty": float(mutation_penalty[0].item()),
+                    "loss_identity_penalty": float(identity_penalty[0].item()),
+                    "loss_stability_penalty": float(stability_penalty[0].item()),
+                    "loss_binding_penalty": float(binding_penalty[0].item()),
+                    "loss_lock_penalty": float(lock_penalty[0].item()),
+                    "loss_l1_penalty": float(l1_penalty[0].item()),
+                }
+                trajectory.append(state)
+
+                is_valid = (
+                    seq_identity >= min_identity
+                    and float(stability_t[0].item()) >= min_stability
+                    and float(dna_force_t[0].item()) >= min_binding
+                )
+
+                improved = False
+                if is_valid and state["score"] > (best_valid_score + 1e-3):
+                    best_valid_state = dict(state)
+                    best_valid_score = float(state["score"])
+                    improved = True
+
+                if improved:
+                    checks_without_improve = 0
+                else:
+                    checks_without_improve += 1
+                if step_idx >= 40 and checks_without_improve >= 6:
+                    break
+
+        final_state = best_valid_state if best_valid_state is not None else trajectory[-1]
+        final_muts = json.loads(final_state.get("mutations_json", "[]"))
+        final_positions = json.loads(final_state.get("mut_positions_json", "[]"))
+
+        candidate_uid = (
+            f"{scenario.scenario_id}|{pass_name}|rep{repeat_idx}|rst{restart_idx}|trial{trial_idx}"
+        )
+        candidate = {
+            "candidate_uid": candidate_uid,
+            "scenario_id": scenario.scenario_id,
+            "target_label": scenario.target_label,
+            "targets_json": json.dumps(scenario.targets),
+            "delivery_method": scenario.delivery_method,
+            "pass_name": pass_name,
+            "repeat_idx": int(repeat_idx),
+            "restart_idx": int(restart_idx),
+            "trial_idx": int(trial_idx),
+            "profile": profile["name"],
+            "sequence": final_state["sequence"],
+            "score": float(final_state["score"]),
+            "score_raw": float(final_state.get("score_raw", final_state["score"])),
+            "score_calibrated": float(final_state.get("score_calibrated", final_state["score"])),
+            "score_gain_vs_target": float(final_state["score"] - baseline_score),
+            "stability": float(final_state["stability"]),
+            "binding": float(final_state["binding"]),
+            "identity": float(final_state["identity"]),
+            "n_mutations": int(final_state["n_mutations"]),
+            "mutations_json": json.dumps(final_muts),
+            "mut_positions_json": json.dumps(final_positions),
+            "uncertainty": float(final_state.get("uncertainty", 0.0)),
+            "ood_distance": float(final_state.get("ood_distance", 0.0)),
+            "meets_constraints": bool(
+                float(final_state["identity"]) >= min_identity
+                and float(final_state["stability"]) >= min_stability
+                and float(final_state["binding"]) >= min_binding
+            ),
+            "selection_reason": "trust_adjusted_rank",
+            "receptor_source": "n/a",
+            "docking_backend": "n/a",
+            "md_status": "n/a",
+        }
+
+        traj_rows = []
+        for row in trajectory:
+            payload = dict(row)
+            payload["candidate_uid"] = candidate_uid
+            payload["scenario_id"] = scenario.scenario_id
+            payload["target_label"] = scenario.target_label
+            payload["delivery_method"] = scenario.delivery_method
+            payload["pass_name"] = pass_name
+            payload["profile"] = profile["name"]
+            traj_rows.append(payload)
+
+        return candidate, traj_rows
+
+    def _run_clinical_for_scenario(self, candidates: List[Dict[str, Any]], top_k: int = 3) -> List[Dict[str, Any]]:
+        assert self.clinical is not None
+
+        if not candidates:
+            return []
+        df = pd.DataFrame(candidates)
+        df = df.sort_values("score", ascending=False).head(int(max(top_k, 1)))
+
+        rows: List[Dict[str, Any]] = []
+        for _, row in df.iterrows():
+            candidate_uid = str(row["candidate_uid"])
+            targets = json.loads(str(row.get("targets_json", "[]")))
+            cancer_mut = str(targets[0]) if targets else "R175H"
+            rescue_muts = json.loads(str(row.get("mutations_json", "[]")))
+            rescue_seq = str(row.get("sequence", P53_WT))
+            report = self.clinical.generate_report(
+                name=f"{candidate_uid.replace('|', '_')}",
+                wt_sequence=P53_WT,
+                rescue_sequence=rescue_seq,
+                cancer_mutation=cancer_mut,
+                rescue_mutations=rescue_muts,
+            )
+            rows.append(
+                {
+                    "candidate_uid": candidate_uid,
+                    "scenario_id": str(row.get("scenario_id", "")),
+                    "clinical_score": float(report.overall_clinical_score),
+                    "clinical_viability": str(report.clinical_viability),
+                    "us_annual_patients": int(report.patient_population.total_patients_per_year),
+                    "global_estimate": int(report.patient_population.global_estimate),
+                    "therapeutic_window": str(report.therapeutic_index.therapeutic_window),
+                    "delivery_recommendation": str(report.delivery_options[0].method if report.delivery_options else "n/a"),
+                }
+            )
+        return rows
+
+    def _build_target_sequence(self, targets: Sequence[str]) -> str:
+        seq = P53_WT
+        for mut in targets:
+            token = str(mut).strip().upper()
+            if parse_single_mutation(token) is None:
+                continue
+            updated = apply_mutation(seq, token)
+            if updated is not None:
+                seq = updated
+        return seq
+
+    def _wt_aa_tensor(self, device: torch.device) -> torch.Tensor:
+        assert self.embedder is not None
+        wt_aa_indices = []
+        for aa in P53_WT:
+            aa_id = self.embedder.tokenizer.convert_tokens_to_ids(aa)
+            if aa_id in AA_IDS:
+                wt_aa_indices.append(AA_IDS.index(aa_id))
+            else:
+                wt_aa_indices.append(0)
+        return torch.tensor(wt_aa_indices, device=device)
+
+    def _delivery_identity_floor(self, delivery_method: str) -> float:
+        mode = str(delivery_method).strip().lower()
+        if mode == "protein_therapy":
+            return 92.0
+        if mode == "mrna_therapy":
+            return 92.0
+        return 90.0
+
+    def _batch_dna_force(self, z_batch: torch.Tensor, probs_full: torch.Tensor) -> torch.Tensor:
+        hotspots = [119, 174, 240, 247, 272, 279]
+        hotspots = [i for i in hotspots if i < z_batch.shape[1]]
+        if not hotspots:
+            return torch.zeros(z_batch.shape[0], device=z_batch.device)
+        pos_charge_ids = [10, 15, 21]
+        latent_force = z_batch[:, hotspots, :].norm(dim=-1).mean(dim=-1)
+        charge_prob = probs_full[:, hotspots][:, :, pos_charge_ids].sum(dim=-1).mean(dim=-1)
+        return 0.5 * latent_force + 5.0 * charge_prob
+
+    def _batch_hydrophobic_packing(self, probs_full: torch.Tensor) -> torch.Tensor:
+        hydro_ids = [4, 12, 7, 18, 22, 20]
+        core_res = [i for i in range(93, 312) if i < probs_full.shape[1]]
+        loops = set(range(111, 124)) | set(range(162, 195)) | set(range(235, 251))
+        true_core = [i for i in core_res if i not in loops]
+        if not true_core:
+            return torch.zeros(probs_full.shape[0], device=probs_full.device)
+        return probs_full[:, true_core][:, :, hydro_ids].sum(dim=-1).mean(dim=-1)
+
+    def _decode_sequence(self, logits_aa: torch.Tensor) -> str:
+        assert self.embedder is not None
+        top_ids_aa = torch.argmax(logits_aa, dim=-1)[0]
+        aa_local = [AA_IDS[idx] for idx in top_ids_aa.tolist()]
+        tokens = self.embedder.tokenizer.convert_ids_to_tokens(aa_local)
+        return "".join(tokens)[: len(P53_WT)]
+
+    def _mutation_pos(self, mut: str) -> Optional[int]:
+        digits = "".join(ch for ch in str(mut) if ch.isdigit())
+        if not digits:
+            return None
+        try:
+            return int(digits)
+        except ValueError:
+            return None
+
+    def _compute_baseline_metrics(self, target_seq: str, pooled_target_ref: torch.Tensor, mc_samples: int) -> Dict[str, float]:
+        assert self.embedder is not None
+        assert self.oracle is not None
+
+        emb = self.embedder.get_embeddings(target_seq).detach()
+        with torch.no_grad():
+            z, logits, _ = self.embedder.latent_forward_ascent(emb)
+            pooled = z.mean(dim=1)
+            if pooled.shape[-1] != 320:
+                pooled = pooled[:, :320]
+            raw_score = float(self.oracle.model(pooled).item())
+            logits_aa = logits[:, :, AA_IDS]
+            stability = float(F.log_softmax(logits_aa, dim=-1).max(dim=-1).values.mean().item())
+            probs_full = torch.softmax(logits, dim=-1)
+            binding = float(self._batch_dna_force(z, probs_full)[0].item())
+
+        bundle = self._build_trust_adjusted_score(
+            raw_score=raw_score,
+            pooled=pooled,
+            pooled_ref=pooled_target_ref,
+            cached_uncertainty=self._estimate_uncertainty(pooled, mc_samples=mc_samples),
+        )
+        return {
+            "score": float(bundle["score_adjusted"]),
+            "score_raw": float(bundle["score_raw"]),
+            "score_calibrated": float(bundle["score_calibrated"]),
+            "stability": stability,
+            "binding": binding,
+            "uncertainty": float(bundle["uncertainty"]),
+            "ood_distance": float(bundle["ood_distance"]),
+        }
+
+    def _score_calibration_profile(self) -> Dict[str, float]:
+        fallback = {"clip_low": -3.0, "clip_high": 4.0, "center": 0.0, "scale": 1.0}
+        try:
+            dms_df = get_dms_data()
+        except Exception:
+            return fallback
+        if dms_df is None or dms_df.empty or "score" not in dms_df.columns:
+            return fallback
+
+        dms_work = dms_df.copy()
+        if "n_mutations" in dms_work.columns:
+            dms_work = dms_work[dms_work["n_mutations"] == 1].copy()
+        scores = pd.to_numeric(dms_work["score"], errors="coerce").dropna().to_numpy(dtype=float)
+        if scores.size < 20:
+            return fallback
+
+        q1, q5, q95, q99 = np.percentile(scores, [1, 5, 95, 99])
+        center = float(np.median(scores))
+        scale = float(max((q95 - q5) / 2.0, 1e-3))
+        clip_low = float(min(q1, q5))
+        clip_high = float(max(q99, q95))
+        if clip_high <= clip_low:
+            clip_low, clip_high = -3.0, 4.0
+
+        return {"clip_low": clip_low, "clip_high": clip_high, "center": center, "scale": scale}
+
+    def _calibrate_score(self, raw_score: float) -> float:
+        center = float(self.calibration_profile.get("center", 0.0))
+        scale = float(max(self.calibration_profile.get("scale", 1.0), 1e-6))
+        clip_low = float(self.calibration_profile.get("clip_low", -3.0))
+        clip_high = float(self.calibration_profile.get("clip_high", 4.0))
+        squashed = center + scale * np.tanh((float(raw_score) - center) / scale)
+        return float(np.clip(squashed, clip_low, clip_high))
+
+    def _estimate_uncertainty(self, pooled: torch.Tensor, mc_samples: int = 8) -> float:
+        assert self.oracle is not None
+        n_samples = max(int(mc_samples), 2)
+        was_training = self.oracle.model.training
+        preds = []
+        try:
+            self.oracle.model.train()
+            with torch.no_grad():
+                for _ in range(n_samples):
+                    preds.append(float(self.oracle.model(pooled).squeeze(-1).mean().item()))
+        except Exception:
+            return 0.0
+        finally:
+            if not was_training:
+                self.oracle.model.eval()
+        return float(np.std(np.asarray(preds, dtype=float)))
+
+    def _build_trust_adjusted_score(
+        self,
+        *,
+        raw_score: float,
+        pooled: Optional[torch.Tensor],
+        pooled_ref: Optional[torch.Tensor],
+        cached_uncertainty: float,
+    ) -> Dict[str, float]:
+        calibrated = self._calibrate_score(raw_score)
+        ood_distance = 0.0
+        if pooled is not None and pooled_ref is not None:
+            with torch.no_grad():
+                ood_distance = float(torch.norm(pooled - pooled_ref, p=2, dim=-1).mean().item())
+
+        adjusted = calibrated - self.uncertainty_weight * float(cached_uncertainty) - self.ood_rank_weight * max(
+            0.0, ood_distance - self.ood_radius
+        )
+        adjusted = float(
+            np.clip(
+                adjusted,
+                float(self.calibration_profile.get("clip_low", -3.0)),
+                float(self.calibration_profile.get("clip_high", 4.0)),
+            )
+        )
+        return {
+            "score_raw": float(raw_score),
+            "score_calibrated": float(calibrated),
+            "score_adjusted": float(adjusted),
+            "uncertainty": float(cached_uncertainty),
+            "ood_distance": float(ood_distance),
+        }
+
+    def _append_rows(self, path: Path, rows: List[Dict[str, Any]]) -> None:
+        if not rows:
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            for row in rows:
+                f.write(json.dumps(row) + "\n")
+
+    def _read_jsonl(self, path: Path) -> pd.DataFrame:
+        if not path.exists():
+            return pd.DataFrame()
+        rows = []
+        with path.open("r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    logger.warning("Skipping malformed jsonl row from %s", path)
+        return pd.DataFrame(rows)
+
+    def _build_summary(
+        self,
+        run_id: str,
+        scenario_df: pd.DataFrame,
+        candidate_df: pd.DataFrame,
+        top30_df: pd.DataFrame,
+    ) -> str:
+        lines: List[str] = []
+        lines.append(f"# Campaign Summary: {run_id}")
+        lines.append("")
+        lines.append(f"Generated at: {datetime.now(timezone.utc).isoformat()}")
+        lines.append("")
+        lines.append("## Run Totals")
+        unique_scenarios = 0
+        pass_breakdown: Dict[str, int] = {}
+        if scenario_df is not None and not scenario_df.empty:
+            if "scenario_id" in scenario_df.columns:
+                unique_scenarios = int(scenario_df["scenario_id"].astype(str).nunique())
+            else:
+                unique_scenarios = int(len(scenario_df))
+            if "pass_name" in scenario_df.columns:
+                pass_breakdown = (
+                    scenario_df["pass_name"]
+                    .astype(str)
+                    .value_counts()
+                    .sort_index()
+                    .to_dict()
+                )
+        lines.append(f"- Scenarios (unique): {unique_scenarios}")
+        if pass_breakdown:
+            lines.append(f"- Scenario pass rows: {pass_breakdown}")
+        lines.append(f"- Candidates: {len(candidate_df)}")
+        lines.append(f"- Presentation shortlist: {len(top30_df)}")
+        lines.append("")
+
+        if not candidate_df.empty:
+            best = candidate_df.sort_values("score", ascending=False).head(1).iloc[0]
+            lines.append("## Best Candidate")
+            lines.append(f"- Candidate UID: {best.get('candidate_uid', 'n/a')}")
+            lines.append(f"- Target: {best.get('target_label', 'n/a')}")
+            lines.append(f"- Delivery: {best.get('delivery_method', 'n/a')}")
+            lines.append(f"- Score: {float(best.get('score', 0.0)):.3f}")
+            lines.append(f"- Identity: {float(best.get('identity', 0.0)):.1f}%")
+            lines.append(f"- Mutations: {int(best.get('n_mutations', 0))}")
+            lines.append("")
+
+        if not top30_df.empty:
+            lines.append("## Top 10 from Shortlist")
+            top10 = top30_df.head(10)
+            for _, row in top10.iterrows():
+                lines.append(
+                    f"- #{int(row.get('presentation_rank', 0))}: "
+                    f"{row.get('target_label', 'n/a')} | {row.get('delivery_method', 'n/a')} | "
+                    f"score={float(row.get('score', 0.0)):.3f} | "
+                    f"clinical={float(row.get('clinical_score', np.nan)) if pd.notna(row.get('clinical_score', np.nan)) else 'n/a'}"
+                )
+
+        return "\n".join(lines) + "\n"
+
+
+
+def scenario_matrix_frame(
+    *,
+    include_pairs: bool = True,
+    hotspots: Sequence[str] | None = None,
+    delivery_methods: Sequence[str] | None = None,
+) -> pd.DataFrame:
+    scenarios = build_scenario_matrix(
+        hotspots=hotspots or BIG8_HOTSPOTS,
+        delivery_methods=delivery_methods or DEFAULT_DELIVERY_METHODS,
+        include_pairs=include_pairs,
+    )
+    return scenarios_to_frame(scenarios)
