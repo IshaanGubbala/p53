@@ -22,34 +22,41 @@ The pipeline uses **ESM-2 protein language model embeddings** combined with a **
 
 ## Results
 
-### DMS-Aware Campaign: 108 Scenarios, 8 Cancer Hotspots, 3 Delivery Methods
+### DMS-Aware Campaign: 152 Scenarios, 8 Cancer Hotspots, 3 Delivery Methods
 
 | Metric | Value |
 |--------|-------|
-| Cancer hotspot targets | 25 unique target combinations |
-| Rescue candidates designed | 22 shortlisted from 960 evaluated |
-| Best evidence score | 0.871 (oracle + DMS + functional fraction) |
-| Best rescue DMS Z-score | **-1.79** (strongly functional individually) |
-| Candidates with functional rescues | 55% (12/22 shortlisted) |
+| Campaign scenarios | 108 screen + 44 deep refinement |
+| Total candidates evaluated | 1,176 (528 deep) |
+| Shortlist | **30/30 slots filled** |
+| Best oracle score | **1.711** |
+| Best rescue DMS Z-score | **-2.00** (strongly functional individually) |
+| Candidates with functional rescues | **73%** (22/30 shortlisted) |
+| Mean shortlist DMS Z-score | **-0.691** |
 | Sequence identity to WT | >99% (1-5 mutations from wild-type) |
-| Delivery methods covered | Gene therapy, mRNA therapy, Protein therapy |
-| Target retention rate | 45.8% of deep candidates |
+| Delivery methods covered | Gene therapy (20), mRNA therapy (8), Protein therapy (2) |
+| Unique target combinations | 11 |
 
-### Top Rescue Candidates (Ranked by Combined Evidence)
+### Top Rescue Candidates (Ranked by Oracle Score)
 
-| Target Mutation | Rescue Mutation | Oracle Score | DMS Z-score | Evidence Score | Delivery |
-|-----------------|-----------------|--------------|-------------|----------------|----------|
-| G245S + R175H | **M340S** | 1.675 | **-1.79 (strongly functional)** | 0.871 | Gene therapy |
-| R175H + R273H | **L344K** | 1.671 | **-1.69 (strongly functional)** | 0.861 | mRNA therapy |
-| R273H | **H115M** | 1.667 | **-0.86 (strongly functional)** | 0.788 | mRNA therapy |
-| R273H | **E51R** | 1.656 | **-0.73 (strongly functional)** | 0.774 | Gene therapy |
-| R249S | **D21S** | 1.604 | **-0.78 (strongly functional)** | 0.766 | Gene therapy |
-| R273H | **T140G + A307P** | 1.610 | **-0.68 (functional, both)** | 0.759 | Gene therapy |
-| R248Q | **W91P** | 1.537 | **-0.57 (functional)** | 0.732 | Gene therapy |
-| R273H | Q167S + K305L | 1.660 | -0.73 (1/2 functional) | 0.700 | Gene therapy |
-| R175H + R249S | W91A + S241H + F385K | 1.660 | -0.23 (2/3 functional) | 0.681 | Gene therapy |
+| # | Target Mutation | Rescue Mutation | Oracle Score | DMS Z-score | Delivery |
+|---|-----------------|-----------------|--------------|-------------|----------|
+| 1 | R249S + R273H | **F341K** | 1.695 | **-1.73** | Gene therapy |
+| 2 | R249S + R282W | **L344E** | 1.711 | **-1.95** | mRNA therapy |
+| 3 | R249S + R282W | **L344E** | 1.711 | **-1.95** | Protein therapy |
+| 4 | R248Q + R282W | **M340Q + F341M** | 1.648 | **-1.16** | Gene therapy |
+| 5 | G245S + R282W | **A39M + S241R + K305I** | 1.691 | **-0.57** | Gene therapy |
+| 6 | R249S + R282W | **L344E + G389E** | 1.680 | **-1.13** | Gene therapy |
+| 7 | G245S + R175H | **M340S** | 1.675 | **-1.79** | Gene therapy |
+| 8 | R175H + R273H | **L344K** | 1.671 | **-1.69** | mRNA therapy |
+| 9 | G245S + R282W | **F338E** | 1.658 | **-2.00** | Gene therapy |
 
-All top 7 candidates have rescue mutations that are **independently functional** in the Giacomelli 2018 DMS assay (negative Z-score = wild-type-like function retained). This is a key advantage of the DMS-aware optimizer: it steers toward rescue mutations with direct experimental evidence of individual function, rather than relying solely on epistatic compensation.
+All top 9 candidates have rescue mutations that are **independently functional** in the Giacomelli 2018 DMS assay (negative Z-score = wild-type-like function retained). The DMS-aware optimizer steers toward rescue mutations with direct experimental evidence of individual function.
+
+Key findings:
+- **L344E** (tetramerization domain) is the strongest single rescue mutation, compensating for R249S+R282W double mutants with DMS Z = -1.95
+- **Positions 340-344** are a rescue mutation hotspot in the tetramerization domain, appearing in 10/30 shortlisted candidates
+- **All 3 delivery methods** are represented in the shortlist, including protein therapy candidates
 
 ### 3D-Printable Protein Model
 
