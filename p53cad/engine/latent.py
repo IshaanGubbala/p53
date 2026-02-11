@@ -1,12 +1,79 @@
 from __future__ import annotations
 
+import time
 import torch
 import torch.nn.functional as F
 from transformers import EsmForMaskedLM, EsmTokenizer
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Callable, TypeVar
 from pathlib import Path
 import os
+import logging
 from p53cad.core.logging import get_logger
+
+T = TypeVar("T")
+
+
+def _load_with_retry(
+    load_fn: Callable[[], T],
+    description: str,
+    logger: logging.Logger,
+    max_retries: int = 3,
+) -> T:
+    """
+    Attempt *load_fn* up to *max_retries* times with exponential back-off.
+
+    Back-off schedule: 2**( 2*attempt - 1 ) seconds  ->  2 s, 8 s, 32 s
+    for attempts 1, 2, 3 respectively.
+
+    Parameters
+    ----------
+    load_fn : callable
+        Zero-argument callable that returns the loaded artifact.
+    description : str
+        Human-readable label used in log messages (e.g. "ESM-2 tokenizer").
+    logger : logging.Logger
+        Logger instance for warnings / errors.
+    max_retries : int
+        Total number of attempts before giving up.
+
+    Returns
+    -------
+    T
+        Whatever *load_fn* returns on success.
+
+    Raises
+    ------
+    RuntimeError
+        After all retries are exhausted.
+    """
+    last_exc: Optional[Exception] = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return load_fn()
+        except Exception as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                backoff = 2 ** (2 * attempt - 1)  # 2, 8, 32
+                logger.warning(
+                    "Attempt %d/%d to load %s failed: %s  -- retrying in %ds",
+                    attempt,
+                    max_retries,
+                    description,
+                    exc,
+                    backoff,
+                )
+                time.sleep(backoff)
+            else:
+                logger.error(
+                    "All %d attempts to load %s failed.", max_retries, description
+                )
+
+    raise RuntimeError(
+        f"Failed to load {description} after {max_retries} attempts "
+        f"(last error: {last_exc}).  "
+        "Please check your network connection, ensure the HuggingFace Hub is "
+        "reachable, or authenticate with `huggingface-cli login`."
+    )
 
 class ManifoldEmbedder:
     """
@@ -28,24 +95,81 @@ class ManifoldEmbedder:
             self.device = torch.device(device)
             
         self.logger.info(f"Loading ESM-2 model {model_name} on {self.device}...")
+
+        # --- Offline-mode gate ---------------------------------------------------
+        offline = os.environ.get("TRANSFORMERS_OFFLINE", "0") == "1"
+        if offline:
+            self.logger.info(
+                "TRANSFORMERS_OFFLINE=1 detected -- loading from local cache only "
+                "(no download retries)."
+            )
+
         try:
-            self.tokenizer = EsmTokenizer.from_pretrained(model_name)
-            try:
-                # Explainability requires attention tensors; SDPA often omits them.
-                self.model = EsmForMaskedLM.from_pretrained(
-                    model_name,
-                    attn_implementation="eager",
-                ).to(self.device)
-            except TypeError:
-                self.logger.warning(
-                    "Current transformers build does not support attn_implementation arg; "
-                    "loading default attention backend."
+            # --- Tokenizer --------------------------------------------------------
+            if offline:
+                self.tokenizer = EsmTokenizer.from_pretrained(model_name, local_files_only=True)
+            else:
+                self.tokenizer = _load_with_retry(
+                    load_fn=lambda: EsmTokenizer.from_pretrained(model_name),
+                    description=f"ESM-2 tokenizer ({model_name})",
+                    logger=self.logger,
                 )
-                self.model = EsmForMaskedLM.from_pretrained(model_name).to(self.device)
+
+            # --- Model ------------------------------------------------------------
+            def _load_model() -> EsmForMaskedLM:
+                try:
+                    # Explainability requires attention tensors; SDPA often omits them.
+                    return EsmForMaskedLM.from_pretrained(
+                        model_name,
+                        attn_implementation="eager",
+                    )
+                except TypeError:
+                    self.logger.warning(
+                        "Current transformers build does not support attn_implementation arg; "
+                        "loading default attention backend."
+                    )
+                    return EsmForMaskedLM.from_pretrained(model_name)
+
+            def _load_model_offline() -> EsmForMaskedLM:
+                try:
+                    return EsmForMaskedLM.from_pretrained(
+                        model_name,
+                        attn_implementation="eager",
+                        local_files_only=True,
+                    )
+                except TypeError:
+                    self.logger.warning(
+                        "Current transformers build does not support attn_implementation arg; "
+                        "loading default attention backend."
+                    )
+                    return EsmForMaskedLM.from_pretrained(model_name, local_files_only=True)
+
+            if offline:
+                self.model = _load_model_offline().to(self.device)
+            else:
+                self.model = _load_with_retry(
+                    load_fn=_load_model,
+                    description=f"ESM-2 model ({model_name})",
+                    logger=self.logger,
+                ).to(self.device)
+
             # Ensure hidden states are always returned to avoid NoneType errors during navigation
-            self.model.config.output_hidden_states = True 
+            self.model.config.output_hidden_states = True
             self.model.eval()
             self.logger.info("Model loaded successfully with output_hidden_states=True.")
+        except OSError as e:
+            if offline:
+                self.logger.error(
+                    "TRANSFORMERS_OFFLINE=1 is set but the model '%s' was not found "
+                    "in the local cache.  Either download the model first with "
+                    "`huggingface-cli download %s` or unset the TRANSFORMERS_OFFLINE "
+                    "environment variable to allow network access.",
+                    model_name,
+                    model_name,
+                )
+            else:
+                self.logger.error(f"Failed to load model: {e}")
+            raise
         except Exception as e:
             self.logger.error(f"Failed to load model: {e}")
             raise

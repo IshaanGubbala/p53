@@ -99,9 +99,67 @@ class CampaignRunner:
         self.ood_radius = 1.75
         self.ood_loss_weight = 12.0
 
+        # ── DMS quality lookup for evidence-aware optimization ──
+        self._dms_lookup: Dict[Tuple[int, str], float] = {}
+        self._dms_quality_tensor: Optional[torch.Tensor] = None
+        self._load_dms_lookup()
+
         # ── Performance caches (populated lazily, cleared between runs) ──
         self._emb_cache: Dict[str, torch.Tensor] = {}
         self._baseline_cache: Dict[str, Dict[str, float]] = {}
+
+    def _load_dms_lookup(self) -> None:
+        """Load raw DMS Z-scores into a (position, amino_acid) → Z-score dict."""
+        dms_path = Path(__file__).parent.parent.parent / "data" / "raw" / "p53_DMS_Giacomelli_2018.csv"
+        if not dms_path.exists():
+            logger.warning("DMS CSV not found at %s; DMS-aware optimization disabled", dms_path)
+            return
+        try:
+            raw = pd.read_csv(dms_path)
+            score_col = "A549_p53WT_Nutlin-3_Z-score"
+            if score_col not in raw.columns:
+                logger.warning("DMS score column '%s' not found; DMS-aware optimization disabled", score_col)
+                return
+            for _, row in raw.iterrows():
+                pos = int(row.get("Position", 0))
+                aa = str(row.get("AA_variant", ""))
+                z = row.get(score_col)
+                if pd.isna(z) or pos < 1 or pos > len(P53_WT) or len(aa) != 1:
+                    continue
+                self._dms_lookup[(pos, aa.upper())] = float(z)
+            logger.info("Loaded %d DMS entries for evidence-aware optimization", len(self._dms_lookup))
+        except Exception as exc:
+            logger.warning("Failed to load DMS lookup: %s", exc)
+
+    def _get_dms_quality_tensor(self, device: torch.device) -> Optional[torch.Tensor]:
+        """Build (seq_len, 20) tensor of raw DMS Z-scores for differentiable DMS penalty.
+
+        Values: raw Nutlin-3 Z-scores (negative = functional = good for rescue).
+        Missing entries default to 0.0 (neutral — no guidance).
+        """
+        if not self._dms_lookup:
+            return None
+        if self._dms_quality_tensor is not None and self._dms_quality_tensor.device == device:
+            return self._dms_quality_tensor
+
+        assert self.embedder is not None
+        # Map AA letters → index in AA_IDS
+        aa_to_idx: Dict[str, int] = {}
+        for i, aa_id in enumerate(AA_IDS):
+            tokens = self.embedder.tokenizer.convert_ids_to_tokens([aa_id])
+            if tokens:
+                aa_to_idx[str(tokens[0]).upper()] = i
+
+        tensor = torch.zeros(len(P53_WT), len(AA_IDS), device=device)
+        filled = 0
+        for (pos, aa), z_score in self._dms_lookup.items():
+            if aa in aa_to_idx and 1 <= pos <= len(P53_WT):
+                tensor[pos - 1, aa_to_idx[aa]] = z_score
+                filled += 1
+
+        logger.info("DMS quality tensor: %d/%d entries filled on %s", filled, len(self._dms_lookup), device)
+        self._dms_quality_tensor = tensor
+        return tensor
 
     def _load_models(self) -> None:
         if self.embedder is not None and self.oracle is not None and self.clinical is not None:
@@ -371,6 +429,9 @@ class CampaignRunner:
             },
         )
 
+        # Post-campaign analysis: ESMFold validation, MD scripts, PyMOL scripts
+        post_results = self._post_campaign_analysis(run_id, top30, paths)
+
         return {
             "run_id": run_id,
             "run_dir": str(paths.run_dir),
@@ -378,7 +439,97 @@ class CampaignRunner:
             "n_candidates": int(len(candidate_df)),
             "n_shortlist": int(len(top30)),
             "selected_pass_b": int(len(selected_objs)),
+            "post_analysis": post_results,
         }
+
+    def _post_campaign_analysis(
+        self,
+        run_id: str,
+        top_df: pd.DataFrame,
+        paths: Any,
+    ) -> Dict[str, Any]:
+        """Run post-campaign analysis: ESMFold validation, MD scripts, PyMOL scripts."""
+        results: Dict[str, Any] = {}
+        run_dir = paths.run_dir
+
+        # 1. ESMFold structural validation for all shortlisted candidates
+        try:
+            from p53cad.engine.md_validation import StructurePredictor, FreeEnergyCalculator
+
+            predictor = StructurePredictor()
+            fe_calc = FreeEnergyCalculator()
+            validations = []
+
+            for _, row in top_df.iterrows():
+                seq = str(row.get("sequence", ""))
+                target_label = str(row.get("target_label", "unknown"))
+                muts = json.loads(str(row.get("mutations_json", "[]")))
+                rescue_muts = [m for m in muts if m not in json.loads(str(row.get("targets_json", "[]")))]
+
+                pred = predictor.predict_esmfold(seq, name=target_label)
+                fe_results = [fe_calc.calculate_ddg(P53_WT, seq, m) for m in rescue_muts]
+
+                validations.append({
+                    "target_label": target_label,
+                    "rescue_mutations": rescue_muts,
+                    "mean_plddt": float(pred.mean_plddt),
+                    "model": pred.model,
+                    "n_residues": len(seq),
+                    "mean_ddg": float(np.mean([fe.ddg_average for fe in fe_results])) if fe_results else 0.0,
+                    "max_ddg": float(max((fe.ddg_average for fe in fe_results), default=0.0)),
+                    "is_estimated": pred.pdb_string.startswith("HEADER    ESTIMATED"),
+                })
+
+            val_path = run_dir / "esmfold_validation.json"
+            val_path.write_text(json.dumps(validations, indent=2), encoding="utf-8")
+            results["esmfold_validations"] = len(validations)
+            logger.info("ESMFold validation: %d candidates validated -> %s", len(validations), val_path)
+        except Exception as exc:
+            logger.warning("ESMFold validation failed: %s", exc)
+            results["esmfold_error"] = str(exc)
+
+        # 2. Generate MD validation scripts for top 5 candidates
+        try:
+            from p53cad.engine.md_validation import MDSimulationGenerator
+
+            md_gen = MDSimulationGenerator()
+            md_dir = run_dir / "md_scripts"
+            md_dir.mkdir(exist_ok=True)
+            n_md = 0
+
+            for _, row in top_df.head(5).iterrows():
+                seq = str(row.get("sequence", ""))
+                target_label = str(row.get("target_label", "unknown"))
+                muts = json.loads(str(row.get("mutations_json", "[]")))
+                safe_name = target_label.replace("+", "_").replace(" ", "_")
+                config = md_gen.generate_config(safe_name, seq, muts)
+
+                for plat in ["openmm", "gromacs"]:
+                    script = md_gen.generate_script(config, plat)
+                    ext = ".py" if plat == "openmm" else ".sh"
+                    script_path = md_dir / f"{safe_name}_{plat}{ext}"
+                    script_path.write_text(script, encoding="utf-8")
+                    n_md += 1
+
+            results["md_scripts"] = n_md
+            logger.info("MD scripts: %d files generated -> %s", n_md, md_dir)
+        except Exception as exc:
+            logger.warning("MD script generation failed: %s", exc)
+            results["md_error"] = str(exc)
+
+        # 3. Generate PyMOL visualization scripts for top 5 candidates
+        try:
+            from p53cad.viz.pymol import PyMolGenerator
+
+            pymol_gen = PyMolGenerator()
+            pymol_paths = pymol_gen.generate_campaign_pml(top_df, run_dir / "pymol", top_n=5)
+            results["pymol_scripts"] = len(pymol_paths)
+            logger.info("PyMOL scripts: %d files generated", len(pymol_paths))
+        except Exception as exc:
+            logger.warning("PyMOL script generation failed: %s", exc)
+            results["pymol_error"] = str(exc)
+
+        return results
 
     def report_run(self, run_id: str, shortlist_n: int = 30) -> Dict[str, Any]:
         bundle = self.store.load_run_bundle(run_id)
@@ -455,6 +606,7 @@ class CampaignRunner:
         locked_indices = [p - 1 for p in lock_positions_sorted]
 
         baseline = self._get_cached_baseline(target_seq, pooled_target_ref, mc_samples=config["mc_samples"])
+        dms_quality = self._get_dms_quality_tensor(emb_target_ref.device)
 
         candidates: List[Dict[str, Any]] = []
         trajectories: List[Dict[str, Any]] = []
@@ -491,6 +643,7 @@ class CampaignRunner:
                         max_mutations=max_mutations,
                         locked_indices=locked_indices,
                         baseline_score=float(baseline["score"]),
+                        dms_quality=dms_quality,
                     )
                     candidates.append(cand)
                     trajectories.extend(traj_rows)
@@ -533,6 +686,7 @@ class CampaignRunner:
         max_mutations: int,
         locked_indices: List[int],
         baseline_score: float,
+        dms_quality: Optional[torch.Tensor] = None,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         assert self.embedder is not None
         assert self.oracle is not None
@@ -594,6 +748,19 @@ class CampaignRunner:
             else:
                 l1_penalty = 40.0 * (emb - emb_wt).abs().mean(dim=(1, 2))
 
+            # DMS quality penalty: steer optimizer toward individually functional rescue mutations.
+            # dms_quality has raw Nutlin-3 Z-scores: negative = functional (good), positive = LoF (bad).
+            # Expected DMS = sum_over_AAs(P(aa|pos) * Z(pos, aa)), weighted by mutation probability.
+            if dms_quality is not None:
+                expected_dms = (probs_aa * dms_quality.unsqueeze(0)).sum(dim=-1)  # (batch, seq_len)
+                mut_prob = 1.0 - wt_probs  # probability of mutation at each position
+                weighted_dms = mut_prob * expected_dms
+                # Only apply to non-locked positions (rescue sites, not cancer targets)
+                dms_mask = l1_mask if locked_indices else torch.ones(emb.size(1), device=emb.device, dtype=torch.bool)
+                dms_penalty = 25.0 * weighted_dms[:, dms_mask].mean(dim=-1)
+            else:
+                dms_penalty = torch.zeros_like(raw_score_t)
+
             loss_vec = (
                 score_term
                 + stability_term
@@ -606,6 +773,7 @@ class CampaignRunner:
                 + binding_penalty
                 + lock_penalty
                 + l1_penalty
+                + dms_penalty
             )
 
             loss = loss_vec.mean()
@@ -667,6 +835,7 @@ class CampaignRunner:
                     "loss_binding_penalty": float(binding_penalty[0].item()),
                     "loss_lock_penalty": float(lock_penalty[0].item()),
                     "loss_l1_penalty": float(l1_penalty[0].item()),
+                    "loss_dms_penalty": float(dms_penalty[0].item()),
                 }
                 trajectory.append(state)
 
@@ -692,6 +861,22 @@ class CampaignRunner:
         final_state = best_valid_state if best_valid_state is not None else trajectory[-1]
         final_muts = json.loads(final_state.get("mutations_json", "[]"))
         final_positions = json.loads(final_state.get("mut_positions_json", "[]"))
+
+        # Compute rescue DMS quality: mean raw Z-score of non-target mutations
+        target_set = set(str(t).strip().upper() for t in scenario.targets)
+        rescue_muts = [m for m in final_muts if m not in target_set]
+        rescue_dms_scores = []
+        n_functional_rescues = 0
+        for rm in rescue_muts:
+            parsed = parse_single_mutation(rm)
+            if parsed is not None:
+                _, pos, var_aa = parsed
+                z = self._dms_lookup.get((pos, var_aa))
+                if z is not None:
+                    rescue_dms_scores.append(z)
+                    if z < 0:
+                        n_functional_rescues += 1
+        rescue_dms_mean = float(np.mean(rescue_dms_scores)) if rescue_dms_scores else 0.0
 
         candidate_uid = (
             f"{scenario.scenario_id}|{pass_name}|rep{repeat_idx}|rst{restart_idx}|trial{trial_idx}"
@@ -720,6 +905,9 @@ class CampaignRunner:
             "mut_positions_json": json.dumps(final_positions),
             "uncertainty": float(final_state.get("uncertainty", 0.0)),
             "ood_distance": float(final_state.get("ood_distance", 0.0)),
+            "rescue_dms_mean": float(rescue_dms_mean),
+            "n_functional_rescues": int(n_functional_rescues),
+            "n_rescue_mutations": int(len(rescue_muts)),
             "meets_constraints": bool(
                 float(final_state["identity"]) >= min_identity
                 and float(final_state["stability"]) >= min_stability

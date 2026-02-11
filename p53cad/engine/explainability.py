@@ -9,6 +9,8 @@ Provides mechanistic insights into WHY rescue mutations work through:
 """
 
 import numpy as np
+import os
+import math
 from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -1019,6 +1021,291 @@ class EnergyDecomposer:
 
         return energy
 
+    # ------------------------------------------------------------------
+    # Structure-aware contact analysis
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_ca_coordinates(pdb_path: str) -> Dict[int, np.ndarray]:
+        """
+        Parse a PDB file and extract CA atom coordinates per residue.
+
+        Only reads ATOM records where the atom name is ' CA '.  Returns a
+        dict mapping residue sequence number (int) to its 3-D coordinate
+        as a numpy array.  No BioPython dependency -- plain text parsing.
+        """
+        ca_coords: Dict[int, np.ndarray] = {}
+        with open(pdb_path, 'r') as fh:
+            for line in fh:
+                if not line.startswith("ATOM"):
+                    continue
+                atom_name = line[12:16].strip()
+                if atom_name != "CA":
+                    continue
+                try:
+                    res_seq = int(line[22:26].strip())
+                    x = float(line[30:38].strip())
+                    y = float(line[38:46].strip())
+                    z = float(line[46:54].strip())
+                    # Keep the first CA occurrence for each residue number
+                    if res_seq not in ca_coords:
+                        ca_coords[res_seq] = np.array([x, y, z])
+                except (ValueError, IndexError):
+                    continue
+        return ca_coords
+
+    @staticmethod
+    def _find_contacts(ca_coords: Dict[int, np.ndarray],
+                       query_positions: List[int],
+                       cutoff: float = 10.0
+                       ) -> Dict[int, List[Tuple[int, float]]]:
+        """
+        For each query position, find all residues whose CA-CA distance
+        is below *cutoff* Angstroms.
+
+        Returns
+        -------
+        contacts : dict
+            Mapping from each query position to a list of
+            ``(neighbor_resid, distance)`` tuples sorted by distance.
+        """
+        contacts: Dict[int, List[Tuple[int, float]]] = {}
+        all_resids = sorted(ca_coords.keys())
+
+        for qpos in query_positions:
+            if qpos not in ca_coords:
+                contacts[qpos] = []
+                continue
+            q_xyz = ca_coords[qpos]
+            neighbours: List[Tuple[int, float]] = []
+            for rid in all_resids:
+                if rid == qpos:
+                    continue
+                diff = ca_coords[rid] - q_xyz
+                dist = math.sqrt(float(diff[0]**2 + diff[1]**2 + diff[2]**2))
+                if dist < cutoff:
+                    neighbours.append((rid, dist))
+            neighbours.sort(key=lambda x: x[1])
+            contacts[qpos] = neighbours
+
+        return contacts
+
+    def decompose_rescue_structural(
+        self,
+        wt_sequence: str,
+        mutant_sequence: str,
+        rescue_sequence: str,
+        mutations: List[str],
+        pdb_path: str = "data/raw/p53_wt.pdb",
+    ) -> EnergyDecomposition:
+        """
+        Structure-aware energy decomposition that uses the wild-type PDB
+        to weight interaction energies by actual CA-CA contact distances.
+
+        Falls back to :meth:`decompose_rescue` when the PDB file is not
+        available.
+
+        Parameters
+        ----------
+        wt_sequence : str
+            Wild-type p53 sequence.
+        mutant_sequence : str
+            Cancer-mutant p53 sequence.
+        rescue_sequence : str
+            Rescued p53 sequence.
+        mutations : list of str
+            Rescue mutations in the form ``"X<pos>Y"`` (1-indexed).
+        pdb_path : str
+            Path to wild-type PDB (default ``data/raw/p53_wt.pdb``).
+
+        Returns
+        -------
+        EnergyDecomposition
+        """
+        # ----- Graceful fallback if PDB is missing -----------------------
+        if not os.path.exists(pdb_path):
+            warnings.warn(
+                f"PDB file not found at '{pdb_path}'; falling back to "
+                "sequence-only energy decomposition.",
+                stacklevel=2,
+            )
+            return self.decompose_rescue(
+                wt_sequence, mutant_sequence, rescue_sequence, mutations
+            )
+
+        # ----- Parse PDB for CA coordinates ------------------------------
+        try:
+            ca_coords = self._parse_ca_coordinates(pdb_path)
+        except Exception as exc:
+            warnings.warn(
+                f"Failed to parse PDB '{pdb_path}': {exc}; falling back "
+                "to sequence-only energy decomposition.",
+                stacklevel=2,
+            )
+            return self.decompose_rescue(
+                wt_sequence, mutant_sequence, rescue_sequence, mutations
+            )
+
+        if not ca_coords:
+            warnings.warn(
+                f"No CA atoms found in '{pdb_path}'; falling back to "
+                "sequence-only energy decomposition.",
+                stacklevel=2,
+            )
+            return self.decompose_rescue(
+                wt_sequence, mutant_sequence, rescue_sequence, mutations
+            )
+
+        # ----- Parse mutations -------------------------------------------
+        parsed: List[Tuple[int, str, str]] = []
+        mutation_positions: List[int] = []
+        for mut in mutations:
+            orig_aa = mut[0]
+            pos = int(mut[1:-1])          # 1-indexed residue number
+            new_aa = mut[-1]
+            parsed.append((pos - 1, orig_aa, new_aa))   # 0-indexed for _estimate_ helpers
+            mutation_positions.append(pos)               # 1-indexed for PDB lookup
+
+        # ----- Contact analysis ------------------------------------------
+        contact_cutoff = 10.0  # Angstroms
+        contacts = self._find_contacts(ca_coords, mutation_positions, cutoff=contact_cutoff)
+
+        # ----- Baseline (sequence-only) energies -------------------------
+        electrostatic = self._estimate_electrostatic(parsed)
+        vdw           = self._estimate_van_der_waals(parsed)
+        hbonds        = self._estimate_hydrogen_bonds(parsed)
+        solvation     = self._estimate_solvation(parsed)
+        entropy       = self._estimate_entropy(parsed)
+        backbone_strain   = self._estimate_backbone_strain(parsed)
+        sidechain_packing = self._estimate_sidechain_packing(parsed)
+        cavity            = self._estimate_cavity_formation(parsed)
+        dna_binding = self._estimate_dna_binding_change(parsed)
+        zinc        = self._estimate_zinc_coordination(parsed)
+
+        # ----- Structure-aware adjustments -------------------------------
+        # For each mutation position, accumulate an interaction energy
+        # bonus/penalty from all contacting residues weighted by 1/distance.
+        structural_contact_energy = 0.0
+        structural_electrostatic_adj = 0.0
+        structural_packing_adj = 0.0
+
+        charged_aa = {'D': -1, 'E': -1, 'K': +1, 'R': +1, 'H': +0.5}
+        hydrophobicity = {
+            'I': 4.5, 'V': 4.2, 'L': 3.8, 'F': 2.8, 'C': 2.5,
+            'M': 1.9, 'A': 1.8, 'W': -0.9, 'Y': -1.3, 'P': -1.6,
+            'G': -0.4, 'T': -0.7, 'S': -0.8, 'H': -3.2, 'E': -3.5,
+            'Q': -3.5, 'D': -3.5, 'N': -3.5, 'K': -3.9, 'R': -4.5,
+        }
+
+        for (zero_pos, orig_aa, new_aa), pdb_pos in zip(parsed, mutation_positions):
+            new_charge = charged_aa.get(new_aa, 0)
+            new_hydro  = hydrophobicity.get(new_aa, 0.0)
+            orig_hydro = hydrophobicity.get(orig_aa, 0.0)
+
+            for neighbor_resid, dist in contacts.get(pdb_pos, []):
+                inv_dist = 1.0 / max(dist, 1.0)  # avoid division by zero
+
+                # Identify the neighbor residue type from the WT sequence
+                seq_idx = neighbor_resid - 1  # convert to 0-indexed
+                if 0 <= seq_idx < len(wt_sequence):
+                    nb_aa = wt_sequence[seq_idx]
+                else:
+                    continue
+
+                nb_charge = charged_aa.get(nb_aa, 0)
+                nb_hydro  = hydrophobicity.get(nb_aa, 0.0)
+
+                # Electrostatic interaction (like charges repel, opposite attract)
+                if new_charge != 0 and nb_charge != 0:
+                    structural_electrostatic_adj += (
+                        -new_charge * nb_charge * inv_dist * 0.5
+                    )
+
+                # Hydrophobic packing: complementary hydrophobics in close
+                # contact stabilize; mismatched polarities destabilize.
+                hydro_product = new_hydro * nb_hydro
+                if hydro_product > 0:
+                    # Both hydrophobic or both polar -- stabilizing
+                    structural_packing_adj -= abs(hydro_product) * inv_dist * 0.05
+                elif hydro_product < 0:
+                    # Mismatch -- destabilizing
+                    structural_packing_adj += abs(hydro_product) * inv_dist * 0.03
+
+                # Functional-site proximity bonus: contacts to key sites
+                # get stronger weighting.
+                if neighbor_resid - 1 in P53_FUNCTIONAL_SITES.get("DNA_binding_direct", []):
+                    structural_contact_energy -= inv_dist * 0.4
+                elif neighbor_resid - 1 in P53_FUNCTIONAL_SITES.get("zinc_coordination", []):
+                    structural_contact_energy -= inv_dist * 0.3
+                elif neighbor_resid - 1 in P53_FUNCTIONAL_SITES.get("hydrophobic_core", []):
+                    structural_contact_energy -= inv_dist * 0.2
+
+        # Apply structural adjustments
+        electrostatic += structural_electrostatic_adj
+        sidechain_packing += structural_packing_adj
+
+        # Rescue bonus (same logic as decompose_rescue)
+        rescue_bonus = 0.0
+        for pos, orig, new in parsed:
+            if pos in P53_FUNCTIONAL_SITES.get("L2_loop", []):
+                rescue_bonus -= 0.8
+            if pos in P53_FUNCTIONAL_SITES.get("DNA_binding_support", []):
+                rescue_bonus -= 1.0
+            if pos in P53_FUNCTIONAL_SITES.get("L3_loop", []):
+                rescue_bonus -= 0.7
+            if new in ['Y', 'F', 'W'] and orig not in ['Y', 'F', 'W']:
+                rescue_bonus -= 0.6
+            if new in ['R', 'K'] and pos not in P53_FUNCTIONAL_SITES.get("hydrophobic_core", []):
+                rescue_bonus -= 0.5
+            if pos in [239, 268, 284, 245]:
+                rescue_bonus -= 0.8
+
+        # Total energy
+        total_ddg = (
+            electrostatic + vdw + hbonds + solvation + entropy
+            + backbone_strain + sidechain_packing + cavity
+            + dna_binding + zinc
+            + structural_contact_energy + rescue_bonus
+        )
+
+        # Dominant mechanism
+        components = {
+            'electrostatic': abs(electrostatic),
+            'van_der_waals': abs(vdw),
+            'hydrogen_bonds': abs(hbonds),
+            'solvation': abs(solvation),
+            'sidechain_packing': abs(sidechain_packing),
+            'dna_binding': abs(dna_binding),
+            'structural_contacts': abs(structural_contact_energy),
+        }
+        dominant = max(components, key=components.get)
+
+        # Quality assessment
+        if total_ddg < -2.0:
+            quality = "excellent"
+        elif total_ddg < 0:
+            quality = "good"
+        elif total_ddg < 2.0:
+            quality = "marginal"
+        else:
+            quality = "poor"
+
+        return EnergyDecomposition(
+            total_ddg=total_ddg,
+            electrostatic=electrostatic,
+            van_der_waals=vdw,
+            hydrogen_bonds=hbonds,
+            solvation=solvation,
+            entropy=entropy,
+            backbone_strain=backbone_strain,
+            sidechain_packing=sidechain_packing,
+            cavity_formation=cavity,
+            dna_binding_change=dna_binding,
+            zinc_coordination_change=zinc,
+            dominant_mechanism=dominant,
+            rescue_quality=quality,
+        )
+
 
 # ============================================================================
 # RESCUE MECHANISM CLASSIFIER
@@ -1039,8 +1326,10 @@ class RescueMechanismClassifier:
         Returns:
             RescueMechanism object with classification and evidence
         """
-        # Get energy decomposition
-        decomp = self.energy_decomposer.decompose_rescue(
+        # Get energy decomposition -- prefer structure-aware version, fall
+        # back to sequence-only automatically (decompose_rescue_structural
+        # handles missing PDB gracefully).
+        decomp = self.energy_decomposer.decompose_rescue_structural(
             wt_sequence, mutant_sequence, rescue_sequence, rescue_mutations
         )
 

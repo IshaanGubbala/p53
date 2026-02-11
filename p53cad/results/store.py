@@ -144,6 +144,13 @@ class CampaignStore:
         paths = self.run_paths(run_id)
         paths.summary_path.write_text(text, encoding="utf-8")
 
+    def write_validation(self, run_id: str, filename: str, data: Any) -> Path:
+        """Write a JSON validation artifact to the run directory."""
+        paths = self.run_paths(run_id)
+        out_path = paths.run_dir / filename
+        out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return out_path
+
     def load_run_bundle(self, run_id: str) -> Dict[str, Any]:
         paths = self.run_paths(run_id)
         manifest = self._read_json(paths.manifest_path)
@@ -213,3 +220,60 @@ class CampaignStore:
         )
         runs = sorted(runs, key=lambda r: str(r.get("updated_at_utc", "")), reverse=True)
         self._write_json(self.index_path, {"runs": runs})
+
+    def generate_pymol_scripts(self, run_id: str, top_n: int = 5) -> list[Path]:
+        """Auto-generate PyMOL PML scripts for a campaign's top candidates.
+
+        This is intended to be called after :meth:`write_top30` (or any
+        finalisation step) so that ready-to-use visualisation scripts are
+        stored alongside the other campaign artefacts.
+
+        Parameters
+        ----------
+        run_id : str
+            The campaign run identifier.
+        top_n : int
+            Number of top candidates to generate scripts for (default 5).
+
+        Returns
+        -------
+        list[Path]
+            Paths of the generated ``.pml`` files, or an empty list if
+            generation was skipped (e.g. no top-30 table found).
+        """
+        paths = self.run_paths(run_id)
+
+        if not paths.top30_path.exists():
+            logger.warning(
+                "Top-30 table not found for run %s – skipping PyMOL generation",
+                run_id,
+            )
+            return []
+
+        top_df = pd.read_parquet(paths.top30_path)
+        if top_df.empty:
+            logger.warning("Top-30 table is empty for run %s", run_id)
+            return []
+
+        pymol_dir = paths.run_dir / "pymol"
+        pymol_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            from p53cad.viz.pymol import PyMolGenerator
+
+            gen = PyMolGenerator()
+            generated = gen.generate_campaign_pml(top_df, pymol_dir, top_n=top_n)
+            logger.info(
+                "Generated %d PyMOL scripts for run %s in %s",
+                len(generated),
+                run_id,
+                pymol_dir,
+            )
+
+            # Record the artefact in the manifest so downstream tools can
+            # discover it.
+            self.update_manifest(run_id, {"artifacts.pymol_dir": str(pymol_dir)})
+            return generated
+        except Exception:
+            logger.exception("Failed to generate PyMOL scripts for run %s", run_id)
+            return []

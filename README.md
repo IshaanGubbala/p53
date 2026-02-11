@@ -22,36 +22,38 @@ The pipeline uses **ESM-2 protein language model embeddings** combined with a **
 
 ## Results
 
-### Campaign: 108 Scenarios, 8 Cancer Hotspots, 3 Delivery Methods
+### DMS-Aware Campaign: 108 Scenarios, 8 Cancer Hotspots, 3 Delivery Methods
 
 | Metric | Value |
 |--------|-------|
-| Cancer hotspot targets | 10 unique target combinations |
-| Rescue candidates designed | 23 shortlisted from 1,176 evaluated |
-| Best oracle score | 1.714 (wild-type-like function) |
+| Cancer hotspot targets | 25 unique target combinations |
+| Rescue candidates designed | 22 shortlisted from 960 evaluated |
+| Best evidence score | 0.871 (oracle + DMS + functional fraction) |
+| Best rescue DMS Z-score | **-1.79** (strongly functional individually) |
+| Candidates with functional rescues | 55% (12/22 shortlisted) |
 | Sequence identity to WT | >99% (1-5 mutations from wild-type) |
 | Delivery methods covered | Gene therapy, mRNA therapy, Protein therapy |
-| Target retention rate | 39.2% of deep candidates |
+| Target retention rate | 45.8% of deep candidates |
 
-### Top Rescue Candidates
+### Top Rescue Candidates (Ranked by Combined Evidence)
 
-| Target Mutation | Rescue Mutation | Oracle Score | DMS Validation | Delivery |
-|-----------------|-----------------|--------------|----------------|----------|
-| R273H + R282W | G244C | 1.714 | Epistatic rescue | Gene therapy |
-| R175H + R249S | S241R | 1.709 | Epistatic rescue | Gene therapy |
-| R249S | M237R + S241R | 1.704 | Epistatic rescue | Gene therapy |
-| R249S + R282W | G389E | 1.701 | F328I: Z = -0.31 (functional) | Gene therapy |
-| R175H + R249S | S241H | 1.699 | Epistatic rescue | Gene therapy |
-| G245S + R249S | V203D | 1.699 | Epistatic rescue | Gene therapy |
-| R273H | F328I | 1.686 | **F328I: Z = -0.96 (strongly functional)** | Gene therapy |
-| R273H + R282W | T118H | 1.667 | **T118H: Z = -0.10 (functional)** | mRNA therapy |
-| R248Q | W91P | 1.598 | **W91P: Z = -0.57 (functional)** | Gene therapy |
+| Target Mutation | Rescue Mutation | Oracle Score | DMS Z-score | Evidence Score | Delivery |
+|-----------------|-----------------|--------------|-------------|----------------|----------|
+| G245S + R175H | **M340S** | 1.675 | **-1.79 (strongly functional)** | 0.871 | Gene therapy |
+| R175H + R273H | **L344K** | 1.671 | **-1.69 (strongly functional)** | 0.861 | mRNA therapy |
+| R273H | **H115M** | 1.667 | **-0.86 (strongly functional)** | 0.788 | mRNA therapy |
+| R273H | **E51R** | 1.656 | **-0.73 (strongly functional)** | 0.774 | Gene therapy |
+| R249S | **D21S** | 1.604 | **-0.78 (strongly functional)** | 0.766 | Gene therapy |
+| R273H | **T140G + A307P** | 1.610 | **-0.68 (functional, both)** | 0.759 | Gene therapy |
+| R248Q | **W91P** | 1.537 | **-0.57 (functional)** | 0.732 | Gene therapy |
+| R273H | Q167S + K305L | 1.660 | -0.73 (1/2 functional) | 0.700 | Gene therapy |
+| R175H + R249S | W91A + S241H + F385K | 1.660 | -0.23 (2/3 functional) | 0.681 | Gene therapy |
 
-Rescue mutations marked **bold** are independently functional in Giacomelli 2018 DMS data (negative Z-score = wild-type-like). Others work through **epistatic compensation** — they are harmful alone but restore function in combination with the cancer mutation.
+All top 7 candidates have rescue mutations that are **independently functional** in the Giacomelli 2018 DMS assay (negative Z-score = wild-type-like function retained). This is a key advantage of the DMS-aware optimizer: it steers toward rescue mutations with direct experimental evidence of individual function, rather than relying solely on epistatic compensation.
 
 ### 3D-Printable Protein Model
 
-The best rescue candidate (R273H+R282W rescued by G244C) is exported as a 3MF file for 3D printing, with cancer mutation sites colored red and rescue sites colored green. Generated from the AlphaFold wild-type p53 structure (AF-P04637-F1-model_v6).
+The best rescue candidate (G245S+R175H rescued by M340S) is exported as a 3MF file for 3D printing with per-triangle material coloring: **black** = protein surface, **red** = cancer mutation sites (R175H, G245S), **green** = rescue mutation site (M340S), **blue** = DNA-binding domain (residues 94-292). Generated from the AlphaFold wild-type p53 structure (AF-P04637-F1-model_v6). Compatible with OrcaSlicer, PrusaSlicer, and Flashforge slicers.
 
 ---
 
@@ -62,11 +64,14 @@ The best rescue candidate (R273H+R282W rescued by G244C) is exported as a 3MF fi
 1. **Encode**: The cancer-mutant p53 sequence is embedded into ESM-2's 320-dimensional latent space (per position)
 2. **Optimize**: Gradient ascent maximizes a multi-objective loss combining:
    - Functional oracle score (trained on 7,844 DMS variants)
-   - Stability preservation
-   - DNA binding maintenance
+   - **DMS-aware rescue quality** — a differentiable penalty using per-residue experimental fitness data that steers the optimizer toward rescue mutations that are individually functional in the Giacomelli DMS assay
+   - Stability preservation (log-probability packing)
+   - DNA binding maintenance (hotspot charge/latent force)
    - Sequence identity constraint (>90% to wild-type)
    - Target mutation lock (cancer mutations are retained, not "fixed")
 3. **Decode**: The optimized embedding is decoded back to amino acid probabilities, yielding a rescued protein sequence
+
+The DMS-aware penalty computes expected fitness at each position using `E[Z] = Σ P(aa|pos) × Z(pos, aa)`, where P comes from the softmax over amino acids and Z is the experimental Nutlin-3 Z-score. This is fully differentiable, allowing gradient-based optimization to directly incorporate experimental evidence into the rescue mutation search.
 
 ### Campaign System
 
@@ -75,7 +80,7 @@ The campaign runner evaluates all combinations of:
 - **3 delivery methods** (gene therapy, mRNA therapy, protein therapy)
 - **3 optimization profiles** (Balanced, Stability-First, Binding-Optimized)
 
-This produces 108 scenarios in Pass A (screening), then deep-refines the top 40% in Pass B with multiple random restarts and trials. A diversity-aware shortlist selects the top 30 candidates across targets, delivery methods, and optimization profiles.
+This produces 108 scenarios in Pass A (screening), then deep-refines the top 40% in Pass B with multiple random restarts and trials. An evidence-weighted, diversity-aware shortlist selects the top 30 candidates across targets, delivery methods, and optimization profiles — ranking by oracle score, DMS rescue quality, clinical impact, and mutation novelty.
 
 ### Experimental Validation
 

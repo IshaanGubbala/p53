@@ -204,6 +204,7 @@ def select_presentation_shortlist(
     for col, default in [
         ("score", -np.inf),
         ("clinical_score", -np.inf),
+        ("rescue_dms_mean", np.inf),
         ("uncertainty", np.inf),
         ("ood_distance", np.inf),
         ("n_mutations", np.inf),
@@ -218,6 +219,7 @@ def select_presentation_shortlist(
 
     work["score"] = pd.to_numeric(work["score"], errors="coerce").fillna(-np.inf)
     work["clinical_score"] = pd.to_numeric(work["clinical_score"], errors="coerce").fillna(-np.inf)
+    work["rescue_dms_mean"] = pd.to_numeric(work["rescue_dms_mean"], errors="coerce").fillna(np.inf)
     work["uncertainty"] = pd.to_numeric(work["uncertainty"], errors="coerce").fillna(np.inf)
     work["ood_distance"] = pd.to_numeric(work["ood_distance"], errors="coerce").fillna(np.inf)
     work["n_mutations"] = pd.to_numeric(work["n_mutations"], errors="coerce").fillna(np.inf)
@@ -242,8 +244,8 @@ def select_presentation_shortlist(
                 cols.append(needed)
         return pd.DataFrame(columns=cols)
 
-    ranking_cols = ["score", "clinical_score", "uncertainty", "ood_distance", "n_mutations"]
-    ranking_asc = [False, False, True, True, True]
+    ranking_cols = ["score", "clinical_score", "rescue_dms_mean", "uncertainty", "ood_distance", "n_mutations"]
+    ranking_asc = [False, False, True, True, True, True]
 
     work = work.sort_values(by=ranking_cols, ascending=ranking_asc, kind="mergesort").reset_index(drop=True)
     work["_candidate_uid"] = work["candidate_uid"].astype(str)
@@ -273,6 +275,19 @@ def select_presentation_shortlist(
         score_min, score_max = 0.0, 1.0
     score_range = max(score_max - score_min, 1e-6)
     work["_score_norm"] = ((work["score"] - score_min) / score_range).clip(0.0, 1.0)
+
+    # DMS quality bonus: negative rescue_dms_mean = individually functional rescue mutations.
+    # Normalize to [0, 1] where 1 = best DMS quality (most negative Z-scores).
+    finite_dms = work["rescue_dms_mean"][np.isfinite(work["rescue_dms_mean"])]
+    if len(finite_dms) > 1:
+        dms_min = float(finite_dms.min())  # most negative = best
+        dms_max = float(finite_dms.max())
+        dms_range = max(dms_max - dms_min, 1e-6)
+        # Invert: lower Z = higher bonus
+        work["_dms_quality_norm"] = ((dms_max - work["rescue_dms_mean"]) / dms_range).clip(0.0, 1.0)
+    else:
+        work["_dms_quality_norm"] = 0.0
+    work["_dms_quality_norm"] = work["_dms_quality_norm"].fillna(0.0)
 
     desired_delivery = [str(d).strip().lower() for d in (delivery_methods or DEFAULT_DELIVERY_METHODS)]
     selected_indices: List[int] = []
@@ -348,6 +363,7 @@ def select_presentation_shortlist(
 
     novelty_weight = 0.35
     overlap_penalty = 0.20
+    dms_quality_weight = 0.25
 
     def _greedy_utility(idx: int, selected: Sequence[int]) -> tuple[float, float, float]:
         rescue_set = set(work.at[idx, "_rescue_set"])
@@ -358,7 +374,8 @@ def select_presentation_shortlist(
             overlaps = [_jaccard_overlap(rescue_set, set(work.at[s, "_rescue_set"])) for s in selected]
             max_overlap = float(max(overlaps)) if overlaps else 0.0
             novelty = float(1.0 - np.mean(overlaps)) if overlaps else 1.0
-        utility = float(work.at[idx, "_score_norm"]) + (novelty_weight * novelty) - (overlap_penalty * max_overlap)
+        dms_bonus = float(work.at[idx, "_dms_quality_norm"]) * dms_quality_weight
+        utility = float(work.at[idx, "_score_norm"]) + dms_bonus + (novelty_weight * novelty) - (overlap_penalty * max_overlap)
         return utility, novelty, max_overlap
 
     # Fill remaining slots with greedy diversity utility.
