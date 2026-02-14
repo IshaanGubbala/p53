@@ -1,11 +1,158 @@
 [
     {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm",
+        "description": "openmm",
+        "isExtraImport": true,
+        "detail": "openmm",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.app",
+        "description": "openmm.app",
+        "isExtraImport": true,
+        "detail": "openmm.app",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
+        "label": "*",
+        "importPath": "openmm.unit",
+        "description": "openmm.unit",
+        "isExtraImport": true,
+        "detail": "openmm.unit",
+        "documentation": {}
+    },
+    {
         "label": "numpy",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "numpy",
         "description": "numpy",
         "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "mdtraj",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mdtraj",
+        "description": "mdtraj",
+        "detail": "mdtraj",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
         "documentation": {}
     },
     {
@@ -329,6 +476,22 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -346,6 +509,22 @@
     },
     {
         "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Callable",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "TypeVar",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -481,6 +660,46 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Sequence",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Iterable",
         "importPath": "typing",
         "description": "typing",
@@ -617,7 +836,15 @@
         "documentation": {}
     },
     {
-        "label": "Iterable",
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -626,6 +853,14 @@
     },
     {
         "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -753,6 +988,22 @@
         "documentation": {}
     },
     {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
         "label": "dataclass",
         "importPath": "dataclasses",
         "description": "dataclasses",
@@ -785,12 +1036,19 @@
         "documentation": {}
     },
     {
-        "label": "json",
-        "kind": 6,
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
         "isExtraImport": true,
-        "importPath": "json",
-        "description": "json",
-        "detail": "json",
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
         "documentation": {}
     },
     {
@@ -948,22 +1206,6 @@
         "documentation": {}
     },
     {
-        "label": "LatentEmbedder",
-        "importPath": "p53cad.engine.latent",
-        "description": "p53cad.engine.latent",
-        "isExtraImport": true,
-        "detail": "p53cad.engine.latent",
-        "documentation": {}
-    },
-    {
-        "label": "ManifoldWalker",
-        "importPath": "p53cad.engine.latent",
-        "description": "p53cad.engine.latent",
-        "isExtraImport": true,
-        "detail": "p53cad.engine.latent",
-        "documentation": {}
-    },
-    {
         "label": "ManifoldEmbedder",
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
@@ -1068,6 +1310,38 @@
         "documentation": {}
     },
     {
+        "label": "get_logger",
+        "importPath": "p53cad.core.logging",
+        "description": "p53cad.core.logging",
+        "isExtraImport": true,
+        "detail": "p53cad.core.logging",
+        "documentation": {}
+    },
+    {
+        "label": "bootstrap_runtime",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "get_runtime_capabilities",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "log_runtime_capabilities",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
         "label": "bootstrap_runtime",
         "importPath": "p53cad.core.runtime",
         "description": "p53cad.core.runtime",
@@ -1100,15 +1374,7 @@
         "documentation": {}
     },
     {
-        "label": "get_runtime_capabilities",
-        "importPath": "p53cad.core.runtime",
-        "description": "p53cad.core.runtime",
-        "isExtraImport": true,
-        "detail": "p53cad.core.runtime",
-        "documentation": {}
-    },
-    {
-        "label": "log_runtime_capabilities",
+        "label": "bootstrap_runtime",
         "importPath": "p53cad.core.runtime",
         "description": "p53cad.core.runtime",
         "isExtraImport": true,
@@ -1416,7 +1682,23 @@
         "documentation": {}
     },
     {
+        "label": "AttentionPoolingNet",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
         "label": "FunctionalOracle",
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "compute_conditional_rescue_scores",
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
         "isExtraImport": true,
@@ -1440,7 +1722,7 @@
         "documentation": {}
     },
     {
-        "label": "FunctionalOracle",
+        "label": "compute_masked_marginal_pll",
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
         "isExtraImport": true,
@@ -1586,15 +1868,6 @@
         "documentation": {}
     },
     {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
-        "documentation": {}
-    },
-    {
         "label": "RotatingFileHandler",
         "importPath": "logging.handlers",
         "description": "logging.handlers",
@@ -1711,28 +1984,21 @@
         "documentation": {}
     },
     {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
         "label": "subprocess",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "subprocess",
         "description": "subprocess",
         "detail": "subprocess",
+        "documentation": {}
+    },
+    {
+        "label": "math",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "math",
+        "description": "math",
+        "detail": "math",
         "documentation": {}
     },
     {
@@ -1768,6 +2034,14 @@
         "documentation": {}
     },
     {
+        "label": "get_pairwise_epistasis_lookup",
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "isExtraImport": true,
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
         "label": "parse_single_mutation",
         "importPath": "p53cad.data.dms",
         "description": "p53cad.data.dms",
@@ -1792,15 +2066,7 @@
         "documentation": {}
     },
     {
-        "label": "P53_WT",
-        "importPath": "p53cad.data.dms",
-        "description": "p53cad.data.dms",
-        "isExtraImport": true,
-        "detail": "p53cad.data.dms",
-        "documentation": {}
-    },
-    {
-        "label": "apply_mutation",
+        "label": "parse_single_mutation",
         "importPath": "p53cad.data.dms",
         "description": "p53cad.data.dms",
         "isExtraImport": true,
@@ -1930,55 +2196,6 @@
         "documentation": {}
     },
     {
-        "label": "EsmForMaskedLM",
-        "importPath": "transformers",
-        "description": "transformers",
-        "isExtraImport": true,
-        "detail": "transformers",
-        "documentation": {}
-    },
-    {
-        "label": "EsmTokenizer",
-        "importPath": "transformers",
-        "description": "transformers",
-        "isExtraImport": true,
-        "detail": "transformers",
-        "documentation": {}
-    },
-    {
-        "label": "*",
-        "importPath": "openmm",
-        "description": "openmm",
-        "isExtraImport": true,
-        "detail": "openmm",
-        "documentation": {}
-    },
-    {
-        "label": "*",
-        "importPath": "openmm.app",
-        "description": "openmm.app",
-        "isExtraImport": true,
-        "detail": "openmm.app",
-        "documentation": {}
-    },
-    {
-        "label": "*",
-        "importPath": "openmm.unit",
-        "description": "openmm.unit",
-        "isExtraImport": true,
-        "detail": "openmm.unit",
-        "documentation": {}
-    },
-    {
-        "label": "mdtraj",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "mdtraj",
-        "description": "mdtraj",
-        "detail": "mdtraj",
-        "documentation": {}
-    },
-    {
         "label": "torch.nn",
         "kind": 6,
         "isExtraImport": true,
@@ -1988,12 +2205,19 @@
         "documentation": {}
     },
     {
-        "label": "torch.optim",
-        "kind": 6,
+        "label": "DataLoader",
+        "importPath": "torch.utils.data",
+        "description": "torch.utils.data",
         "isExtraImport": true,
-        "importPath": "torch.optim",
-        "description": "torch.optim",
-        "detail": "torch.optim",
+        "detail": "torch.utils.data",
+        "documentation": {}
+    },
+    {
+        "label": "Dataset",
+        "importPath": "torch.utils.data",
+        "description": "torch.utils.data",
+        "isExtraImport": true,
+        "detail": "torch.utils.data",
         "documentation": {}
     },
     {
@@ -2021,11 +2245,28 @@
         "documentation": {}
     },
     {
-        "label": "tqdm",
-        "importPath": "tqdm",
-        "description": "tqdm",
+        "label": "EsmForMaskedLM",
+        "importPath": "transformers",
+        "description": "transformers",
         "isExtraImport": true,
-        "detail": "tqdm",
+        "detail": "transformers",
+        "documentation": {}
+    },
+    {
+        "label": "EsmTokenizer",
+        "importPath": "transformers",
+        "description": "transformers",
+        "isExtraImport": true,
+        "detail": "transformers",
+        "documentation": {}
+    },
+    {
+        "label": "torch.optim",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "torch.optim",
+        "description": "torch.optim",
+        "detail": "torch.optim",
         "documentation": {}
     },
     {
@@ -2045,19 +2286,54 @@
         "documentation": {}
     },
     {
-        "label": "product",
-        "importPath": "itertools",
-        "description": "itertools",
-        "isExtraImport": true,
-        "detail": "itertools",
-        "documentation": {}
-    },
-    {
         "label": "griddata",
         "importPath": "scipy.interpolate",
         "description": "scipy.interpolate",
         "isExtraImport": true,
         "detail": "scipy.interpolate",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib",
+        "description": "matplotlib",
+        "detail": "matplotlib",
+        "documentation": {}
+    },
+    {
+        "label": "patheffects",
+        "importPath": "matplotlib",
+        "description": "matplotlib",
+        "isExtraImport": true,
+        "detail": "matplotlib",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib.pyplot",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib.pyplot",
+        "description": "matplotlib.pyplot",
+        "detail": "matplotlib.pyplot",
+        "documentation": {}
+    },
+    {
+        "label": "matplotlib.patches",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "matplotlib.patches",
+        "description": "matplotlib.patches",
+        "detail": "matplotlib.patches",
+        "documentation": {}
+    },
+    {
+        "label": "GridSpec",
+        "importPath": "matplotlib.gridspec",
+        "description": "matplotlib.gridspec",
+        "isExtraImport": true,
+        "detail": "matplotlib.gridspec",
         "documentation": {}
     },
     {
@@ -2103,6 +2379,22 @@
         "documentation": {}
     },
     {
+        "label": "ParetoFront",
+        "importPath": "p53cad.engine.pareto",
+        "description": "p53cad.engine.pareto",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.pareto",
+        "documentation": {}
+    },
+    {
+        "label": "ParetoSolution",
+        "importPath": "p53cad.engine.pareto",
+        "description": "p53cad.engine.pareto",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.pareto",
+        "documentation": {}
+    },
+    {
         "label": "setup",
         "importPath": "setuptools",
         "description": "setuptools",
@@ -2119,57 +2411,723 @@
         "documentation": {}
     },
     {
-        "label": "IMMUNOGENICITY_THRESHOLDS",
+        "label": "SEQUENCE",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "IMMUNOGENICITY_THRESHOLDS = {\n    \"conservative\": 95,  # Minimal risk - suitable for chronic use\n    \"moderate\": 90,      # Low risk - acceptable for most therapies\n    \"aggressive\": 85,    # Moderate risk - requires immunogenicity testing\n    \"experimental\": 80,  # High risk - research only, extensive testing needed\n}\n# 2. P53-SPECIFIC STRUCTURAL REQUIREMENTS\n# ----------------------------------------\n# p53 has distinct domains with different tolerance for mutation:\nP53_DOMAIN_TOLERANCE = {",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "SEQUENCE = \"\"\"MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGPYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSRCMGSMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDWRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD\"\"\"\nNAME = \"G245S_R282W\"\nMUTATIONS = ['S106P', 'S241R', 'G245S', 'R282W']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
         "documentation": {}
     },
     {
-        "label": "P53_DOMAIN_TOLERANCE",
+        "label": "NAME",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "P53_DOMAIN_TOLERANCE = {\n    \"N-terminal_TAD\": {\n        \"residues\": \"1-93\",\n        \"function\": \"Transactivation\",\n        \"mutation_tolerance\": \"HIGH\",  # Intrinsically disordered\n        \"min_identity\": 70,\n    },\n    \"DNA_binding_domain\": {\n        \"residues\": \"94-292\", \n        \"function\": \"DNA recognition\",",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "NAME = \"G245S_R282W\"\nMUTATIONS = ['S106P', 'S241R', 'G245S', 'R282W']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
         "documentation": {}
     },
     {
-        "label": "APPROVED_PRECEDENTS",
+        "label": "MUTATIONS",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "APPROVED_PRECEDENTS = {\n    \"Insulin_analogs\": {\n        \"identity_to_human\": 97,  # Lispro, Aspart (1-3 mutations)\n        \"status\": \"Widely approved\",\n    },\n    \"Erythropoietin_analogs\": {\n        \"identity_to_human\": 96,  # Darbepoetin (5 mutations)\n        \"status\": \"Approved\",\n    },\n    \"Factor_VIII_variants\": {",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "MUTATIONS = ['S106P', 'S241R', 'G245S', 'R282W']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
         "documentation": {}
     },
     {
-        "label": "P53_THERAPY_CONSTRAINTS",
+        "label": "TEMPERATURE",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "P53_THERAPY_CONSTRAINTS = {\n    \"delivery_method\": {\n        \"gene_therapy\": {\n            \"min_identity\": 85,  # Expressed endogenously, lower immunogenicity\n            \"rationale\": \"Intracellular expression reduces immune exposure\"\n        },\n        \"protein_therapy\": {\n            \"min_identity\": 95,  # Direct injection, higher immunogenicity risk\n            \"rationale\": \"Extracellular exposure requires near-native sequence\"\n        },",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "TEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
         "documentation": {}
     },
     {
-        "label": "FUNCTIONAL_REQUIREMENTS",
+        "label": "PRESSURE",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "FUNCTIONAL_REQUIREMENTS = {\n    \"DNA_binding\": {\n        \"critical_residues\": [120, 175, 245, 248, 273, 282],\n        \"max_mutations_allowed\": 2,  # Can compensate with 1-2 changes\n        \"rationale\": \"Core DNA contact points\"\n    },\n    \"zinc_coordination\": {\n        \"critical_residues\": [176, 179, 238, 242],\n        \"max_mutations_allowed\": 0,  # Absolutely conserved\n        \"rationale\": \"Structural zinc finger\"",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "PRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
         "documentation": {}
     },
     {
-        "label": "RECOMMENDED_THRESHOLDS",
+        "label": "TIMESTEP",
         "kind": 5,
-        "importPath": "docs.therapeutic_viability_analysis",
-        "description": "docs.therapeutic_viability_analysis",
-        "peekOfCode": "RECOMMENDED_THRESHOLDS = {\n    \"ISEF_presentation\": {\n        \"min_identity\": 90,\n        \"max_mutations\": 39,  # 10% of 393 residues\n        \"rationale\": \"Demonstrates therapeutic viability + scientific rigor\",\n        \"risk_level\": \"Low\",\n        \"regulatory_path\": \"Feasible\"\n    },\n    \"research_publication\": {\n        \"min_identity\": 85,",
-        "detail": "docs.therapeutic_viability_analysis",
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "TIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "EQUILIBRATION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "EQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "PRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "OUTPUT_INTERVAL",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "OUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:\n# pdb = PDBFile('input.pdb')",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "forcefield",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "forcefield = ForceField('amber14-all.xml', 'tip3p.xml')\n# Create modeller for solvation\nmodeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "modeller",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "modeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',\n    padding=1.0*nanometers,\n    ionicStrength=0.15*molar",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "system",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "system = forcefield.createSystem(\n    modeller.topology,\n    nonbondedMethod=PME,\n    nonbondedCutoff=1.0*nanometers,\n    constraints=HBonds\n)\n# Add barostat for NPT\nsystem.addForce(MonteCarloBarostat(PRESSURE, TEMPERATURE))\n# Integrator\nintegrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "integrator",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "integrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)\n# Platform selection\nplatform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "platform_name",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "platform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:\n            platform = Platform.getPlatformByName('CPU')\nelse:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "simulation",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "simulation = Simulation(modeller.topology, system, integrator, platform)\nsimulation.context.setPositions(modeller.positions)\n# ============================================================================\n# MINIMIZATION\n# ============================================================================\nprint(\"Minimizing energy...\")\nsimulation.minimizeEnergy(maxIterations=1000)\n# ============================================================================\n# EQUILIBRATION\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "traj",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "traj = md.load(f'{NAME}_trajectory.dcd', top=f'{NAME}.pdb')\n# RMSD\nrmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsd",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "rmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsf",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "rmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rg",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "rg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "analysis",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "peekOfCode": "analysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),\n    \"rg_std\": float(rg.std()),\n    \"n_frames\": len(traj),\n    \"simulation_time_ns\": len(traj) * TIMESTEP.value_in_unit(picoseconds) * OUTPUT_INTERVAL / 1000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.G245S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "SEQUENCE = \"\"\"MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRHCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSHCTTIHYNYMCNSHCMGGMNRSPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD\"\"\"\nNAME = \"R175H_R249S\"\nMUTATIONS = ['R175H', 'D228H', 'S241H', 'R249S']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "NAME",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "NAME = \"R175H_R249S\"\nMUTATIONS = ['R175H', 'D228H', 'S241H', 'R249S']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "MUTATIONS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "MUTATIONS = ['R175H', 'D228H', 'S241H', 'R249S']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TEMPERATURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "TEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRESSURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "PRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TIMESTEP",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "TIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "EQUILIBRATION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "EQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "PRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "OUTPUT_INTERVAL",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "OUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:\n# pdb = PDBFile('input.pdb')",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "forcefield",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "forcefield = ForceField('amber14-all.xml', 'tip3p.xml')\n# Create modeller for solvation\nmodeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "modeller",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "modeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',\n    padding=1.0*nanometers,\n    ionicStrength=0.15*molar",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "system",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "system = forcefield.createSystem(\n    modeller.topology,\n    nonbondedMethod=PME,\n    nonbondedCutoff=1.0*nanometers,\n    constraints=HBonds\n)\n# Add barostat for NPT\nsystem.addForce(MonteCarloBarostat(PRESSURE, TEMPERATURE))\n# Integrator\nintegrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "integrator",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "integrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)\n# Platform selection\nplatform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "platform_name",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "platform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:\n            platform = Platform.getPlatformByName('CPU')\nelse:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "simulation",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "simulation = Simulation(modeller.topology, system, integrator, platform)\nsimulation.context.setPositions(modeller.positions)\n# ============================================================================\n# MINIMIZATION\n# ============================================================================\nprint(\"Minimizing energy...\")\nsimulation.minimizeEnergy(maxIterations=1000)\n# ============================================================================\n# EQUILIBRATION\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "traj",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "traj = md.load(f'{NAME}_trajectory.dcd', top=f'{NAME}.pdb')\n# RMSD\nrmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsd",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "rmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsf",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "rmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rg",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "rg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "analysis",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "peekOfCode": "analysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),\n    \"rg_std\": float(rg.std()),\n    \"n_frames\": len(traj),\n    \"simulation_time_ns\": len(traj) * TIMESTEP.value_in_unit(picoseconds) * OUTPUT_INTERVAL / 1000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R175H_R249S_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "SEQUENCE = \"\"\"MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRSPILTIITLEDSSGNLLGRNSFEVHVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMKRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD\"\"\"\nNAME = \"R249S_R273H\"\nMUTATIONS = ['R249S', 'R273H', 'F341K']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "NAME",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "NAME = \"R249S_R273H\"\nMUTATIONS = ['R249S', 'R273H', 'F341K']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "MUTATIONS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "MUTATIONS = ['R249S', 'R273H', 'F341K']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TEMPERATURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "TEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRESSURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "PRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TIMESTEP",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "TIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "EQUILIBRATION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "EQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "PRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "OUTPUT_INTERVAL",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "OUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:\n# pdb = PDBFile('input.pdb')",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "forcefield",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "forcefield = ForceField('amber14-all.xml', 'tip3p.xml')\n# Create modeller for solvation\nmodeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "modeller",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "modeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',\n    padding=1.0*nanometers,\n    ionicStrength=0.15*molar",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "system",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "system = forcefield.createSystem(\n    modeller.topology,\n    nonbondedMethod=PME,\n    nonbondedCutoff=1.0*nanometers,\n    constraints=HBonds\n)\n# Add barostat for NPT\nsystem.addForce(MonteCarloBarostat(PRESSURE, TEMPERATURE))\n# Integrator\nintegrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "integrator",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "integrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)\n# Platform selection\nplatform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "platform_name",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "platform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:\n            platform = Platform.getPlatformByName('CPU')\nelse:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "simulation",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "simulation = Simulation(modeller.topology, system, integrator, platform)\nsimulation.context.setPositions(modeller.positions)\n# ============================================================================\n# MINIMIZATION\n# ============================================================================\nprint(\"Minimizing energy...\")\nsimulation.minimizeEnergy(maxIterations=1000)\n# ============================================================================\n# EQUILIBRATION\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "traj",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "traj = md.load(f'{NAME}_trajectory.dcd', top=f'{NAME}.pdb')\n# RMSD\nrmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsd",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "rmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsf",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "rmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rg",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "rg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "analysis",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "peekOfCode": "analysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),\n    \"rg_std\": float(rg.std()),\n    \"n_frames\": len(traj),\n    \"simulation_time_ns\": len(traj) * TIMESTEP.value_in_unit(picoseconds) * OUTPUT_INTERVAL / 1000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R273H_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "SEQUENCE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "SEQUENCE = \"\"\"MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRSPILTIITLEDSSGNLLGRNSFEVRVCACPGRDWRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFREENEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD\"\"\"\nNAME = \"R249S_R282W\"\nMUTATIONS = ['R249S', 'R282W', 'L344E']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "NAME",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "NAME = \"R249S_R282W\"\nMUTATIONS = ['R249S', 'R282W', 'L344E']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "MUTATIONS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "MUTATIONS = ['R249S', 'R282W', 'L344E']\n# Simulation parameters\nTEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TEMPERATURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "TEMPERATURE = 310.0 * kelvin\nPRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRESSURE",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "PRESSURE = 1.0 * bar\nTIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "TIMESTEP",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "TIMESTEP = 0.002 * picoseconds\nEQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "EQUILIBRATION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "EQUILIBRATION_STEPS = 50000\nPRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTION_STEPS",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "PRODUCTION_STEPS = 5000000\nOUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "OUTPUT_INTERVAL",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "OUTPUT_INTERVAL = 5000\n# ============================================================================\n# SETUP\n# ============================================================================\nprint(f\"Setting up MD simulation for {NAME}\")\nprint(f\"Sequence length: {len(SEQUENCE)} residues\")\nprint(f\"Mutations: {MUTATIONS}\")\n# Load structure (from ESMFold prediction or PDB)\n# In practice, you would load from file:\n# pdb = PDBFile('input.pdb')",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "forcefield",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "forcefield = ForceField('amber14-all.xml', 'tip3p.xml')\n# Create modeller for solvation\nmodeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "modeller",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "modeller = Modeller(pdb.topology, pdb.positions)\n# Add hydrogens\nmodeller.addHydrogens(forcefield)\n# Add solvent\nprint(\"Adding solvent box...\")\nmodeller.addSolvent(\n    forcefield,\n    model='tip3p',\n    padding=1.0*nanometers,\n    ionicStrength=0.15*molar",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "system",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "system = forcefield.createSystem(\n    modeller.topology,\n    nonbondedMethod=PME,\n    nonbondedCutoff=1.0*nanometers,\n    constraints=HBonds\n)\n# Add barostat for NPT\nsystem.addForce(MonteCarloBarostat(PRESSURE, TEMPERATURE))\n# Integrator\nintegrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "integrator",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "integrator = LangevinMiddleIntegrator(TEMPERATURE, 1/picosecond, TIMESTEP)\n# Platform selection\nplatform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "platform_name",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "platform_name = \"auto\"\nif platform_name == \"auto\":\n    try:\n        platform = Platform.getPlatformByName('CUDA')\n    except:\n        try:\n            platform = Platform.getPlatformByName('OpenCL')\n        except:\n            platform = Platform.getPlatformByName('CPU')\nelse:",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "simulation",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "simulation = Simulation(modeller.topology, system, integrator, platform)\nsimulation.context.setPositions(modeller.positions)\n# ============================================================================\n# MINIMIZATION\n# ============================================================================\nprint(\"Minimizing energy...\")\nsimulation.minimizeEnergy(maxIterations=1000)\n# ============================================================================\n# EQUILIBRATION\n# ============================================================================",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "traj",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "traj = md.load(f'{NAME}_trajectory.dcd', top=f'{NAME}.pdb')\n# RMSD\nrmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsd",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "rmsd = md.rmsd(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"RMSD: {rmsd.mean()*10:.2f} ± {rmsd.std()*10:.2f} Å\")\n# RMSF\nrmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rmsf",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "rmsf = md.rmsf(traj, traj[0], atom_indices=traj.topology.select('name CA'))\nprint(f\"Mean RMSF: {rmsf.mean()*10:.2f} Å\")\n# Radius of gyration\nrg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "rg",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "rg = md.compute_rg(traj)\nprint(f\"Radius of gyration: {rg.mean()*10:.2f} ± {rg.std()*10:.2f} Å\")\n# Save analysis\nanalysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "documentation": {}
+    },
+    {
+        "label": "analysis",
+        "kind": 5,
+        "importPath": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "description": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
+        "peekOfCode": "analysis = {\n    \"name\": NAME,\n    \"mutations\": MUTATIONS,\n    \"rmsd_mean\": float(rmsd.mean()),\n    \"rmsd_std\": float(rmsd.std()),\n    \"rmsf_mean\": float(rmsf.mean()),\n    \"rg_mean\": float(rg.mean()),\n    \"rg_std\": float(rg.std()),\n    \"n_frames\": len(traj),\n    \"simulation_time_ns\": len(traj) * TIMESTEP.value_in_unit(picoseconds) * OUTPUT_INTERVAL / 1000",
+        "detail": "data.campaigns.campaign_20260211_130341.md_scripts.R249S_R282W_openmm",
         "documentation": {}
     },
     {
@@ -2960,7 +3918,7 @@
         "kind": 2,
         "importPath": "p53cad.cli.main",
         "description": "p53cad.cli.main",
-        "peekOfCode": "def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed, hidden_dim, num_layers, dropout):\n    \"\"\"Train the Functional Oracle on DMS data.\"\"\"\n    logger = get_logger(\"p53cad.cli.train\")\n    logger.info(\"Starting training pipeline...\")\n    from p53cad.data.dms import load_dms_data\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.engine.oracle import FunctionalOracle\n    # Logic ported from run_functional_training.py\n    df = load_dms_data(dms)\n    embedder = ManifoldEmbedder()",
+        "peekOfCode": "def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed, hidden_dim, num_layers, dropout, arch):\n    \"\"\"Train the Functional Oracle on DMS data.\"\"\"\n    logger = get_logger(\"p53cad.cli.train\")\n    logger.info(\"Starting training pipeline...\")\n    from p53cad.data.dms import load_dms_data\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.engine.oracle import FunctionalOracle\n    # Logic ported from run_functional_training.py\n    df = load_dms_data(dms)\n    embedder = ManifoldEmbedder()",
         "detail": "p53cad.cli.main",
         "documentation": {}
     },
@@ -3123,6 +4081,24 @@
         "importPath": "p53cad.data.dms",
         "description": "p53cad.data.dms",
         "peekOfCode": "def get_mutation_statistics(df: pd.DataFrame) -> dict:\n    \"\"\"\n    Compute statistics about the DMS dataset.\n    \"\"\"\n    stats = {\n        'total_entries': len(df),\n        'unique_positions': df['pos'].nunique() if 'pos' in df.columns else 0,\n        'score_mean': df['score'].mean(),\n        'score_std': df['score'].std(),\n        'score_min': df['score'].min(),",
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "load_double_mutant_data",
+        "kind": 2,
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "peekOfCode": "def load_double_mutant_data(path: Optional[Path] = None) -> pd.DataFrame:\n    \"\"\"Load double-mutant DMS data from external source.\n    Expected CSV columns: pos1, aa1, pos2, aa2, score (or mutation column\n    with comma-separated pairs like 'R175H,N268D').\n    Falls back to ``data/raw/p53_DMS_double_mutants.csv`` when *path* is None.\n    Returns an empty DataFrame if the file is not found (graceful degradation).\n    \"\"\"\n    default_path = Path(__file__).parent.parent.parent / \"data\" / \"raw\" / \"p53_DMS_double_mutants.csv\"\n    path = Path(path) if path else default_path\n    if not path.exists():",
+        "detail": "p53cad.data.dms",
+        "documentation": {}
+    },
+    {
+        "label": "get_pairwise_epistasis_lookup",
+        "kind": 2,
+        "importPath": "p53cad.data.dms",
+        "description": "p53cad.data.dms",
+        "peekOfCode": "def get_pairwise_epistasis_lookup(\n    dms_df: Optional[pd.DataFrame] = None,\n    double_df: Optional[pd.DataFrame] = None,\n) -> Dict[tuple, float]:\n    \"\"\"Build (pos1, aa1, pos2, aa2) → epistasis score lookup.\n    Uses real double-mutant data when available.  Falls back to an additive\n    model: epistasis = observed_double - (single_A + single_B).  When no\n    double-mutant data exists, returns an empty dict (callers should fall\n    back to structural heuristics).\n    Returns",
         "detail": "p53cad.data.dms",
         "documentation": {}
     },
@@ -3523,6 +4499,24 @@
         "documentation": {}
     },
     {
+        "label": "FeedbackIntegrator",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class FeedbackIntegrator:\n    \"\"\"Integrate experimental results back into the computational pipeline.\n    Supports parsing growth assay and Western blot data, augmenting the DMS\n    training set, and suggesting next candidates via active learning.\n    \"\"\"\n    def parse_growth_assay(self, csv_path: str) -> 'pd.DataFrame':\n        \"\"\"Parse a growth assay CSV into a standardised DataFrame.\n        Expected columns: well, mutation, rescue_mutation, growth_rate,\n        nutlin_conc, replicate.\n        \"\"\"",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
+        "label": "ExperimentalDesigner",
+        "kind": 6,
+        "importPath": "p53cad.engine.experimental",
+        "description": "p53cad.engine.experimental",
+        "peekOfCode": "class ExperimentalDesigner:\n    \"\"\"Generate complete experimental validation packages for campaign output.\"\"\"\n    def design_validation_plate(\n        self,\n        candidates_df: 'pd.DataFrame',\n        plate_format: int = 96,\n    ) -> Dict[str, Any]:\n        \"\"\"Design a validation plate layout with controls.\n        Returns a dict with plate_map (well → sample), controls, and layout.\n        \"\"\"",
+        "detail": "p53cad.engine.experimental",
+        "documentation": {}
+    },
+    {
         "label": "protein_to_dna",
         "kind": 2,
         "importPath": "p53cad.engine.experimental",
@@ -3730,11 +4724,47 @@
         "documentation": {}
     },
     {
+        "label": "_TripletDataset",
+        "kind": 6,
+        "importPath": "p53cad.engine.finetune",
+        "description": "p53cad.engine.finetune",
+        "peekOfCode": "class _TripletDataset(Dataset):\n    \"\"\"Dataset for contrastive triplet training.\"\"\"\n    def __init__(self, anchor_ids, positive_ids, negative_ids):\n        self.anchor_ids = anchor_ids\n        self.positive_ids = positive_ids\n        self.negative_ids = negative_ids\n    def __len__(self):\n        return len(self.anchor_ids)\n    def __getitem__(self, idx):\n        return self.anchor_ids[idx], self.positive_ids[idx], self.negative_ids[idx]",
+        "detail": "p53cad.engine.finetune",
+        "documentation": {}
+    },
+    {
+        "label": "_MLMDataset",
+        "kind": 6,
+        "importPath": "p53cad.engine.finetune",
+        "description": "p53cad.engine.finetune",
+        "peekOfCode": "class _MLMDataset(Dataset):\n    \"\"\"Dataset for masked language model training.\"\"\"\n    def __init__(self, token_ids_list, mask_prob=0.15, mask_token_id=32):\n        self.token_ids_list = token_ids_list\n        self.mask_prob = mask_prob\n        self.mask_token_id = mask_token_id\n    def __len__(self):\n        return len(self.token_ids_list)\n    def __getitem__(self, idx):\n        ids = self.token_ids_list[idx].clone()",
+        "detail": "p53cad.engine.finetune",
+        "documentation": {}
+    },
+    {
+        "label": "ESM2FineTuner",
+        "kind": 6,
+        "importPath": "p53cad.engine.finetune",
+        "description": "p53cad.engine.finetune",
+        "peekOfCode": "class ESM2FineTuner:\n    \"\"\"LoRA fine-tuning of ESM-2 on p53 functional data.\n    Parameters\n    ----------\n    model_name : str\n        HuggingFace model identifier.\n    lora_r : int\n        LoRA rank (default 8).\n    lora_alpha : int\n        LoRA scaling factor (default 16).",
+        "detail": "p53cad.engine.finetune",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "p53cad.engine.finetune",
+        "description": "p53cad.engine.finetune",
+        "peekOfCode": "logger = get_logger(__name__)\nclass _TripletDataset(Dataset):\n    \"\"\"Dataset for contrastive triplet training.\"\"\"\n    def __init__(self, anchor_ids, positive_ids, negative_ids):\n        self.anchor_ids = anchor_ids\n        self.positive_ids = positive_ids\n        self.negative_ids = negative_ids\n    def __len__(self):\n        return len(self.anchor_ids)\n    def __getitem__(self, idx):",
+        "detail": "p53cad.engine.finetune",
+        "documentation": {}
+    },
+    {
         "label": "ManifoldEmbedder",
         "kind": 6,
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
-        "peekOfCode": "class ManifoldEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t6_8M_UR50D\", device: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        if device is None:\n            if torch.backends.mps.is_available():",
+        "peekOfCode": "class ManifoldEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t33_650M_UR50D\", device: Optional[str] = None, lora_path: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        if device is None:\n            if torch.backends.mps.is_available():",
         "detail": "p53cad.engine.latent",
         "documentation": {}
     },
@@ -3744,6 +4774,15 @@
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
         "peekOfCode": "class ManifoldWalker:\n    \"\"\"\n    Performs vector arithmetic and interpolation in the latent space.\n    \"\"\"\n    def __init__(self, embedder: ManifoldEmbedder):\n        self.embedder = embedder\n        self.logger = get_logger(__name__)\n    def interpolate(self, seq_start: str, seq_end: str, steps: int = 10) -> List[str]:\n        \"\"\"\n        Linearly interpolates between two sequences in latent space.",
+        "detail": "p53cad.engine.latent",
+        "documentation": {}
+    },
+    {
+        "label": "T",
+        "kind": 5,
+        "importPath": "p53cad.engine.latent",
+        "description": "p53cad.engine.latent",
+        "peekOfCode": "T = TypeVar(\"T\")\ndef _load_with_retry(\n    load_fn: Callable[[], T],\n    description: str,\n    logger: logging.Logger,\n    max_retries: int = 3,\n) -> T:\n    \"\"\"\n    Attempt *load_fn* up to *max_retries* times with exponential back-off.\n    Back-off schedule: 2**( 2*attempt - 1 ) seconds  ->  2 s, 8 s, 32 s",
         "detail": "p53cad.engine.latent",
         "documentation": {}
     },
@@ -4148,7 +5187,7 @@
         "kind": 6,
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
-        "peekOfCode": "class DMSDataset(Dataset):\n    def __init__(self, sequences: List[str], scores: List[float], embedder: ManifoldEmbedder):\n        self.sequences = sequences\n        self.scores = torch.tensor(scores, dtype=torch.float32)\n        self.embedder = embedder\n        self.cache: Dict[str, torch.Tensor] = {}\n    def __len__(self):\n        return len(self.sequences)\n    def __getitem__(self, idx):\n        seq = self.sequences[idx]",
+        "peekOfCode": "class DMSDataset(Dataset):\n    def __init__(\n        self,\n        sequences: List[str],\n        scores: List[float],\n        embedder: ManifoldEmbedder,\n        per_position: bool = False,\n    ):\n        self.sequences = sequences\n        self.scores = torch.tensor(scores, dtype=torch.float32)",
         "detail": "p53cad.engine.oracle",
         "documentation": {}
     },
@@ -4157,7 +5196,16 @@
         "kind": 6,
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
-        "peekOfCode": "class FunctionalNet(nn.Module):\n    \"\"\"\n    Single-head MLP oracle.\n    \"\"\"\n    def __init__(\n        self,\n        input_dim: int = 320,\n        hidden_dim: int = 128,\n        num_layers: int = 2,\n        dropout: float = 0.2,",
+        "peekOfCode": "class FunctionalNet(nn.Module):\n    \"\"\"\n    Single-head MLP oracle.\n    \"\"\"\n    def __init__(\n        self,\n        input_dim: int = 1280,\n        hidden_dim: int = 128,\n        num_layers: int = 2,\n        dropout: float = 0.2,",
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "AttentionPoolingNet",
+        "kind": 6,
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "peekOfCode": "class AttentionPoolingNet(nn.Module):\n    \"\"\"Oracle with learnable attention pooling over sequence positions.\n    Accepts (batch, seq_len, D) and learns which positions matter for\n    functional scoring, eliminating the mean-pooling bottleneck.\n    Also accepts (batch, D) for backward compatibility (passes through MLP head).\n    Uses delta encoding: subtracts a cached WT baseline from per-position\n    inputs so that mutated positions stand out as nonzero residuals.\n    Without this, single-AA mutations are invisible among 393 identical positions.\n    \"\"\"\n    def __init__(",
         "detail": "p53cad.engine.oracle",
         "documentation": {}
     },
@@ -4166,8 +5214,44 @@
         "kind": 6,
         "importPath": "p53cad.engine.oracle",
         "description": "p53cad.engine.oracle",
-        "peekOfCode": "class FunctionalOracle:\n    def __init__(\n        self,\n        model_path: Path | str = None,\n        input_dim: int = 320,\n        hidden_dim: int = 128,\n        num_layers: int = 2,\n        dropout: float = 0.2,\n        use_rtl: bool = False,\n    ):",
+        "peekOfCode": "class FunctionalOracle:\n    def __init__(\n        self,\n        model_path: Path | str = None,\n        input_dim: int = 1280,\n        hidden_dim: int = 128,\n        num_layers: int = 2,\n        dropout: float = 0.2,\n        use_rtl: bool = False,\n        arch: str = \"legacy_mlp\",",
         "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "compute_masked_marginal_pll",
+        "kind": 2,
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "peekOfCode": "def compute_masked_marginal_pll(\n    embedder: ManifoldEmbedder,\n    sequence: str,\n    mutated_positions: List[int],\n) -> float:\n    \"\"\"Compute masked marginal pseudo-log-likelihood at mutated positions.\n    For each position in *mutated_positions* (1-indexed), mask the token,\n    run ESM-2 forward, and accumulate log P(true_aa | context).  This is\n    the gold-standard zero-shot fitness predictor (Meier et al. 2021).\n    Too expensive for the inner optimisation loop (one forward pass per",
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "compute_conditional_rescue_scores",
+        "kind": 2,
+        "importPath": "p53cad.engine.oracle",
+        "description": "p53cad.engine.oracle",
+        "peekOfCode": "def compute_conditional_rescue_scores(\n    embedder: ManifoldEmbedder,\n    cancer_seq: str,\n    positions: List[int],\n) -> Dict[int, Dict[str, float]]:\n    \"\"\"Compute ESM-2 P(aa | cancer_context) at each position.\n    Masks each position in the cancer sequence, runs ESM-2 forward, and\n    returns the full amino acid log-probability distribution.  This tells\n    us which substitutions ESM-2 considers favorable *in the cancer context*,\n    enabling conditional DMS scoring.",
+        "detail": "p53cad.engine.oracle",
+        "documentation": {}
+    },
+    {
+        "label": "ParetoSolution",
+        "kind": 6,
+        "importPath": "p53cad.engine.pareto",
+        "description": "p53cad.engine.pareto",
+        "peekOfCode": "class ParetoSolution:\n    \"\"\"A single candidate in multi-objective space.\"\"\"\n    candidate_uid: str\n    objectives: Dict[str, float]  # all values to MAXIMIZE\n    pareto_rank: int = 0\n    crowding_distance: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\nclass ParetoFront:\n    \"\"\"NSGA-II non-dominated sorting and crowding distance computation.\n    Usage::",
+        "detail": "p53cad.engine.pareto",
+        "documentation": {}
+    },
+    {
+        "label": "ParetoFront",
+        "kind": 6,
+        "importPath": "p53cad.engine.pareto",
+        "description": "p53cad.engine.pareto",
+        "peekOfCode": "class ParetoFront:\n    \"\"\"NSGA-II non-dominated sorting and crowding distance computation.\n    Usage::\n        front = ParetoFront()\n        for cand in candidates:\n            front.add(ParetoSolution(\n                candidate_uid=cand[\"candidate_uid\"],\n                objectives={\n                    \"oracle_score\": cand[\"score\"],\n                    \"pll\": cand.get(\"pll\", 0.0),",
+        "detail": "p53cad.engine.pareto",
         "documentation": {}
     },
     {
@@ -4342,156 +5426,291 @@
         "documentation": {}
     },
     {
-        "label": "run_blind_validation",
+        "label": "parse_rescue",
         "kind": 2,
-        "importPath": "scripts.blind_validation",
-        "description": "scripts.blind_validation",
-        "peekOfCode": "def run_blind_validation():\n    \"\"\"\n    Simulates a 'Blind Validation' check on mutations not in the Giacomelli training set.\n    \"\"\"\n    print(\"🚀 Running p53CAD Blind Validation Engine...\")\n    # Load Models\n    embedder = LatentEmbedder()\n    walker = ManifoldWalker(embedder)\n    oracle_path = Path(\"data/models/functional_oracle.pt\")\n    if not oracle_path.exists():",
-        "detail": "scripts.blind_validation",
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n    return [m for m in muts if m not in targets]\n# =====================================================================\n# FIGURE 1: Top 15 Candidates — Oracle Score + DMS Z-Score (dual bars)\n# =====================================================================\ndef fig1_top_candidates():\n    fig, ax1 = plt.subplots(figsize=(7.2, 4.5))",
+        "detail": "scripts.generate_figures",
         "documentation": {}
     },
     {
-        "label": "run_optimization",
+        "label": "fig1_top_candidates",
         "kind": 2,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "def run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)\n    # Run optimization\n    for step in range(TEST_STEPS):",
-        "detail": "scripts.grid_search_weights",
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig1_top_candidates():\n    fig, ax1 = plt.subplots(figsize=(7.2, 4.5))\n    df = top.head(15).copy()\n    df[\"rescue\"] = df.apply(parse_rescue, axis=1).apply(lambda x: \"+\".join(x))\n    df[\"label\"] = df[\"target_label\"] + \"\\n\" + df[\"rescue\"]\n    y = np.arange(len(df))\n    bar_h = 0.35\n    # Oracle score bars (normalized to fit visual range)\n    oracle_vals = df[\"score\"].values\n    bars1 = ax1.barh(y + bar_h/2, oracle_vals, bar_h, color=C_ORACLE, alpha=0.85,",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig2_dms_distribution",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig2_dms_distribution():\n    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 3.2), gridspec_kw={\"width_ratios\": [2, 1]})\n    # Panel A: Histogram comparison\n    deep_dms = deep[\"rescue_dms_mean\"].dropna()\n    deep_dms = deep_dms[deep_dms != 0]\n    short_dms = top[\"rescue_dms_mean\"].dropna()\n    short_dms = short_dms[short_dms != 0]\n    bins = np.linspace(-3, 3, 30)\n    ax1.hist(deep_dms, bins=bins, density=True, alpha=0.4, color=\"#AAAAAA\",\n             edgecolor=\"white\", linewidth=0.3, label=f\"All deep (n={len(deep_dms)})\", zorder=2)",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig3_oracle_vs_dms",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig3_oracle_vs_dms():\n    fig, ax = plt.subplots(figsize=(5.5, 4.5))\n    # Plot all deep candidates as background\n    deep_valid = deep[deep[\"rescue_dms_mean\"].notna() & (deep[\"rescue_dms_mean\"] != 0)].copy()\n    ax.scatter(deep_valid[\"score\"], deep_valid[\"rescue_dms_mean\"],\n               s=8, alpha=0.15, color=\"#BBBBBB\", edgecolors=\"none\", zorder=2, label=\"_nolegend_\")\n    # Shortlisted candidates with delivery color\n    for dm, color in DELIVERY_COLORS.items():\n        subset = top[top[\"delivery_method\"] == dm]\n        ax.scatter(subset[\"score\"], subset[\"rescue_dms_mean\"],",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig4_retention_heatmap",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig4_retention_heatmap():\n    # Build retention matrix\n    hotspots = [\"R175H\", \"G245S\", \"R248Q\", \"R249S\", \"R273H\", \"R273C\", \"R282W\", \"R248W\"]\n    retention_data = {}\n    for _, row in deep.iterrows():\n        tl = row[\"target_label\"]\n        targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n        muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n        if tl not in retention_data:\n            retention_data[tl] = [0, 0]",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig5_mutation_landscape",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig5_mutation_landscape():\n    fig, ax = plt.subplots(figsize=(7.2, 3.5))\n    # Count rescue mutation positions across shortlist\n    position_counts = {}\n    position_dms = {}\n    for _, row in top.iterrows():\n        rescue = parse_rescue(row)\n        dms = row.get(\"rescue_dms_mean\", 0)\n        for mut in rescue:\n            # Extract position number",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig6_summary_panel",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig6_summary_panel():\n    fig = plt.figure(figsize=(7.2, 6.5))\n    gs = GridSpec(2, 2, figure=fig, hspace=0.4, wspace=0.35)\n    # Panel A: Delivery method distribution\n    ax_a = fig.add_subplot(gs[0, 0])\n    delivery_counts = top[\"delivery_method\"].value_counts()\n    wedges, texts, autotexts = ax_a.pie(\n        delivery_counts.values,\n        labels=[DELIVERY_LABELS.get(d, d) for d in delivery_counts.index],\n        colors=[DELIVERY_COLORS.get(d, \"#999\") for d in delivery_counts.index],",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "fig7_evidence_waterfall",
+        "kind": 2,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "def fig7_evidence_waterfall():\n    fig, ax = plt.subplots(figsize=(7.2, 3.5))\n    df = top.copy()\n    # Compute evidence score: oracle_norm * dms_component * clinical_norm\n    # Already in selection_score or we approximate\n    df[\"rescue\"] = df.apply(parse_rescue, axis=1).apply(lambda x: \"+\".join(x[:2]))\n    df = df.sort_values(\"score\", ascending=False).head(20)\n    x = np.arange(len(df))\n    # Stacked components: oracle contribution, DMS contribution, clinical contribution\n    oracle_norm = (df[\"score\"] - 1.5) / 0.25  # normalize to ~[0,1]",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\nimport json\nimport numpy as np\nimport pandas as pd\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\nimport matplotlib.patches as mpatches\nfrom matplotlib.gridspec import GridSpec\nfrom matplotlib import patheffects",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "C_NONFUNC",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "C_NONFUNC = \"#984EA3\"   # Purple\nC_GENE    = \"#2166AC\"   # Blue\nC_MRNA    = \"#E08214\"   # Orange\nC_PROTEIN = \"#1B7837\"   # Green\nC_BG      = \"#F7F7F7\"\nC_GRID    = \"#E0E0E0\"\nDELIVERY_COLORS = {\n    \"gene_therapy\": C_GENE,\n    \"mrna_therapy\": C_MRNA,\n    \"protein_therapy\": C_PROTEIN,",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "C_PROTEIN",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "C_PROTEIN = \"#1B7837\"   # Green\nC_BG      = \"#F7F7F7\"\nC_GRID    = \"#E0E0E0\"\nDELIVERY_COLORS = {\n    \"gene_therapy\": C_GENE,\n    \"mrna_therapy\": C_MRNA,\n    \"protein_therapy\": C_PROTEIN,\n}\nDELIVERY_LABELS = {\n    \"gene_therapy\": \"Gene Therapy\",",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "DELIVERY_COLORS",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "DELIVERY_COLORS = {\n    \"gene_therapy\": C_GENE,\n    \"mrna_therapy\": C_MRNA,\n    \"protein_therapy\": C_PROTEIN,\n}\nDELIVERY_LABELS = {\n    \"gene_therapy\": \"Gene Therapy\",\n    \"mrna_therapy\": \"mRNA Therapy\",\n    \"protein_therapy\": \"Protein Therapy\",\n}",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "DELIVERY_LABELS",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "DELIVERY_LABELS = {\n    \"gene_therapy\": \"Gene Therapy\",\n    \"mrna_therapy\": \"mRNA Therapy\",\n    \"protein_therapy\": \"Protein Therapy\",\n}\n# ── Data ─────────────────────────────────────────────────────────────────\nCAMPAIGN_DIR = Path(\"/Users/ishaangubbala/Documents/p53/data/campaigns/campaign_20260211_130341\")\nOUT_DIR = CAMPAIGN_DIR / \"figures\"\nOUT_DIR.mkdir(exist_ok=True)\ntop = pd.read_csv(CAMPAIGN_DIR / \"top30.csv\")",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "CAMPAIGN_DIR",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "CAMPAIGN_DIR = Path(\"/Users/ishaangubbala/Documents/p53/data/campaigns/campaign_20260211_130341\")\nOUT_DIR = CAMPAIGN_DIR / \"figures\"\nOUT_DIR.mkdir(exist_ok=True)\ntop = pd.read_csv(CAMPAIGN_DIR / \"top30.csv\")\ncand = pd.read_parquet(CAMPAIGN_DIR / \"candidates.parquet\")\ndeep = cand[cand[\"pass_name\"] == \"deep\"].copy()\ndef parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "OUT_DIR",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "OUT_DIR = CAMPAIGN_DIR / \"figures\"\nOUT_DIR.mkdir(exist_ok=True)\ntop = pd.read_csv(CAMPAIGN_DIR / \"top30.csv\")\ncand = pd.read_parquet(CAMPAIGN_DIR / \"candidates.parquet\")\ndeep = cand[cand[\"pass_name\"] == \"deep\"].copy()\ndef parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n    return [m for m in muts if m not in targets]",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "top",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "top = pd.read_csv(CAMPAIGN_DIR / \"top30.csv\")\ncand = pd.read_parquet(CAMPAIGN_DIR / \"candidates.parquet\")\ndeep = cand[cand[\"pass_name\"] == \"deep\"].copy()\ndef parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n    return [m for m in muts if m not in targets]\n# =====================================================================\n# FIGURE 1: Top 15 Candidates — Oracle Score + DMS Z-Score (dual bars)",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "cand",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "cand = pd.read_parquet(CAMPAIGN_DIR / \"candidates.parquet\")\ndeep = cand[cand[\"pass_name\"] == \"deep\"].copy()\ndef parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n    return [m for m in muts if m not in targets]\n# =====================================================================\n# FIGURE 1: Top 15 Candidates — Oracle Score + DMS Z-Score (dual bars)\n# =====================================================================",
+        "detail": "scripts.generate_figures",
+        "documentation": {}
+    },
+    {
+        "label": "deep",
+        "kind": 5,
+        "importPath": "scripts.generate_figures",
+        "description": "scripts.generate_figures",
+        "peekOfCode": "deep = cand[cand[\"pass_name\"] == \"deep\"].copy()\ndef parse_rescue(row):\n    \"\"\"Extract rescue mutations (mutations - targets).\"\"\"\n    muts = json.loads(str(row.get(\"mutations_json\", \"[]\")))\n    targets = json.loads(str(row.get(\"targets_json\", \"[]\")))\n    return [m for m in muts if m not in targets]\n# =====================================================================\n# FIGURE 1: Top 15 Candidates — Oracle Score + DMS Z-Score (dual bars)\n# =====================================================================\ndef fig1_top_candidates():",
+        "detail": "scripts.generate_figures",
         "documentation": {}
     },
     {
         "label": "main",
         "kind": 2,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "def main():\n    print(\"🔬 Starting Grid Search for Optimal Loss Weights\")\n    print(f\"Testing {len(IDENTITY_WEIGHTS)} identity settings × {len(STABILITY_COEFFS)} stability settings\")\n    print(f\"Total combinations: {len(IDENTITY_WEIGHTS) * len(STABILITY_COEFFS)}\")\n    print(f\"Test mutation: {TEST_MUTATION}, Steps: {TEST_STEPS}\\n\")\n    # Load models\n    print(\"Loading models...\")\n    embedder = ManifoldEmbedder()\n    oracle_path = Path(\"data/models/functional_oracle.pt\")\n    if not oracle_path.exists():",
-        "detail": "scripts.grid_search_weights",
+        "importPath": "scripts.run_full_campaign",
+        "description": "scripts.run_full_campaign",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser(description=\"Run full p53 rescue campaign\")\n    parser.add_argument(\"--budget\", default=\"medium\", choices=[\"fast\", \"medium\", \"high\"],\n                        help=\"Compute budget (fast=~5min, medium=~80min, high=~4hr)\")\n    parser.add_argument(\"--seed\", type=int, default=42, help=\"Random seed\")\n    parser.add_argument(\"--shortlist-n\", type=int, default=30, help=\"Number of shortlist candidates\")\n    parser.add_argument(\"--no-pairs\", action=\"store_true\", help=\"Skip multi-hotspot combos\")\n    parser.add_argument(\"--hotspots\", nargs=\"+\", default=None,\n                        help=\"Specific hotspots (default: all BIG8)\")\n    args = parser.parse_args()",
+        "detail": "scripts.run_full_campaign",
         "documentation": {}
     },
     {
-        "label": "IDENTITY_WEIGHTS",
+        "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
         "kind": 5,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "IDENTITY_WEIGHTS = [\n    (10, 30),   # Original\n    (25, 75),   # Moderate\n    (50, 150),  # Strong\n    (75, 225),  # Very Strong\n    (100, 300), # Maximum\n]\nSTABILITY_COEFFS = [\n    3.0,   # Low\n    6.0,   # Original",
-        "detail": "scripts.grid_search_weights",
+        "importPath": "scripts.run_full_campaign",
+        "description": "scripts.run_full_campaign",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\n# Ensure project root is on path\nproject_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\nsys.path.insert(0, project_root)\nfrom p53cad.core.runtime import bootstrap_runtime\nbootstrap_runtime()\ndef main():\n    parser = argparse.ArgumentParser(description=\"Run full p53 rescue campaign\")\n    parser.add_argument(\"--budget\", default=\"medium\", choices=[\"fast\", \"medium\", \"high\"],\n                        help=\"Compute budget (fast=~5min, medium=~80min, high=~4hr)\")",
+        "detail": "scripts.run_full_campaign",
         "documentation": {}
     },
     {
-        "label": "STABILITY_COEFFS",
+        "label": "project_root",
         "kind": 5,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "STABILITY_COEFFS = [\n    3.0,   # Low\n    6.0,   # Original\n    9.0,   # Moderate\n    12.0,  # High\n    15.0,  # Very High\n]\n# Test configuration\nTEST_MUTATION = \"R175H\"\nTEST_STEPS = 100  # Shorter for grid search",
-        "detail": "scripts.grid_search_weights",
+        "importPath": "scripts.run_full_campaign",
+        "description": "scripts.run_full_campaign",
+        "peekOfCode": "project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\nsys.path.insert(0, project_root)\nfrom p53cad.core.runtime import bootstrap_runtime\nbootstrap_runtime()\ndef main():\n    parser = argparse.ArgumentParser(description=\"Run full p53 rescue campaign\")\n    parser.add_argument(\"--budget\", default=\"medium\", choices=[\"fast\", \"medium\", \"high\"],\n                        help=\"Compute budget (fast=~5min, medium=~80min, high=~4hr)\")\n    parser.add_argument(\"--seed\", type=int, default=42, help=\"Random seed\")\n    parser.add_argument(\"--shortlist-n\", type=int, default=30, help=\"Number of shortlist candidates\")",
+        "detail": "scripts.run_full_campaign",
         "documentation": {}
     },
     {
-        "label": "TEST_MUTATION",
-        "kind": 5,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "TEST_MUTATION = \"R175H\"\nTEST_STEPS = 100  # Shorter for grid search\nLEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()",
-        "detail": "scripts.grid_search_weights",
+        "label": "score_sequence",
+        "kind": 2,
+        "importPath": "scripts.validate_literature_rescues",
+        "description": "scripts.validate_literature_rescues",
+        "peekOfCode": "def score_sequence(\n    embedder: ManifoldEmbedder,\n    oracle: FunctionalOracle,\n    sequence: str,\n) -> float:\n    \"\"\"Get the oracle score for a sequence.\"\"\"\n    from p53cad.engine.oracle import AttentionPoolingNet\n    emb = embedder.get_embeddings(sequence).detach()\n    with torch.no_grad():\n        z, _, _ = embedder.latent_forward_ascent(emb)",
+        "detail": "scripts.validate_literature_rescues",
         "documentation": {}
     },
     {
-        "label": "TEST_STEPS",
-        "kind": 5,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "TEST_STEPS = 100  # Shorter for grid search\nLEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)",
-        "detail": "scripts.grid_search_weights",
-        "documentation": {}
-    },
-    {
-        "label": "LEARNING_RATE",
-        "kind": 5,
-        "importPath": "scripts.grid_search_weights",
-        "description": "scripts.grid_search_weights",
-        "peekOfCode": "LEARNING_RATE = 0.04\ndef run_optimization(embedder, oracle, identity_l1, identity_mse, stability_coeff):\n    \"\"\"Run a single optimization with given weights.\"\"\"\n    # Setup\n    cancer_seq = apply_mutation(P53_WT, TEST_MUTATION)\n    AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]\n    emb = embedder.get_embeddings(cancer_seq).detach().requires_grad_(True)\n    emb_wt = embedder.get_embeddings(P53_WT).detach()\n    optimizer = torch.optim.Adam([emb], lr=LEARNING_RATE)\n    # Run optimization",
-        "detail": "scripts.grid_search_weights",
+        "label": "load_dms_lookup",
+        "kind": 2,
+        "importPath": "scripts.validate_literature_rescues",
+        "description": "scripts.validate_literature_rescues",
+        "peekOfCode": "def load_dms_lookup() -> Dict[Tuple[int, str], float]:\n    \"\"\"Load raw DMS Z-scores into a (position, amino_acid) → Z-score dict.\"\"\"\n    import pandas as pd\n    dms_path = _root / \"data\" / \"raw\" / \"p53_DMS_Giacomelli_2018.csv\"\n    if not dms_path.exists():\n        print(f\"  [WARN] DMS CSV not found at {dms_path}\")\n        return {}\n    raw = pd.read_csv(dms_path)\n    score_col = \"A549_p53WT_Nutlin-3_Z-score\"\n    if score_col not in raw.columns:",
+        "detail": "scripts.validate_literature_rescues",
         "documentation": {}
     },
     {
         "label": "main",
         "kind": 2,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "def main() -> None:\n    parser = argparse.ArgumentParser(description=\"Organize generated campaign/result files.\")\n    parser.add_argument(\"--apply\", action=\"store_true\", help=\"Perform moves (default is dry-run).\")\n    args = parser.parse_args()\n    timestamp = datetime.now(timezone.utc).strftime(\"%Y%m%d_%H%M%S\")\n    archive_dir = ARCHIVE_BASE / timestamp\n    # Ensure directory layout exists regardless of dry-run.\n    CAMPAIGNS_DIR.mkdir(parents=True, exist_ok=True)\n    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)\n    archive_dir.mkdir(parents=True, exist_ok=True)",
-        "detail": "scripts.organize_workspace",
+        "importPath": "scripts.validate_literature_rescues",
+        "description": "scripts.validate_literature_rescues",
+        "peekOfCode": "def main() -> None:\n    print(\"=\" * 70)\n    print(\"  p53-proteoMgCAD  |  Literature Rescue Validation\")\n    print(\"=\" * 70)\n    print()\n    # Load models\n    print(\"Loading ESM-2 and oracle...\")\n    embedder = ManifoldEmbedder()\n    oracle = FunctionalOracle(model_path=_root / \"data\" / \"models\" / \"functional_oracle.pt\")\n    dms_lookup = load_dms_lookup()",
+        "detail": "scripts.validate_literature_rescues",
         "documentation": {}
     },
     {
-        "label": "ROOT",
+        "label": "_root",
         "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nLEGACY_DIR = ROOT / \"_legacy\"\nCAMPAIGNS_DIR = ROOT / \"data\" / \"campaigns\"\nEXPORTS_DIR = ROOT / \"data\" / \"processed\" / \"exports\"\nARCHIVE_BASE = ROOT / \"data\" / \"processed\" / \"archive\"\nROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",",
-        "detail": "scripts.organize_workspace",
+        "importPath": "scripts.validate_literature_rescues",
+        "description": "scripts.validate_literature_rescues",
+        "peekOfCode": "_root = Path(__file__).resolve().parent.parent\nif str(_root) not in sys.path:\n    sys.path.insert(0, str(_root))\nos.environ.setdefault(\"KMP_DUPLICATE_LIB_OK\", \"TRUE\")\nimport numpy as np\nfrom p53cad.core.runtime import bootstrap_runtime\nbootstrap_runtime()\nimport torch\nfrom p53cad.data.dms import P53_WT, apply_mutation, parse_single_mutation\nfrom p53cad.engine.latent import ManifoldEmbedder",
+        "detail": "scripts.validate_literature_rescues",
         "documentation": {}
     },
     {
-        "label": "LEGACY_DIR",
-        "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "LEGACY_DIR = ROOT / \"_legacy\"\nCAMPAIGNS_DIR = ROOT / \"data\" / \"campaigns\"\nEXPORTS_DIR = ROOT / \"data\" / \"processed\" / \"exports\"\nARCHIVE_BASE = ROOT / \"data\" / \"processed\" / \"archive\"\nROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",\n    \"top30.csv\",",
-        "detail": "scripts.organize_workspace",
+        "label": "TestAttentionPoolingNet",
+        "kind": 6,
+        "importPath": "tests.test_attention_oracle",
+        "description": "tests.test_attention_oracle",
+        "peekOfCode": "class TestAttentionPoolingNet(unittest.TestCase):\n    \"\"\"Test AttentionPoolingNet forward, backward, and compatibility.\"\"\"\n    def setUp(self):\n        self.net = AttentionPoolingNet(input_dim=64, hidden_dim=32, n_heads=2, dropout=0.0)\n        self.net.eval()\n    def test_forward_3d_input(self):\n        \"\"\"(batch, seq_len, D) input produces (batch, 1) output.\"\"\"\n        x = torch.randn(2, 10, 64)\n        out = self.net(x)\n        self.assertEqual(out.shape, (2, 1))",
+        "detail": "tests.test_attention_oracle",
         "documentation": {}
     },
     {
-        "label": "CAMPAIGNS_DIR",
-        "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "CAMPAIGNS_DIR = ROOT / \"data\" / \"campaigns\"\nEXPORTS_DIR = ROOT / \"data\" / \"processed\" / \"exports\"\nARCHIVE_BASE = ROOT / \"data\" / \"processed\" / \"archive\"\nROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",\n    \"top30.csv\",\n    \"top30.parquet\",",
-        "detail": "scripts.organize_workspace",
+        "label": "TestAutoRegressiveTrial",
+        "kind": 6,
+        "importPath": "tests.test_autoregressive",
+        "description": "tests.test_autoregressive",
+        "peekOfCode": "class TestAutoRegressiveTrial(unittest.TestCase):\n    \"\"\"Test the autoregressive mutation sampling method.\"\"\"\n    @classmethod\n    def setUpClass(cls):\n        cls.tmpdir = tempfile.mkdtemp(prefix=\"p53cad_ar_test_\")\n        cls.store = CampaignStore(base_dir=cls.tmpdir)\n        cls.runner = CampaignRunner(store=cls.store)\n        # Ensure embedder + oracle are loaded\n        cls.runner._load_models()\n    @classmethod",
+        "detail": "tests.test_autoregressive",
         "documentation": {}
     },
     {
-        "label": "EXPORTS_DIR",
+        "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
         "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "EXPORTS_DIR = ROOT / \"data\" / \"processed\" / \"exports\"\nARCHIVE_BASE = ROOT / \"data\" / \"processed\" / \"archive\"\nROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",\n    \"top30.csv\",\n    \"top30.parquet\",\n    \"campaign_summary.md\",",
-        "detail": "scripts.organize_workspace",
+        "importPath": "tests.test_autoregressive",
+        "description": "tests.test_autoregressive",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\ntry:\n    import torch\n    from p53cad.core.runtime import bootstrap_runtime\n    bootstrap_runtime()\n    from p53cad.data.dms import P53_WT\n    from p53cad.engine.campaign import CampaignRunner, ScenarioRuntime\n    from p53cad.results.store import CampaignStore\n    HAS_DEPS = True\nexcept ImportError:",
+        "detail": "tests.test_autoregressive",
         "documentation": {}
     },
     {
-        "label": "ARCHIVE_BASE",
-        "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "ARCHIVE_BASE = ROOT / \"data\" / \"processed\" / \"archive\"\nROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",\n    \"top30.csv\",\n    \"top30.parquet\",\n    \"campaign_summary.md\",\n}",
-        "detail": "scripts.organize_workspace",
+        "label": "TestCampaignIntegration",
+        "kind": 6,
+        "importPath": "tests.test_campaign_integration",
+        "description": "tests.test_campaign_integration",
+        "peekOfCode": "class TestCampaignIntegration(unittest.TestCase):\n    \"\"\"End-to-end integration test with a single-scenario mini campaign.\"\"\"\n    @classmethod\n    def setUpClass(cls):\n        cls.tmpdir = tempfile.mkdtemp(prefix=\"p53cad_test_\")\n        cls.store = CampaignStore(base_dir=cls.tmpdir)\n        cls.runner = CampaignRunner(store=cls.store)\n    @classmethod\n    def tearDownClass(cls):\n        shutil.rmtree(cls.tmpdir, ignore_errors=True)",
+        "detail": "tests.test_campaign_integration",
         "documentation": {}
     },
     {
-        "label": "ROOT_ALLOWLIST",
-        "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "ROOT_ALLOWLIST = {\n    \"results_raw.csv\",\n    \"generative_design_candidates.csv\",\n    \"candidates.csv\",\n    \"candidates_analyzed.csv\",\n    \"top30.csv\",\n    \"top30.parquet\",\n    \"campaign_summary.md\",\n}\nPROCESSED_EXPORT_KEYWORDS = (",
-        "detail": "scripts.organize_workspace",
+        "label": "TestPostAnalysisComponents",
+        "kind": 6,
+        "importPath": "tests.test_campaign_integration",
+        "description": "tests.test_campaign_integration",
+        "peekOfCode": "class TestPostAnalysisComponents(unittest.TestCase):\n    \"\"\"Test individual post-campaign analysis components.\"\"\"\n    def test_esmfold_structure_predictor(self):\n        \"\"\"Test ESMFold structure prediction (falls back to estimation).\"\"\"\n        from p53cad.engine.md_validation import StructurePredictor\n        predictor = StructurePredictor()\n        # Use a short test sequence (not full p53)\n        pred = predictor.predict_esmfold(\"MVLSPADKTNVKAAW\", name=\"test\")\n        self.assertGreater(pred.mean_plddt, 0)\n        self.assertGreater(len(pred.plddt_scores), 0)",
+        "detail": "tests.test_campaign_integration",
         "documentation": {}
     },
     {
-        "label": "PROCESSED_EXPORT_KEYWORDS",
-        "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "PROCESSED_EXPORT_KEYWORDS = (\n    \"top30\",\n    \"shortlist\",\n    \"presentation\",\n    \"report\",\n)\nPROCESSED_MOVE_SUFFIXES = {\".csv\", \".json\", \".parquet\", \".md\", \".txt\"}\ndef _safe_destination(dst: Path) -> Path:\n    if not dst.exists():\n        return dst",
-        "detail": "scripts.organize_workspace",
+        "label": "TestScientificImprovements",
+        "kind": 6,
+        "importPath": "tests.test_campaign_integration",
+        "description": "tests.test_campaign_integration",
+        "peekOfCode": "class TestScientificImprovements(unittest.TestCase):\n    \"\"\"Tests for PLL, contact preservation, and epistasis scoring.\"\"\"\n    @classmethod\n    def setUpClass(cls):\n        cls.embedder = ManifoldEmbedder()\n    def test_latent_forward_return_hidden(self):\n        \"\"\"latent_forward_ascent with return_hidden=True returns 4 tensors.\"\"\"\n        from p53cad.data.dms import P53_WT\n        emb = self.embedder.get_embeddings(P53_WT[:50]).detach()\n        result = self.embedder.latent_forward_ascent(emb, return_hidden=True)",
+        "detail": "tests.test_campaign_integration",
         "documentation": {}
     },
     {
-        "label": "PROCESSED_MOVE_SUFFIXES",
+        "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
         "kind": 5,
-        "importPath": "scripts.organize_workspace",
-        "description": "scripts.organize_workspace",
-        "peekOfCode": "PROCESSED_MOVE_SUFFIXES = {\".csv\", \".json\", \".parquet\", \".md\", \".txt\"}\ndef _safe_destination(dst: Path) -> Path:\n    if not dst.exists():\n        return dst\n    stem = dst.stem\n    suffix = dst.suffix\n    parent = dst.parent\n    idx = 1\n    while True:\n        candidate = parent / f\"{stem}_{idx}{suffix}\"",
-        "detail": "scripts.organize_workspace",
+        "importPath": "tests.test_campaign_integration",
+        "description": "tests.test_campaign_integration",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\ntry:\n    import torch\n    from p53cad.core.runtime import bootstrap_runtime\n    bootstrap_runtime()\n    from p53cad.engine.campaign import CampaignRunner\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.engine.oracle import FunctionalOracle, compute_masked_marginal_pll\n    from p53cad.results.store import CampaignStore\n    HAS_DEPS = True",
+        "detail": "tests.test_campaign_integration",
         "documentation": {}
     },
     {
@@ -4531,6 +5750,33 @@
         "documentation": {}
     },
     {
+        "label": "TestConditionalRescueScores",
+        "kind": 6,
+        "importPath": "tests.test_conditional_dms",
+        "description": "tests.test_conditional_dms",
+        "peekOfCode": "class TestConditionalRescueScores(unittest.TestCase):\n    \"\"\"Test compute_conditional_rescue_scores function.\"\"\"\n    @classmethod\n    def setUpClass(cls):\n        cls.embedder = ManifoldEmbedder()\n    def test_returns_dict_for_each_position(self):\n        \"\"\"Result has an entry for each requested position.\"\"\"\n        cancer_seq = apply_mutation(P53_WT, \"R175H\")\n        positions = [200, 220, 240]\n        result = compute_conditional_rescue_scores(",
+        "detail": "tests.test_conditional_dms",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"KMP_DUPLICATE_LIB_OK\"]",
+        "kind": 5,
+        "importPath": "tests.test_conditional_dms",
+        "description": "tests.test_conditional_dms",
+        "peekOfCode": "os.environ[\"KMP_DUPLICATE_LIB_OK\"] = \"TRUE\"\ntry:\n    import torch\n    from p53cad.core.runtime import bootstrap_runtime\n    bootstrap_runtime()\n    from p53cad.data.dms import P53_WT, apply_mutation\n    from p53cad.engine.latent import ManifoldEmbedder\n    from p53cad.engine.oracle import compute_conditional_rescue_scores\n    HAS_DEPS = True\nexcept ImportError:",
+        "detail": "tests.test_conditional_dms",
+        "documentation": {}
+    },
+    {
+        "label": "STANDARD_AAS",
+        "kind": 5,
+        "importPath": "tests.test_conditional_dms",
+        "description": "tests.test_conditional_dms",
+        "peekOfCode": "STANDARD_AAS = \"ACDEFGHIKLMNPQRSTVWY\"\n@unittest.skipUnless(HAS_DEPS, \"Requires torch, transformers, p53cad\")\nclass TestConditionalRescueScores(unittest.TestCase):\n    \"\"\"Test compute_conditional_rescue_scores function.\"\"\"\n    @classmethod\n    def setUpClass(cls):\n        cls.embedder = ManifoldEmbedder()\n    def test_returns_dict_for_each_position(self):\n        \"\"\"Result has an entry for each requested position.\"\"\"\n        cancer_seq = apply_mutation(P53_WT, \"R175H\")",
+        "detail": "tests.test_conditional_dms",
+        "documentation": {}
+    },
+    {
         "label": "DrugRuntimeTests",
         "kind": 6,
         "importPath": "tests.test_drug_runtime",
@@ -4555,6 +5801,42 @@
         "description": "tests.test_import_smoke",
         "peekOfCode": "class ImportSmokeTests(unittest.TestCase):\n    def test_core_imports(self):\n        import p53cad.core.runtime  # noqa: F401\n        import p53cad.data.dms  # noqa: F401\n        import p53cad.engine.oracle  # noqa: F401\n        import p53cad.engine.drug_generator  # noqa: F401\n        import p53cad.engine.explainability  # noqa: F401\nif __name__ == \"__main__\":\n    unittest.main()",
         "detail": "tests.test_import_smoke",
+        "documentation": {}
+    },
+    {
+        "label": "TestDominance",
+        "kind": 6,
+        "importPath": "tests.test_pareto",
+        "description": "tests.test_pareto",
+        "peekOfCode": "class TestDominance(unittest.TestCase):\n    \"\"\"Test the Pareto dominance relation.\"\"\"\n    def _front(self):\n        return ParetoFront(objectives=[\"a\", \"b\"])\n    def test_dominates_strictly_better(self):\n        pf = self._front()\n        a = ParetoSolution(\"A\", {\"a\": 2.0, \"b\": 2.0})\n        b = ParetoSolution(\"B\", {\"a\": 1.0, \"b\": 1.0})\n        self.assertTrue(pf._dominates(a, b))\n        self.assertFalse(pf._dominates(b, a))",
+        "detail": "tests.test_pareto",
+        "documentation": {}
+    },
+    {
+        "label": "TestNSGAIIRanking",
+        "kind": 6,
+        "importPath": "tests.test_pareto",
+        "description": "tests.test_pareto",
+        "peekOfCode": "class TestNSGAIIRanking(unittest.TestCase):\n    \"\"\"Test non-dominated sorting assigns correct Pareto ranks.\"\"\"\n    def test_single_solution_rank_1(self):\n        pf = ParetoFront(objectives=[\"x\", \"y\"])\n        pf.add(ParetoSolution(\"only\", {\"x\": 1.0, \"y\": 1.0}))\n        self.assertEqual(pf.solutions[0].pareto_rank, 1)\n    def test_two_nondominated_both_rank_1(self):\n        pf = ParetoFront(objectives=[\"x\", \"y\"])\n        pf.add(ParetoSolution(\"A\", {\"x\": 2.0, \"y\": 0.5}))\n        pf.add(ParetoSolution(\"B\", {\"x\": 0.5, \"y\": 2.0}))",
+        "detail": "tests.test_pareto",
+        "documentation": {}
+    },
+    {
+        "label": "TestCrowdingDistance",
+        "kind": 6,
+        "importPath": "tests.test_pareto",
+        "description": "tests.test_pareto",
+        "peekOfCode": "class TestCrowdingDistance(unittest.TestCase):\n    \"\"\"Test crowding distance computation.\"\"\"\n    def test_boundary_solutions_infinite_distance(self):\n        pf = ParetoFront(objectives=[\"x\", \"y\"])\n        # 4 non-dominated solutions on rank 1 front\n        pf.add(ParetoSolution(\"A\", {\"x\": 0.0, \"y\": 5.0}))\n        pf.add(ParetoSolution(\"B\", {\"x\": 2.0, \"y\": 3.0}))\n        pf.add(ParetoSolution(\"C\", {\"x\": 3.0, \"y\": 2.0}))\n        pf.add(ParetoSolution(\"D\", {\"x\": 5.0, \"y\": 0.0}))\n        sols = {s.candidate_uid: s for s in pf.solutions}",
+        "detail": "tests.test_pareto",
+        "documentation": {}
+    },
+    {
+        "label": "TestFrontQueries",
+        "kind": 6,
+        "importPath": "tests.test_pareto",
+        "description": "tests.test_pareto",
+        "peekOfCode": "class TestFrontQueries(unittest.TestCase):\n    \"\"\"Test get_front and best_by_crowding queries.\"\"\"\n    def test_get_front_rank_1(self):\n        pf = ParetoFront(objectives=[\"x\", \"y\"])\n        pf.add(ParetoSolution(\"top1\", {\"x\": 5.0, \"y\": 1.0}))\n        pf.add(ParetoSolution(\"top2\", {\"x\": 1.0, \"y\": 5.0}))\n        pf.add(ParetoSolution(\"low\", {\"x\": 0.5, \"y\": 0.5}))\n        rank1 = pf.get_front(rank=1)\n        uids = {s.candidate_uid for s in rank1}\n        self.assertIn(\"top1\", uids)",
+        "detail": "tests.test_pareto",
         "documentation": {}
     },
     {

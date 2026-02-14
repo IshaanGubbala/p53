@@ -326,6 +326,101 @@ def get_mutation_statistics(df: pd.DataFrame) -> dict:
     return stats
 
 
+def load_double_mutant_data(path: Optional[Path] = None) -> pd.DataFrame:
+    """Load double-mutant DMS data from external source.
+
+    Expected CSV columns: pos1, aa1, pos2, aa2, score (or mutation column
+    with comma-separated pairs like 'R175H,N268D').
+
+    Falls back to ``data/raw/p53_DMS_double_mutants.csv`` when *path* is None.
+    Returns an empty DataFrame if the file is not found (graceful degradation).
+    """
+    default_path = Path(__file__).parent.parent.parent / "data" / "raw" / "p53_DMS_double_mutants.csv"
+    path = Path(path) if path else default_path
+    if not path.exists():
+        logger.info("Double-mutant DMS file not found at %s; using additive fallback", path)
+        return pd.DataFrame()
+
+    logger.info("Loading double-mutant DMS data from %s", path)
+    df = pd.read_csv(path)
+
+    # Normalise columns
+    if "mutation" in df.columns and "pos1" not in df.columns:
+        # Parse 'R175H,N268D' format
+        rows = []
+        score_col = next((c for c in df.columns if "score" in c.lower() or "z" in c.lower()), None)
+        if score_col is None:
+            logger.warning("No score column found in double-mutant CSV")
+            return pd.DataFrame()
+        for _, row in df.iterrows():
+            parts = parse_mutation(str(row["mutation"]))
+            if len(parts) == 2:
+                (_, p1, a1), (_, p2, a2) = parts
+                rows.append({"pos1": p1, "aa1": a1, "pos2": p2, "aa2": a2, "score": float(row[score_col])})
+        df = pd.DataFrame(rows)
+
+    required = {"pos1", "aa1", "pos2", "aa2", "score"}
+    if not required.issubset(set(df.columns)):
+        logger.warning("Double-mutant CSV missing columns: %s", required - set(df.columns))
+        return pd.DataFrame()
+
+    logger.info("Loaded %d double-mutant DMS entries", len(df))
+    return df
+
+
+def get_pairwise_epistasis_lookup(
+    dms_df: Optional[pd.DataFrame] = None,
+    double_df: Optional[pd.DataFrame] = None,
+) -> Dict[tuple, float]:
+    """Build (pos1, aa1, pos2, aa2) → epistasis score lookup.
+
+    Uses real double-mutant data when available.  Falls back to an additive
+    model: epistasis = observed_double - (single_A + single_B).  When no
+    double-mutant data exists, returns an empty dict (callers should fall
+    back to structural heuristics).
+
+    Returns
+    -------
+    dict
+        Keys are ``(pos1, aa1, pos2, aa2)`` tuples (positions 1-indexed).
+        Values are Z-score differences (positive = synergistic).
+    """
+    if double_df is None:
+        double_df = load_double_mutant_data()
+    if double_df.empty:
+        return {}
+
+    # Load single-mutant data for additive baseline
+    if dms_df is None:
+        try:
+            dms_df = get_dms_data()
+        except FileNotFoundError:
+            dms_df = pd.DataFrame()
+
+    single_lookup: Dict[tuple, float] = {}
+    if not dms_df.empty and "pos" in dms_df.columns and "alt" in dms_df.columns and "score" in dms_df.columns:
+        for _, row in dms_df.iterrows():
+            single_lookup[(int(row["pos"]), str(row["alt"]))] = float(row["score"])
+
+    result: Dict[tuple, float] = {}
+    for _, row in double_df.iterrows():
+        p1, a1 = int(row["pos1"]), str(row["aa1"]).upper()
+        p2, a2 = int(row["pos2"]), str(row["aa2"]).upper()
+        observed = float(row["score"])
+
+        # Additive expectation (sum of singles)
+        s1 = single_lookup.get((p1, a1), 0.0)
+        s2 = single_lookup.get((p2, a2), 0.0)
+        epistasis = observed - (s1 + s2)
+
+        # Store both orderings for easy lookup
+        result[(p1, a1, p2, a2)] = epistasis
+        result[(p2, a2, p1, a1)] = epistasis
+
+    logger.info("Built pairwise epistasis lookup: %d pairs", len(result) // 2)
+    return result
+
+
 # Convenience function for quick loading
 def get_dms_data() -> pd.DataFrame:
     """Load DMS data with default settings."""

@@ -1094,6 +1094,309 @@ class ExperimentalPipeline:
 
 
 # ============================================================================
+# FEEDBACK INTEGRATOR
+# ============================================================================
+
+class FeedbackIntegrator:
+    """Integrate experimental results back into the computational pipeline.
+
+    Supports parsing growth assay and Western blot data, augmenting the DMS
+    training set, and suggesting next candidates via active learning.
+    """
+
+    def parse_growth_assay(self, csv_path: str) -> 'pd.DataFrame':
+        """Parse a growth assay CSV into a standardised DataFrame.
+
+        Expected columns: well, mutation, rescue_mutation, growth_rate,
+        nutlin_conc, replicate.
+        """
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+        required = {"mutation", "growth_rate"}
+        missing = required - set(df.columns)
+        if missing:
+            raise ValueError(f"Growth assay CSV missing columns: {missing}")
+        if "rescue_mutation" not in df.columns:
+            df["rescue_mutation"] = ""
+        if "nutlin_conc" not in df.columns:
+            df["nutlin_conc"] = 0.0
+        if "replicate" not in df.columns:
+            df["replicate"] = 1
+        return df
+
+    def parse_western_blot(self, csv_path: str) -> 'pd.DataFrame':
+        """Parse Western blot quantification CSV."""
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+        required = {"mutation", "band_intensity"}
+        missing = required - set(df.columns)
+        if missing:
+            raise ValueError(f"Western blot CSV missing columns: {missing}")
+        return df
+
+    def update_training_data(
+        self,
+        experimental_df: 'pd.DataFrame',
+        existing_dms_path: str,
+        output_path: str,
+    ) -> Path:
+        """Merge experimental results with existing DMS data and save.
+
+        The experimental DataFrame must have 'mutation' and 'growth_rate'
+        columns.  Growth rates are normalised to Z-scores for compatibility
+        with the DMS scoring convention.
+        """
+        import pandas as pd
+        import numpy as np
+
+        existing = pd.read_csv(existing_dms_path)
+
+        # Normalise growth rates to Z-score scale
+        rates = experimental_df["growth_rate"].values
+        if np.std(rates) > 0:
+            z_scores = (rates - np.mean(rates)) / np.std(rates)
+        else:
+            z_scores = np.zeros_like(rates)
+
+        new_rows = []
+        for idx, row in experimental_df.iterrows():
+            new_rows.append({
+                "mutation": str(row["mutation"]),
+                "score": float(-z_scores[idx]),  # negate to match DMS convention
+                "source": "experimental",
+            })
+
+        new_df = pd.DataFrame(new_rows)
+        augmented = pd.concat([existing, new_df], ignore_index=True)
+        augmented = augmented.drop_duplicates(subset=["mutation"], keep="last")
+
+        out = Path(output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        augmented.to_csv(out, index=False)
+        return out
+
+    def retrain_oracle(
+        self,
+        augmented_path: str,
+        model_output_path: str,
+        embedder_name: str = "facebook/esm2_t33_650M_UR50D",
+    ) -> None:
+        """Retrain the oracle on augmented DMS + experimental data."""
+        from p53cad.data.dms import load_dms_data, hydrate_sequences
+        from p53cad.engine.latent import ManifoldEmbedder
+        from p53cad.engine.oracle import FunctionalOracle
+
+        df = load_dms_data(augmented_path)
+        if "sequence" not in df.columns:
+            df = hydrate_sequences(df)
+
+        embedder = ManifoldEmbedder(model_name=embedder_name)
+        oracle = FunctionalOracle(input_dim=embedder.hidden_size)
+        oracle.train(df, embedder, epochs=30, save_path=Path(model_output_path))
+
+    def suggest_next_candidates(
+        self,
+        tested_results: 'pd.DataFrame',
+        untested_candidates: 'pd.DataFrame',
+        n: int = 10,
+    ) -> 'pd.DataFrame':
+        """Active learning: prioritise untested candidates by uncertainty + diversity.
+
+        Returns the top-*n* candidates sorted by a composite acquisition score.
+        """
+        import numpy as np
+
+        work = untested_candidates.copy()
+
+        # Uncertainty component (if available)
+        if "uncertainty" in work.columns:
+            unc = work["uncertainty"].fillna(0.0)
+            unc_norm = (unc - unc.min()) / max(unc.max() - unc.min(), 1e-6)
+        else:
+            unc_norm = 0.5
+
+        # Score component (explore high-potential candidates)
+        if "score" in work.columns:
+            score = work["score"].fillna(0.0)
+            score_norm = (score - score.min()) / max(score.max() - score.min(), 1e-6)
+        else:
+            score_norm = 0.5
+
+        # Diversity: prefer mutations not yet tested
+        tested_muts = set()
+        if "mutation" in tested_results.columns:
+            tested_muts = set(tested_results["mutation"].dropna().astype(str))
+        elif "mutations_json" in tested_results.columns:
+            for mj in tested_results["mutations_json"].dropna():
+                try:
+                    tested_muts.update(json.loads(str(mj)))
+                except Exception:
+                    pass
+
+        def _novelty(row):
+            try:
+                muts = set(json.loads(str(row.get("mutations_json", "[]"))))
+            except Exception:
+                muts = set()
+            overlap = len(muts & tested_muts)
+            return 1.0 / (1.0 + overlap)
+
+        work["_novelty"] = work.apply(_novelty, axis=1)
+
+        # Acquisition function: weighted sum
+        work["_acquisition"] = 0.4 * unc_norm + 0.3 * score_norm + 0.3 * work["_novelty"]
+        work = work.sort_values("_acquisition", ascending=False)
+
+        return work.head(n).drop(columns=["_novelty", "_acquisition"], errors="ignore")
+
+
+# ============================================================================
+# EXPERIMENTAL DESIGNER
+# ============================================================================
+
+class ExperimentalDesigner:
+    """Generate complete experimental validation packages for campaign output."""
+
+    def design_validation_plate(
+        self,
+        candidates_df: 'pd.DataFrame',
+        plate_format: int = 96,
+    ) -> Dict[str, Any]:
+        """Design a validation plate layout with controls.
+
+        Returns a dict with plate_map (well → sample), controls, and layout.
+        """
+        n_controls = max(plate_format // 12, 4)  # ~8% controls
+        n_samples = plate_format - n_controls
+
+        rows = "ABCDEFGH"
+        cols = list(range(1, 13))
+        wells = [f"{r}{c}" for r in rows for c in cols][:plate_format]
+
+        plate_map: Dict[str, Dict[str, Any]] = {}
+
+        # Controls in first and last columns
+        control_wells = [w for w in wells if w.endswith("1") or w.endswith("12")][:n_controls]
+        control_types = ["WT_positive", "cancer_only_negative", "media_blank", "WT_positive"]
+        for i, well in enumerate(control_wells):
+            plate_map[well] = {
+                "type": "control",
+                "control_type": control_types[i % len(control_types)],
+            }
+
+        # Sample wells
+        sample_wells = [w for w in wells if w not in plate_map]
+        for i, (_, row) in enumerate(candidates_df.head(n_samples).iterrows()):
+            if i >= len(sample_wells):
+                break
+            plate_map[sample_wells[i]] = {
+                "type": "sample",
+                "candidate_uid": str(row.get("candidate_uid", f"sample_{i}")),
+                "target_label": str(row.get("target_label", "")),
+                "mutations": str(row.get("mutations_json", "[]")),
+            }
+
+        return {
+            "plate_format": plate_format,
+            "n_samples": min(len(candidates_df), n_samples),
+            "n_controls": len(control_wells),
+            "plate_map": plate_map,
+        }
+
+    def generate_synthesis_order(
+        self,
+        candidates_df: 'pd.DataFrame',
+        organism: str = "human",
+    ) -> List[Dict[str, str]]:
+        """Generate codon-optimised DNA sequences for gene synthesis.
+
+        Returns a list of dicts with name, protein_sequence, dna_sequence, and
+        organism fields, ready for submission to a synthesis provider.
+        """
+        orders = []
+        for _, row in candidates_df.iterrows():
+            name = str(row.get("candidate_uid", "unknown")).replace("|", "_")
+            protein_seq = str(row.get("sequence", ""))
+            if not protein_seq:
+                continue
+            dna_seq = protein_to_dna(protein_seq, organism=organism)
+            orders.append({
+                "name": name,
+                "protein_sequence": protein_seq,
+                "dna_sequence": dna_seq,
+                "organism": organism,
+                "length_bp": str(len(dna_seq)),
+            })
+        return orders
+
+    def generate_full_package(
+        self,
+        campaign_dir: str,
+        candidates_df: 'pd.DataFrame',
+    ) -> Path:
+        """Generate a complete experimental validation package directory.
+
+        Creates:
+        - plate_layout.json — 96-well plate map with controls
+        - synthesis_order.csv — codon-optimised DNA sequences
+        - fasta/ — individual FASTA files per candidate
+        - primers.csv — mutagenesis primers (simplified)
+        """
+        out_dir = Path(campaign_dir) / "experimental_package"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1. Plate layout
+        plate = self.design_validation_plate(candidates_df)
+        (out_dir / "plate_layout.json").write_text(json.dumps(plate, indent=2))
+
+        # 2. Synthesis order
+        orders = self.generate_synthesis_order(candidates_df)
+        if orders:
+            import csv
+            with (out_dir / "synthesis_order.csv").open("w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=orders[0].keys())
+                writer.writeheader()
+                writer.writerows(orders)
+
+        # 3. FASTA files
+        fasta_dir = out_dir / "fasta"
+        fasta_dir.mkdir(exist_ok=True)
+        for _, row in candidates_df.iterrows():
+            name = str(row.get("candidate_uid", "unknown")).replace("|", "_")
+            seq = str(row.get("sequence", ""))
+            if seq:
+                fasta_path = fasta_dir / f"{name}.fasta"
+                lines = [f">{name}"]
+                for i in range(0, len(seq), 60):
+                    lines.append(seq[i:i+60])
+                fasta_path.write_text("\n".join(lines) + "\n")
+
+        # 4. Simplified mutagenesis primers
+        primers = []
+        for _, row in candidates_df.iterrows():
+            try:
+                muts = json.loads(str(row.get("mutations_json", "[]")))
+            except Exception:
+                muts = []
+            for mut in muts:
+                if len(mut) >= 3:
+                    primers.append({
+                        "candidate": str(row.get("candidate_uid", "")),
+                        "mutation": mut,
+                        "forward_primer": f"5'-...{mut}...-3'",  # placeholder
+                        "reverse_primer": f"3'-...{mut}...-5'",  # placeholder
+                    })
+        if primers:
+            import csv
+            with (out_dir / "primers.csv").open("w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=primers[0].keys())
+                writer.writeheader()
+                writer.writerows(primers)
+
+        return out_dir
+
+
+# ============================================================================
 # CLI INTERFACE
 # ============================================================================
 

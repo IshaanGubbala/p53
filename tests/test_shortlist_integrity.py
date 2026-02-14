@@ -23,6 +23,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                 "n_mutations": 2,
                 "mutations_json": "[\"R175H\",\"N239Y\"]",
                 "sequence": "SEQ_VALID_1",
+                "pareto_rank": 1,
             },
             {
                 "candidate_uid": "invalid_missing_target",
@@ -38,6 +39,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                 "n_mutations": 1,
                 "mutations_json": "[\"N239Y\"]",
                 "sequence": "SEQ_INVALID_NO_TARGET",
+                "pareto_rank": 1,
             },
             {
                 "candidate_uid": "invalid_zero_mut",
@@ -53,6 +55,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                 "n_mutations": 0,
                 "mutations_json": "[]",
                 "sequence": "SEQ_INVALID_ZERO",
+                "pareto_rank": 2,
             },
             {
                 "candidate_uid": "valid_2",
@@ -68,6 +71,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                 "n_mutations": 2,
                 "mutations_json": "[\"R248Q\",\"S241H\"]",
                 "sequence": "SEQ_VALID_2",
+                "pareto_rank": 2,
             },
         ]
 
@@ -96,6 +100,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                 "n_mutations": 2,
                 "mutations_json": "[\"R175H\",\"N239Y\"]",
                 "sequence": "SEQ_VALID_1",
+                "pareto_rank": 2,
             }
         )
         out = select_presentation_shortlist(pd.DataFrame(rows), top_n=10)
@@ -137,6 +142,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                         "n_mutations": 2,
                         "mutations_json": f'["{h}","A{100+uid}G"]',
                         "sequence": f"SEQ_{uid}",
+                        "pareto_rank": 1 + k,
                     })
         df = pd.DataFrame(rows)
         out = select_presentation_shortlist(df, top_n=30, max_per_target=4)
@@ -180,6 +186,7 @@ class ShortlistIntegrityTests(unittest.TestCase):
                     "n_mutations": 3,
                     "mutations_json": str(muts).replace("'", '"'),
                     "sequence": f"SEQ_COMBO_{uid}",
+                    "pareto_rank": 1,
                 })
         df = pd.DataFrame(rows)
         out = select_presentation_shortlist(df, top_n=15, max_per_base_mutation=4)

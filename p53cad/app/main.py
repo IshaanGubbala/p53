@@ -1546,8 +1546,8 @@ def compute_target_baseline_metrics(target_mutation: str) -> Dict[str, float]:
         emb = embedder.get_embeddings(seq).detach()
         z, logits, probs = embedder.latent_forward_ascent(emb)
         pooled = z.mean(dim=1)
-        if pooled.shape[-1] != 320:
-            pooled = pooled[:, :320]
+        if pooled.shape[-1] != oracle.input_dim:
+            pooled = pooled[:, :oracle.input_dim]
         raw_score = float(oracle.model(pooled).item())
         logits_aa = logits[:, :, aa_ids]
         stability = float(F.log_softmax(logits_aa, dim=-1).max(dim=-1).values.mean().item())
@@ -1979,8 +1979,8 @@ def run_search(target_mut_override=None):
             pooled = z.mean(dim=1)
             
             # Validation: Force dimension consistency for Oracle
-            if pooled.shape[-1] != 320:
-                 pooled = pooled[:, :320] 
+            if pooled.shape[-1] != oracle.input_dim:
+                 pooled = pooled[:, :oracle.input_dim] 
 
             score = oracle.model(pooled)
             
@@ -2225,8 +2225,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
     with torch.no_grad():
         z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
         pooled_target_ref = z_target_ref.mean(dim=1)
-        if pooled_target_ref.shape[-1] != 320:
-            pooled_target_ref = pooled_target_ref[:, :320]
+        if pooled_target_ref.shape[-1] != oracle.input_dim:
+            pooled_target_ref = pooled_target_ref[:, :oracle.input_dim]
 
     wt_aa_indices = []
     for aa in P53_WT:
@@ -2329,8 +2329,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
                 optimizer.zero_grad()
                 z, logits, _ = embedder.latent_forward_ascent(emb)
                 pooled = z.mean(dim=1)
-                if pooled.shape[-1] != 320:
-                    pooled = pooled[:, :320]
+                if pooled.shape[-1] != oracle.input_dim:
+                    pooled = pooled[:, :oracle.input_dim]
                 score = oracle.model(pooled).squeeze(-1)
                 probs_full = torch.softmax(logits, dim=-1)
                 logits_aa = logits[:, :, AA_IDS]
@@ -2367,8 +2367,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
             with torch.no_grad():
                 z, logits, _ = embedder.latent_forward_ascent(emb)
                 pooled = z.mean(dim=1)
-                if pooled.shape[-1] != 320:
-                    pooled = pooled[:, :320]
+                if pooled.shape[-1] != oracle.input_dim:
+                    pooled = pooled[:, :oracle.input_dim]
                 raw_scores = oracle.model(pooled).squeeze(-1)
                 ood_distances = torch.norm(pooled - pooled_ref_batch, p=2, dim=-1)
                 for i, spec in enumerate(batch_specs):
@@ -2442,8 +2442,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
 
             z, logits, _ = embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != 320:
-                pooled = pooled[:, :320]
+            if pooled.shape[-1] != oracle.input_dim:
+                pooled = pooled[:, :oracle.input_dim]
             raw_score_t = oracle.model(pooled).squeeze(-1)
             probs_full = torch.softmax(logits, dim=-1)
             logits_aa = logits[:, :, AA_IDS]
@@ -2588,8 +2588,8 @@ def run_generative_design_live(constraints: dict, n_candidates: int = 6,
                 with torch.no_grad():
                     z, logits, _ = embedder.latent_forward_ascent(emb[i: i + 1])
                     pooled = z.mean(dim=1)
-                    if pooled.shape[-1] != 320:
-                        pooled = pooled[:, :320]
+                    if pooled.shape[-1] != oracle.input_dim:
+                        pooled = pooled[:, :oracle.input_dim]
                     raw_score = float(oracle.model(pooled).item())
                     tokens = embedder.tokenizer.convert_ids_to_tokens(
                         [AA_IDS[idx] for idx in torch.argmax(logits[:, :, AA_IDS], dim=-1)[0].tolist()]
@@ -2703,8 +2703,8 @@ def run_generative_design(constraints: dict, n_candidates: int = 6, n_steps: Opt
     with torch.no_grad():
         z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
         pooled_target_ref = z_target_ref.mean(dim=1)
-        if pooled_target_ref.shape[-1] != 320:
-            pooled_target_ref = pooled_target_ref[:, :320]
+        if pooled_target_ref.shape[-1] != oracle.input_dim:
+            pooled_target_ref = pooled_target_ref[:, :oracle.input_dim]
 
     wt_aa_indices = []
     for aa in P53_WT:
@@ -2759,8 +2759,8 @@ def run_generative_design(constraints: dict, n_candidates: int = 6, n_steps: Opt
 
             z, logits, probs = embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != 320:
-                pooled = pooled[:, :320]
+            if pooled.shape[-1] != oracle.input_dim:
+                pooled = pooled[:, :oracle.input_dim]
 
             score = oracle.model(pooled)
 
@@ -2857,8 +2857,8 @@ def run_generative_design(constraints: dict, n_candidates: int = 6, n_steps: Opt
             log_probs = F.log_softmax(logits_aa, dim=-1)
             stability = log_probs.max(dim=-1).values.mean()
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != 320:
-                pooled = pooled[:, :320]
+            if pooled.shape[-1] != oracle.input_dim:
+                pooled = pooled[:, :oracle.input_dim]
             score = oracle.model(pooled)
             dna_force = embedder.get_dna_contact_prob(z, logits, probs=probs)
 
@@ -3323,8 +3323,8 @@ with tab1:
             with torch.no_grad():
                 z_target_ref, _, _ = embedder.latent_forward_ascent(emb_target_ref)
                 pooled_target_ref = z_target_ref.mean(dim=1)
-                if pooled_target_ref.shape[-1] != 320:
-                    pooled_target_ref = pooled_target_ref[:, :320]
+                if pooled_target_ref.shape[-1] != oracle.input_dim:
+                    pooled_target_ref = pooled_target_ref[:, :oracle.input_dim]
 
             wt_aa_indices = []
             for aa in P53_WT:
@@ -3401,8 +3401,8 @@ with tab1:
 
                     z, logits, probs = embedder.latent_forward_ascent(emb)
                     pooled = z.mean(dim=1)
-                    if pooled.shape[-1] != 320:
-                        pooled = pooled[:, :320]
+                    if pooled.shape[-1] != oracle.input_dim:
+                        pooled = pooled[:, :oracle.input_dim]
 
                     score = oracle.model(pooled)
 

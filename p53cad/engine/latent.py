@@ -80,7 +80,7 @@ class ManifoldEmbedder:
     Handles interactions with the ESM-2 Protein Language Model.
     Focuses on encoding sequences into latent space and decoding them back.
     """
-    def __init__(self, model_name: str = "facebook/esm2_t6_8M_UR50D", device: Optional[str] = None):
+    def __init__(self, model_name: str = "facebook/esm2_t33_650M_UR50D", device: Optional[str] = None, lora_path: Optional[str] = None):
         self.logger = get_logger(__name__)
         self.model_name = model_name
         
@@ -155,6 +155,21 @@ class ManifoldEmbedder:
 
             # Ensure hidden states are always returned to avoid NoneType errors during navigation
             self.model.config.output_hidden_states = True
+
+            # Optional LoRA adapter loading (requires peft library)
+            if lora_path is not None:
+                try:
+                    from peft import PeftModel
+                    self.model = PeftModel.from_pretrained(self.model, lora_path)
+                    self.logger.info("Loaded LoRA adapter from %s", lora_path)
+                except ImportError:
+                    self.logger.warning(
+                        "peft library not installed; ignoring lora_path=%s. "
+                        "Install with: pip install peft", lora_path
+                    )
+                except Exception as exc:
+                    self.logger.warning("Failed to load LoRA adapter from %s: %s", lora_path, exc)
+
             self.model.eval()
             self.logger.info("Model loaded successfully with output_hidden_states=True.")
         except OSError as e:
@@ -174,6 +189,11 @@ class ManifoldEmbedder:
             self.logger.error(f"Failed to load model: {e}")
             raise
 
+    @property
+    def hidden_size(self) -> int:
+        """Return the hidden dimension of the loaded ESM-2 model."""
+        return int(self.model.config.hidden_size)
+
     def get_embeddings(self, sequence: str) -> torch.Tensor:
         """
         Retrieves the initial token embeddings (input to the first layer).
@@ -191,19 +211,46 @@ class ManifoldEmbedder:
             
         return embeddings
 
-    def latent_forward_ascent(self, embeddings: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def latent_forward_ascent(
+        self,
+        embeddings: torch.Tensor,
+        return_hidden: bool = False,
+        return_attention: bool = False,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, ...]:
         """
         Runs the transformer forward pass starting from soft embeddings.
-        Returns: (last_hidden_state, logits, probabilities)
+
+        Parameters
+        ----------
+        embeddings : Tensor
+            Soft input embeddings (1, L, D).
+        return_hidden : bool
+            If True, the 4th return value is the last hidden state tensor (1, L, D).
+        return_attention : bool
+            If True, an additional return value is a tuple of attention tensors,
+            one per layer, each of shape (1, heads, L, L).
+
+        Returns
+        -------
+        Tuple of (last_hidden_state, logits, probabilities[, hidden][, attentions])
         """
-        # Optimized: Explicit hidden state extraction (D=320)
-        # Using .esm directly ensures we get the 320-dim latent state for the oracle.
-        esm_outputs = self.model.esm(inputs_embeds=embeddings, output_hidden_states=True, return_dict=True)
+        esm_outputs = self.model.esm(
+            inputs_embeds=embeddings,
+            output_hidden_states=True,
+            output_attentions=return_attention,
+            return_dict=True,
+        )
         h = esm_outputs.last_hidden_state
-        
+
         logits = self.model.lm_head(h)
         probs = torch.softmax(logits[0], dim=-1)
-        return h, logits, probs
+
+        result = [h, logits, probs]
+        if return_hidden:
+            result.append(h)
+        if return_attention:
+            result.append(esm_outputs.attentions)
+        return tuple(result)
 
     def encode(self, sequence: str) -> torch.Tensor:
         """

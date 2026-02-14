@@ -190,7 +190,9 @@ def campaign_list(output_dir):
 @click.option('--hidden-dim', default=128, show_default=True, type=int, help="Oracle first hidden layer width.")
 @click.option('--num-layers', default=2, show_default=True, type=int, help="Number of oracle hidden layers.")
 @click.option('--dropout', default=0.2, show_default=True, type=float, help="Dropout probability between hidden layers.")
-def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed, hidden_dim, num_layers, dropout):
+@click.option('--arch', default='legacy_mlp', show_default=True, type=click.Choice(['legacy_mlp', 'attention_pooling']),
+              help="Oracle architecture: legacy_mlp (mean-pooled MLP) or attention_pooling (learnable position weighting).")
+def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed, hidden_dim, num_layers, dropout, arch):
     """Train the Functional Oracle on DMS data."""
     logger = get_logger("p53cad.cli.train")
     logger.info("Starting training pipeline...")
@@ -203,10 +205,11 @@ def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed,
     df = load_dms_data(dms)
     embedder = ManifoldEmbedder()
     oracle = FunctionalOracle(
-        input_dim=320,
+        input_dim=embedder.hidden_size,
         hidden_dim=hidden_dim,
         num_layers=num_layers,
         dropout=dropout,
+        arch=arch,
     )
     
     # Hydrate sequences from mutation names

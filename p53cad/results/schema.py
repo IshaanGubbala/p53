@@ -204,6 +204,7 @@ def select_presentation_shortlist(
     for col, default in [
         ("score", -np.inf),
         ("clinical_score", -np.inf),
+        ("pareto_rank", np.inf),
         ("rescue_dms_mean", np.inf),
         ("uncertainty", np.inf),
         ("ood_distance", np.inf),
@@ -219,6 +220,7 @@ def select_presentation_shortlist(
 
     work["score"] = pd.to_numeric(work["score"], errors="coerce").fillna(-np.inf)
     work["clinical_score"] = pd.to_numeric(work["clinical_score"], errors="coerce").fillna(-np.inf)
+    work["pareto_rank"] = pd.to_numeric(work["pareto_rank"], errors="coerce").fillna(np.inf)
     work["rescue_dms_mean"] = pd.to_numeric(work["rescue_dms_mean"], errors="coerce").fillna(np.inf)
     work["uncertainty"] = pd.to_numeric(work["uncertainty"], errors="coerce").fillna(np.inf)
     work["ood_distance"] = pd.to_numeric(work["ood_distance"], errors="coerce").fillna(np.inf)
@@ -244,8 +246,8 @@ def select_presentation_shortlist(
                 cols.append(needed)
         return pd.DataFrame(columns=cols)
 
-    ranking_cols = ["score", "clinical_score", "rescue_dms_mean", "uncertainty", "ood_distance", "n_mutations"]
-    ranking_asc = [False, False, True, True, True, True]
+    ranking_cols = ["pareto_rank", "score", "clinical_score", "rescue_dms_mean", "uncertainty", "ood_distance", "n_mutations"]
+    ranking_asc = [True, False, False, True, True, True, True]
 
     work = work.sort_values(by=ranking_cols, ascending=ranking_asc, kind="mergesort").reset_index(drop=True)
     work["_candidate_uid"] = work["candidate_uid"].astype(str)

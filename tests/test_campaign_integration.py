@@ -9,6 +9,9 @@ Runs a minimal campaign (1 scenario, 1 trial) end-to-end and validates:
 - MD script generation
 - PyMOL script generation
 - Summary markdown
+- PLL scoring (inner-loop and masked marginal)
+- Contact preservation penalty
+- Epistasis-aware scoring
 
 NOTE: Requires PyTorch and ESM-2 model (~30MB download on first run).
 Skipped if torch/transformers are unavailable.
@@ -28,6 +31,8 @@ try:
 
     bootstrap_runtime()
     from p53cad.engine.campaign import CampaignRunner
+    from p53cad.engine.latent import ManifoldEmbedder
+    from p53cad.engine.oracle import FunctionalOracle, compute_masked_marginal_pll
     from p53cad.results.store import CampaignStore
 
     HAS_DEPS = True
@@ -94,6 +99,7 @@ class TestCampaignIntegration(unittest.TestCase):
         self.assertIn("sequence", cand_df.columns)
         self.assertIn("mutations_json", cand_df.columns)
         self.assertIn("rescue_dms_mean", cand_df.columns)
+        self.assertIn("pareto_rank", cand_df.columns)
 
         # All candidates should have valid sequences (length of p53 WT = 393)
         for seq in cand_df["sequence"]:
@@ -214,6 +220,111 @@ class TestPostAnalysisComponents(unittest.TestCase):
             "structural_compensation", "electrostatic_optimization"
         ])
         self.assertGreater(mechanism.confidence, 0)
+
+
+@unittest.skipUnless(HAS_DEPS, "Requires torch, transformers, p53cad")
+class TestScientificImprovements(unittest.TestCase):
+    """Tests for PLL, contact preservation, and epistasis scoring."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.embedder = ManifoldEmbedder()
+
+    def test_latent_forward_return_hidden(self):
+        """latent_forward_ascent with return_hidden=True returns 4 tensors."""
+        from p53cad.data.dms import P53_WT
+
+        emb = self.embedder.get_embeddings(P53_WT[:50]).detach()
+        result = self.embedder.latent_forward_ascent(emb, return_hidden=True)
+        self.assertEqual(len(result), 4)
+        z, logits, probs, hidden = result
+        self.assertEqual(z.shape, hidden.shape)
+
+    def test_latent_forward_return_attention(self):
+        """latent_forward_ascent with return_attention=True returns attention tensors."""
+        from p53cad.data.dms import P53_WT
+
+        emb = self.embedder.get_embeddings(P53_WT[:50]).detach()
+        result = self.embedder.latent_forward_ascent(emb, return_attention=True)
+        self.assertEqual(len(result), 4)
+        z, logits, probs, attns = result
+        self.assertIsInstance(attns, tuple)
+        self.assertGreater(len(attns), 0)
+        # Each attention tensor: (1, heads, L, L)
+        self.assertEqual(attns[0].dim(), 4)
+
+    def test_latent_forward_return_both(self):
+        """return_hidden=True and return_attention=True returns 5 tensors."""
+        from p53cad.data.dms import P53_WT
+
+        emb = self.embedder.get_embeddings(P53_WT[:50]).detach()
+        result = self.embedder.latent_forward_ascent(
+            emb, return_hidden=True, return_attention=True
+        )
+        self.assertEqual(len(result), 5)
+
+    def test_masked_marginal_pll(self):
+        """compute_masked_marginal_pll returns a finite float for WT p53."""
+        from p53cad.data.dms import P53_WT
+
+        # Test on a few positions to keep it fast
+        pll = compute_masked_marginal_pll(self.embedder, P53_WT, [175, 248, 273])
+        self.assertIsInstance(pll, float)
+        import math
+        self.assertFalse(math.isnan(pll))
+        self.assertFalse(math.isinf(pll))
+
+    def test_pll_empty_positions(self):
+        """PLL with no positions returns 0.0."""
+        from p53cad.data.dms import P53_WT
+
+        pll = compute_masked_marginal_pll(self.embedder, P53_WT, [])
+        self.assertEqual(pll, 0.0)
+
+    def test_contact_map_loaded(self):
+        """CampaignRunner loads contact map from WT PDB."""
+        tmpdir = tempfile.mkdtemp(prefix="p53cad_contact_test_")
+        try:
+            store = CampaignStore(base_dir=tmpdir)
+            runner = CampaignRunner(store=store)
+            # Contact map should have been loaded during __init__
+            self.assertGreater(len(runner._wt_contacts), 0)
+            self.assertGreater(len(runner._ca_coords), 0)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_trajectory_has_new_loss_terms(self):
+        """Campaign trajectory includes PLL, contact, and epistasis loss terms."""
+        tmpdir = tempfile.mkdtemp(prefix="p53cad_loss_test_")
+        try:
+            store = CampaignStore(base_dir=tmpdir)
+            runner = CampaignRunner(store=store)
+            result = runner.run(
+                seed=42,
+                include_pairs=False,
+                hotspots=["R175H"],
+                delivery_methods=["gene_therapy"],
+                max_scenarios=1,
+                shortlist_n=1,
+                budget="fast",
+                with_clinical=False,
+            )
+            import pandas as pd
+
+            run_id = result["run_id"]
+            bundle = store.load_run_bundle(run_id)
+            traj_df = bundle["trajectories"]
+            self.assertGreater(len(traj_df), 0)
+            # Check new loss columns exist
+            self.assertIn("loss_pll_term", traj_df.columns)
+            self.assertIn("loss_contact_penalty", traj_df.columns)
+            self.assertIn("loss_epistasis_penalty", traj_df.columns)
+            self.assertIn("loss_cancer_pll_term", traj_df.columns)
+            self.assertIn("loss_local_score_term", traj_df.columns)
+            self.assertIn("loss_cond_rescue_term", traj_df.columns)
+            self.assertIn("loss_structure_term", traj_df.columns)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 if __name__ == "__main__":

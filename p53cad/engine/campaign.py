@@ -15,11 +15,13 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
+import math
+
 from p53cad.analysis.clinical_impact import ClinicalImpactEngine
 from p53cad.core.logging import get_logger
-from p53cad.data.dms import P53_WT, apply_mutation, get_dms_data, parse_single_mutation
+from p53cad.data.dms import P53_WT, apply_mutation, get_dms_data, get_pairwise_epistasis_lookup, parse_single_mutation
 from p53cad.engine.latent import ManifoldEmbedder
-from p53cad.engine.oracle import FunctionalOracle
+from p53cad.engine.oracle import AttentionPoolingNet, FunctionalOracle, compute_conditional_rescue_scores
 from p53cad.results.schema import (
     BIG8_HOTSPOTS,
     DEFAULT_DELIVERY_METHODS,
@@ -104,6 +106,17 @@ class CampaignRunner:
         self._dms_quality_tensor: Optional[torch.Tensor] = None
         self._load_dms_lookup()
 
+        # ── Double-mutant pairwise epistasis lookup ──
+        self._pairwise_dms: Dict[tuple, float] = get_pairwise_epistasis_lookup()
+
+        # ── Structural contact map from WT PDB (for contact & epistasis penalties) ──
+        self._wt_contacts: Dict[int, List[Tuple[int, float]]] = {}
+        self._ca_coords: Dict[int, np.ndarray] = {}
+        self._load_contact_map()
+
+        # ── WT hidden-state cache for contact preservation penalty ──
+        self._wt_hidden: Optional[torch.Tensor] = None
+
         # ── Performance caches (populated lazily, cleared between runs) ──
         self._emb_cache: Dict[str, torch.Tensor] = {}
         self._baseline_cache: Dict[str, Dict[str, float]] = {}
@@ -131,11 +144,49 @@ class CampaignRunner:
         except Exception as exc:
             logger.warning("Failed to load DMS lookup: %s", exc)
 
+    def _load_contact_map(self) -> None:
+        """Parse WT PDB and build contact map for structural penalties."""
+        pdb_path = Path(__file__).parent.parent.parent / "data" / "raw" / "p53_wt.pdb"
+        if not pdb_path.exists():
+            logger.warning("WT PDB not found at %s; contact/epistasis penalties disabled", pdb_path)
+            return
+        try:
+            from p53cad.engine.explainability import EnergyDecomposer
+            self._ca_coords = EnergyDecomposer._parse_ca_coordinates(str(pdb_path))
+            all_positions = sorted(self._ca_coords.keys())
+            self._wt_contacts = EnergyDecomposer._find_contacts(
+                self._ca_coords, all_positions, cutoff=8.0
+            )
+            logger.info("Contact map: %d residues, %d contacts loaded",
+                        len(self._ca_coords),
+                        sum(len(v) for v in self._wt_contacts.values()))
+        except Exception as exc:
+            logger.warning("Failed to load contact map: %s", exc)
+
+    def _get_wt_hidden(self, device: torch.device) -> Optional[torch.Tensor]:
+        """Cache the WT hidden states for contact preservation penalty."""
+        if self._wt_hidden is not None and self._wt_hidden.device == device:
+            return self._wt_hidden
+        if self.embedder is None:
+            return None
+        emb_wt = self._get_cached_embedding(P53_WT)
+        with torch.no_grad():
+            h, _, _ = self.embedder.latent_forward_ascent(emb_wt)
+            self._wt_hidden = h.detach()
+        return self._wt_hidden
+
     def _get_dms_quality_tensor(self, device: torch.device) -> Optional[torch.Tensor]:
         """Build (seq_len, 20) tensor of raw DMS Z-scores for differentiable DMS penalty.
 
-        Values: raw Nutlin-3 Z-scores (negative = functional = good for rescue).
+        Values: raw Nutlin-3 Z-scores with a compensatory dead zone applied:
+        - Z < -0.5: kept as-is (strongly functional — safe rescue candidates)
+        - -0.5 ≤ Z ≤ 2.0: zeroed out (neutral/compensatory zone — may rescue in context)
+        - Z > 2.0: kept as-is (catastrophically LoF — penalize)
+
         Missing entries default to 0.0 (neutral — no guidance).
+
+        The dead zone prevents penalizing mutations in the Z=+0.14 to +1.59 range
+        where known intragenic suppressors (compensatory rescues) are found.
         """
         if not self._dms_lookup:
             return None
@@ -157,7 +208,18 @@ class CampaignRunner:
                 tensor[pos - 1, aa_to_idx[aa]] = z_score
                 filled += 1
 
-        logger.info("DMS quality tensor: %d/%d entries filled on %s", filled, len(self._dms_lookup), device)
+        # Zero out the compensatory zone where rescue mutations live
+        # Z < -0.5: keep (strongly functional — safe rescue candidates)
+        # -0.5 ≤ Z ≤ 2.0: zero (neutral — could be compensatory)
+        # Z > 2.0: keep (catastrophically LoF — penalize)
+        compensatory = (tensor >= -0.5) & (tensor <= 2.0)
+        n_zeroed = int(compensatory.sum().item())
+        tensor[compensatory] = 0.0
+
+        logger.info(
+            "DMS quality tensor: %d/%d entries filled, %d zeroed (compensatory dead zone) on %s",
+            filled, len(self._dms_lookup), n_zeroed, device,
+        )
         self._dms_quality_tensor = tensor
         return tensor
 
@@ -587,8 +649,8 @@ class CampaignRunner:
         with torch.no_grad():
             z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref)
             pooled_target_ref = z_target_ref.mean(dim=1)
-            if pooled_target_ref.shape[-1] != 320:
-                pooled_target_ref = pooled_target_ref[:, :320]
+            if pooled_target_ref.shape[-1] != self.oracle.input_dim:
+                pooled_target_ref = pooled_target_ref[:, :self.oracle.input_dim]
 
         wt_aa_tensor = self._wt_aa_tensor(device=emb_target_ref.device)
 
@@ -607,6 +669,17 @@ class CampaignRunner:
 
         baseline = self._get_cached_baseline(target_seq, pooled_target_ref, mc_samples=config["mc_samples"])
         dms_quality = self._get_dms_quality_tensor(emb_target_ref.device)
+
+        # Pre-compute conditional rescue scores: ESM-2 P(aa | cancer_context)
+        # at candidate positions in the DNA-binding domain (DBD).
+        candidate_positions = [p for p in range(94, 293) if (p - 1) not in locked_indices]
+        conditional_scores: Optional[Dict[int, Dict[str, float]]] = None
+        try:
+            conditional_scores = compute_conditional_rescue_scores(
+                self.embedder, target_seq, candidate_positions[:50]
+            )
+        except Exception as exc:
+            logger.warning("Conditional rescue score computation failed: %s", exc)
 
         candidates: List[Dict[str, Any]] = []
         trajectories: List[Dict[str, Any]] = []
@@ -644,9 +717,51 @@ class CampaignRunner:
                         locked_indices=locked_indices,
                         baseline_score=float(baseline["score"]),
                         dms_quality=dms_quality,
+                        conditional_scores=conditional_scores,
                     )
                     candidates.append(cand)
                     trajectories.extend(traj_rows)
+
+        # Run one autoregressive trial per scenario for diversity
+        try:
+            ar_cand, ar_traj = self._run_autoregressive_trial(
+                scenario=scenario,
+                target_seq=target_seq,
+                locked_indices=locked_indices,
+                max_mutations=max_mutations,
+                pass_name=pass_name,
+                trial_idx=trial_counter + 1,
+                trial_seed=seed + 9999,
+                baseline_score=float(baseline["score"]),
+            )
+            candidates.append(ar_cand)
+            trajectories.extend(ar_traj)
+        except Exception as exc:
+            logger.warning("Autoregressive trial failed: %s", exc)
+
+        # Multi-objective Pareto ranking across all trial candidates
+        try:
+            from p53cad.engine.pareto import ParetoFront, ParetoSolution
+            pareto = ParetoFront()
+            for c in candidates:
+                pareto.add(ParetoSolution(
+                    candidate_uid=str(c.get("candidate_uid", "")),
+                    objectives={
+                        "oracle_score": float(c.get("score", 0.0)),
+                        "pll": float(c.get("stability", 0.0)),
+                        "dms_quality": -float(c.get("rescue_dms_mean", 0.0)),
+                        "identity": float(c.get("identity", 100.0)),
+                        "stability": float(c.get("stability", 0.0)),
+                    },
+                ))
+            ranked = pareto.solutions
+            uid_to_rank = {s.candidate_uid: s.pareto_rank for s in ranked}
+            for c in candidates:
+                c["pareto_rank"] = uid_to_rank.get(str(c.get("candidate_uid", "")), 999)
+        except Exception as exc:
+            logger.warning("Pareto ranking failed: %s", exc)
+            for c in candidates:
+                c["pareto_rank"] = 0
 
         best_score = max((float(c.get("score", -np.inf)) for c in candidates), default=-np.inf)
         metrics = {
@@ -687,6 +802,7 @@ class CampaignRunner:
         locked_indices: List[int],
         baseline_score: float,
         dms_quality: Optional[torch.Tensor] = None,
+        conditional_scores: Optional[Dict[int, Dict[str, float]]] = None,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         assert self.embedder is not None
         assert self.oracle is not None
@@ -700,6 +816,55 @@ class CampaignRunner:
 
         optimizer = torch.optim.Adam([emb], lr=0.03)
 
+        # Pre-compute WT hidden states for contact preservation penalty
+        wt_hidden = self._get_wt_hidden(emb.device)
+
+        # Pre-compute contact neighbor indices for locked (mutating) positions
+        # These are the 0-indexed positions whose structural neighbours we monitor
+        contact_neighbor_indices: List[List[int]] = []
+        has_contacts = bool(self._wt_contacts and wt_hidden is not None)
+        if has_contacts:
+            for li in locked_indices:
+                res_id = li + 1  # 1-indexed
+                neighbors = self._wt_contacts.get(res_id, [])
+                # Convert neighbor residue IDs to 0-indexed, filter to valid range
+                ni = [r - 1 for r, _ in neighbors if 0 <= r - 1 < len(P53_WT)]
+                contact_neighbor_indices.append(ni)
+
+        # Pre-compute pairwise Cα distances for epistasis proximity penalty
+        # We track pairs of all mutatable (non-locked) positions that are close
+        _epistasis_pairs: List[Tuple[int, int, float]] = []  # (idx_i, idx_j, distance)
+        if self._ca_coords:
+            all_pos = list(range(len(P53_WT)))
+            locked_set = set(locked_indices)
+            for i_idx in range(len(all_pos)):
+                if i_idx in locked_set:
+                    continue
+                ri = i_idx + 1  # 1-indexed
+                if ri not in self._ca_coords:
+                    continue
+                for j_idx in range(i_idx + 1, len(all_pos)):
+                    if j_idx in locked_set:
+                        continue
+                    rj = j_idx + 1
+                    if rj not in self._ca_coords:
+                        continue
+                    diff = self._ca_coords[ri] - self._ca_coords[rj]
+                    dist = float(np.sqrt(np.sum(diff ** 2)))
+                    if dist < 10.0:
+                        _epistasis_pairs.append((i_idx, j_idx, dist))
+        cached_epistasis_loss = torch.zeros(1, device=emb.device)
+
+        # Pre-compute position-weighted pooling kernel for mutation-neighborhood oracle.
+        # Gaussian centered on each locked_index with σ=10 residues — upweights positions
+        # near cancer sites so the oracle sees a stronger signal from rescue mutations.
+        seq_len = emb.size(1)
+        pool_weights = torch.ones(seq_len, device=emb.device)
+        for li in locked_indices:
+            dists = (torch.arange(seq_len, device=emb.device).float() - li)
+            pool_weights += torch.exp(-dists**2 / 200.0)  # σ=10 → 2σ²=200
+        pool_weights = pool_weights / pool_weights.sum()  # (L,)
+
         trajectory: List[Dict[str, Any]] = []
         best_valid_state: Optional[Dict[str, Any]] = None
         best_valid_score = -float("inf")
@@ -710,9 +875,31 @@ class CampaignRunner:
             optimizer.zero_grad()
             z, logits, _ = self.embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != 320:
-                pooled = pooled[:, :320]
-            raw_score_t = self.oracle.model(pooled).squeeze(-1)
+            if pooled.shape[-1] != self.oracle.input_dim:
+                pooled = pooled[:, :self.oracle.input_dim]
+
+            # Attention oracle receives full per-position embeddings;
+            # legacy MLP oracle receives mean-pooled embeddings.
+            _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
+            if _uses_attention:
+                z_oracle = z
+                if z_oracle.shape[-1] != self.oracle.input_dim:
+                    z_oracle = z_oracle[:, :, :self.oracle.input_dim]
+                raw_score_t = self.oracle.model(z_oracle).squeeze(-1)
+            else:
+                raw_score_t = self.oracle.model(pooled).squeeze(-1)
+
+            # Mutation-neighborhood oracle: position-weighted pooling that amplifies
+            # the signal near cancer sites instead of averaging uniformly over 393 positions.
+            pooled_local = (z.squeeze(0) * pool_weights.unsqueeze(1)).sum(dim=0, keepdim=True)  # (1, D)
+            if pooled_local.shape[-1] != self.oracle.input_dim:
+                pooled_local = pooled_local[:, :self.oracle.input_dim]
+            if _uses_attention:
+                # Attention oracle already does position weighting natively
+                local_score_t = raw_score_t
+            else:
+                local_score_t = self.oracle.model(pooled_local).squeeze(-1)
+            local_score_term = -2.0 * local_score_t
 
             probs_full = torch.softmax(logits, dim=-1)
             logits_aa = logits[:, :, AA_IDS]
@@ -723,6 +910,10 @@ class CampaignRunner:
             ood_distance_t = torch.norm(pooled - pooled_target_ref, p=2, dim=-1)
 
             probs_aa = torch.softmax(logits_aa, dim=-1)
+
+            # PLL: expected pseudo-log-likelihood — how natural this sequence looks to ESM-2
+            expected_pll = (probs_aa * log_probs).sum(dim=-1).mean(dim=-1)  # [batch]
+
             wt_probs = probs_aa[:, torch.arange(len(P53_WT), device=emb.device), wt_aa_tensor]
             expected_mutations = (1.0 - wt_probs).sum(dim=-1)
             expected_identity = 100.0 * (1.0 - expected_mutations / float(len(P53_WT)))
@@ -757,15 +948,113 @@ class CampaignRunner:
                 weighted_dms = mut_prob * expected_dms
                 # Only apply to non-locked positions (rescue sites, not cancer targets)
                 dms_mask = l1_mask if locked_indices else torch.ones(emb.size(1), device=emb.device, dtype=torch.bool)
-                dms_penalty = 25.0 * weighted_dms[:, dms_mask].mean(dim=-1)
+                dms_penalty = 10.0 * weighted_dms[:, dms_mask].mean(dim=-1)
             else:
                 dms_penalty = torch.zeros_like(raw_score_t)
 
+            # Epistasis penalty: computed every 10 steps to limit overhead.
+            # Uses detached probs to avoid stale-graph errors on subsequent backward().
+            if _epistasis_pairs and step_idx % 10 == 1:
+                probs_aa_d = probs_aa.detach()
+                wt_probs_d = wt_probs.detach()
+
+                # A. Structural proximity: penalize co-mutations at close positions
+                proximity_val = 0.0
+                for i_idx, j_idx, dist in _epistasis_pairs:
+                    mp_i = float((1.0 - probs_aa_d[:, i_idx, wt_aa_tensor[i_idx]]).item())
+                    mp_j = float((1.0 - probs_aa_d[:, j_idx, wt_aa_tensor[j_idx]]).item())
+                    proximity_val += mp_i * mp_j * math.exp(-dist / 5.0)
+                n_pairs = max(len(_epistasis_pairs), 1)
+                proximity_val /= n_pairs
+
+                # B. Attention coupling: high mutual attention = functionally coupled
+                attn_val = 0.0
+                try:
+                    with torch.no_grad():
+                        _, _, _, attns = self.embedder.latent_forward_ascent(
+                            emb.detach(), return_attention=True
+                        )
+                    # attns is a tuple of (1, heads, L, L) per layer — average all
+                    attn_stack = torch.stack([a.mean(dim=1) for a in attns]).mean(dim=0)  # (1, L, L)
+                    for i_idx, j_idx, _ in _epistasis_pairs:
+                        mp_i = float((1.0 - probs_aa_d[:, i_idx, wt_aa_tensor[i_idx]]).item())
+                        mp_j = float((1.0 - probs_aa_d[:, j_idx, wt_aa_tensor[j_idx]]).item())
+                        mutual_attn = float(((attn_stack[:, i_idx, j_idx] + attn_stack[:, j_idx, i_idx]) / 2.0).item())
+                        attn_val += mp_i * mp_j * mutual_attn
+                    attn_val /= n_pairs
+                except Exception:
+                    pass
+
+                cached_epistasis_loss = torch.tensor(
+                    2.0 * (proximity_val + attn_val), device=emb.device
+                )
+
+            epistasis_penalty = cached_epistasis_loss.expand_as(raw_score_t)
+
+            # PLL term: maximize sequence naturalness (negative because we minimize loss)
+            pll_term = -3.0 * expected_pll
+
+            # Cancer-site PLL: maximize log-probability specifically at locked (cancer) positions.
+            # This directly measures "does the current sequence context make ESM-2 more confident
+            # about the cancer residue?" — provides focused gradient that global PLL dilutes.
+            if locked_indices:
+                cancer_site_lp = log_probs[:, locked_indices, :].max(dim=-1).values.mean(dim=-1)
+                cancer_pll_term = -5.0 * cancer_site_lp
+            else:
+                cancer_pll_term = torch.zeros_like(raw_score_t)
+
+            # Contact preservation: penalize when mutated positions disrupt structural neighbors
+            if has_contacts and wt_hidden is not None:
+                cos_sims = []
+                for ni_list in contact_neighbor_indices:
+                    if not ni_list:
+                        continue
+                    ni_t = torch.tensor(ni_list, device=emb.device)
+                    cur_h = z[:, ni_t, :]     # (batch, n_neighbors, D)
+                    wt_h = wt_hidden[:, ni_t, :]  # (1, n_neighbors, D)
+                    # Cosine similarity per neighbor, averaged
+                    sim = F.cosine_similarity(cur_h, wt_h, dim=-1).mean(dim=-1)  # (batch,)
+                    cos_sims.append(sim)
+                if cos_sims:
+                    mean_cos = torch.stack(cos_sims).mean(dim=0)  # (batch,)
+                    contact_penalty = 5.0 * (1.0 - mean_cos)
+                else:
+                    contact_penalty = torch.zeros_like(raw_score_t)
+            else:
+                contact_penalty = torch.zeros_like(raw_score_t)
+
+            # Conditional DMS term: reward mutations that ESM-2 predicts are favorable
+            # in the cancer context (not just individually functional on WT).
+            if conditional_scores:
+                cond_log_prob = torch.zeros_like(raw_score_t)
+                for pos, aa_scores in conditional_scores.items():
+                    idx = pos - 1
+                    if 0 <= idx < probs_aa.shape[1]:
+                        for aa_char, lp in aa_scores.items():
+                            tok_id = self.embedder.tokenizer.convert_tokens_to_ids(aa_char)
+                            if tok_id in AA_IDS:
+                                aa_idx = AA_IDS.index(tok_id)
+                                cond_log_prob += probs_aa[:, idx, aa_idx] * lp
+                cond_rescue_term = -2.0 * cond_log_prob / max(len(conditional_scores), 1)
+            else:
+                cond_rescue_term = torch.zeros_like(raw_score_t)
+
+            # DBD structural confidence: use ESM-2's per-position confidence as a
+            # fast proxy for structural integrity (no extra forward pass needed).
+            dbd_range = list(range(93, 292))
+            dbd_confidence = log_probs[:, dbd_range, :].max(dim=-1).values.mean(dim=-1)
+            structure_term = -3.0 * dbd_confidence
+
             loss_vec = (
                 score_term
+                + local_score_term
                 + stability_term
                 + binding_term
                 + hydro_term
+                + pll_term
+                + cancer_pll_term
+                + contact_penalty
+                + epistasis_penalty
                 + ood_penalty
                 + mutation_penalty
                 + identity_penalty
@@ -774,6 +1063,8 @@ class CampaignRunner:
                 + lock_penalty
                 + l1_penalty
                 + dms_penalty
+                + cond_rescue_term
+                + structure_term
             )
 
             loss = loss_vec.mean()
@@ -791,7 +1082,7 @@ class CampaignRunner:
                     # Use fewer MC samples for intermediate checks; full count only at final step
                     intermediate_mc = min(mc_samples, 4)
                     unc_samples = mc_samples if step_idx == n_steps else intermediate_mc
-                    cached_uncertainty = self._estimate_uncertainty(pooled, mc_samples=unc_samples)
+                    cached_uncertainty = self._estimate_uncertainty(pooled, mc_samples=unc_samples, z_full=z)
 
                 score_bundle = self._build_trust_adjusted_score(
                     raw_score=raw_score,
@@ -835,7 +1126,14 @@ class CampaignRunner:
                     "loss_binding_penalty": float(binding_penalty[0].item()),
                     "loss_lock_penalty": float(lock_penalty[0].item()),
                     "loss_l1_penalty": float(l1_penalty[0].item()),
+                    "loss_pll_term": float(pll_term[0].item()),
+                    "loss_contact_penalty": float(contact_penalty[0].item()),
+                    "loss_epistasis_penalty": float(epistasis_penalty[0].item()),
                     "loss_dms_penalty": float(dms_penalty[0].item()),
+                    "loss_cancer_pll_term": float(cancer_pll_term[0].item()),
+                    "loss_local_score_term": float(local_score_term[0].item()),
+                    "loss_cond_rescue_term": float(cond_rescue_term[0].item()),
+                    "loss_structure_term": float(structure_term[0].item()),
                 }
                 trajectory.append(state)
 
@@ -928,6 +1226,205 @@ class CampaignRunner:
             payload["delivery_method"] = scenario.delivery_method
             payload["pass_name"] = pass_name
             payload["profile"] = profile["name"]
+            traj_rows.append(payload)
+
+        return candidate, traj_rows
+
+    def _run_autoregressive_trial(
+        self,
+        *,
+        scenario: ScenarioRuntime,
+        target_seq: str,
+        locked_indices: List[int],
+        max_mutations: int,
+        pass_name: str,
+        trial_idx: int,
+        trial_seed: int,
+        baseline_score: float,
+        n_candidates: int = 50,
+        top_k: int = 3,
+        temperature: float = 0.8,
+    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        """Gibbs-like autoregressive sampling: propose mutations one position at a time.
+
+        1. Start from the cancer sequence.
+        2. Rank positions by ESM-2 attention (which positions the model focuses on).
+        3. For top-N candidate positions (not locked):
+           a. Mask the position in the current sequence.
+           b. Get ESM-2's distribution over 20 AAs.
+           c. Try top-K candidates; accept if oracle score improves.
+        4. Iterate passes until convergence or max_mutations reached.
+        """
+        assert self.embedder is not None
+        assert self.oracle is not None
+
+        torch.manual_seed(trial_seed)
+        np.random.seed(trial_seed)
+
+        locked_set = set(locked_indices)
+        current_seq = list(target_seq)
+        best_seq = list(target_seq)
+        best_score = baseline_score
+
+        trajectory: List[Dict[str, Any]] = []
+        mutations_applied: List[str] = []
+
+        # Get attention weights to rank positions by importance
+        emb = self.embedder.get_embeddings("".join(current_seq)).detach()
+        with torch.no_grad():
+            _, _, _, attns = self.embedder.latent_forward_ascent(emb, return_attention=True)
+            # Average attention across layers and heads → (L, L)
+            attn_avg = torch.stack([a.mean(dim=1) for a in attns]).mean(dim=0).squeeze(0)  # (L, L)
+            # Per-position attention magnitude = sum of attention received from all other positions
+            pos_importance = attn_avg.sum(dim=0)  # (L,)
+
+        # Rank positions: highest attention, not locked, within DBD
+        dbd_range = set(range(93, 292))
+        candidate_positions = [
+            i for i in range(len(P53_WT))
+            if i not in locked_set and i in dbd_range
+        ]
+        candidate_positions.sort(key=lambda i: float(pos_importance[i].item()), reverse=True)
+        candidate_positions = candidate_positions[:n_candidates]
+
+        n_mutations_applied = 0
+        for pass_num in range(3):  # Up to 3 passes over candidate positions
+            improved_this_pass = False
+            for pos_idx in candidate_positions:
+                if n_mutations_applied >= max_mutations:
+                    break
+
+                # Mask this position and get ESM-2's distribution
+                seq_str = "".join(current_seq)
+                inputs = self.embedder.tokenizer(seq_str, return_tensors="pt", add_special_tokens=False).to(self.embedder.device)
+                masked_ids = inputs.input_ids.clone()
+                masked_ids[0, pos_idx] = self.embedder.tokenizer.mask_token_id
+
+                with torch.no_grad():
+                    outputs = self.embedder.model(input_ids=masked_ids, return_dict=True)
+                    logits = outputs.logits[0, pos_idx]
+                    probs = torch.softmax(logits / temperature, dim=-1)
+
+                # Get top-K amino acid candidates at this position
+                top_probs, top_ids = probs.topk(top_k)
+                original_aa = current_seq[pos_idx]
+
+                for k_idx in range(top_k):
+                    candidate_aa_id = top_ids[k_idx].item()
+                    candidate_tokens = self.embedder.tokenizer.convert_ids_to_tokens([candidate_aa_id])
+                    if not candidate_tokens:
+                        continue
+                    candidate_aa = candidate_tokens[0]
+                    if candidate_aa == original_aa or len(candidate_aa) != 1 or candidate_aa not in "ACDEFGHIKLMNPQRSTVWY":
+                        continue
+
+                    # Try this substitution
+                    test_seq = list(current_seq)
+                    test_seq[pos_idx] = candidate_aa
+                    test_str = "".join(test_seq)
+
+                    # Score with oracle
+                    test_emb = self.embedder.get_embeddings(test_str).detach()
+                    with torch.no_grad():
+                        test_z, _, _ = self.embedder.latent_forward_ascent(test_emb)
+                        if isinstance(self.oracle.model, AttentionPoolingNet):
+                            test_oracle_input = test_z
+                            if test_oracle_input.shape[-1] != self.oracle.input_dim:
+                                test_oracle_input = test_oracle_input[:, :, :self.oracle.input_dim]
+                            test_score = float(self.oracle.model(test_oracle_input).squeeze(-1).item())
+                        else:
+                            test_pooled = test_z.mean(dim=1)
+                            if test_pooled.shape[-1] != self.oracle.input_dim:
+                                test_pooled = test_pooled[:, :self.oracle.input_dim]
+                            test_score = float(self.oracle.model(test_pooled).squeeze(-1).item())
+
+                    if test_score > best_score:
+                        current_seq = test_seq
+                        best_score = test_score
+                        best_seq = list(test_seq)
+                        mut_label = f"{P53_WT[pos_idx]}{pos_idx+1}{candidate_aa}"
+                        mutations_applied.append(mut_label)
+                        n_mutations_applied += 1
+                        improved_this_pass = True
+
+                        trajectory.append({
+                            "step": n_mutations_applied,
+                            "score": best_score,
+                            "mutation_applied": mut_label,
+                            "n_mutations": n_mutations_applied,
+                            "sequence": "".join(best_seq),
+                        })
+                        break  # Accept first improvement, move to next position
+
+            if not improved_this_pass:
+                break  # Converged
+
+        # Build candidate dict
+        final_seq = "".join(best_seq)
+        all_muts = [f"{P53_WT[j]}{j+1}{best_seq[j]}" for j in range(len(P53_WT)) if P53_WT[j] != best_seq[j]]
+        mut_positions = [j + 1 for j in range(len(P53_WT)) if P53_WT[j] != best_seq[j]]
+        seq_identity = 100.0 * (1.0 - len(all_muts) / float(len(P53_WT)))
+
+        # DMS quality for rescue mutations
+        target_set = set(str(t).strip().upper() for t in scenario.targets)
+        rescue_muts = [m for m in all_muts if m not in target_set]
+        rescue_dms_scores = []
+        n_functional_rescues = 0
+        for rm in rescue_muts:
+            parsed = parse_single_mutation(rm)
+            if parsed is not None:
+                _, pos, var_aa = parsed
+                z_val = self._dms_lookup.get((pos, var_aa))
+                if z_val is not None:
+                    rescue_dms_scores.append(z_val)
+                    if z_val < 0:
+                        n_functional_rescues += 1
+        rescue_dms_mean = float(np.mean(rescue_dms_scores)) if rescue_dms_scores else 0.0
+
+        candidate_uid = f"{scenario.scenario_id}|{pass_name}|autoregressive|trial{trial_idx}"
+        candidate = {
+            "candidate_uid": candidate_uid,
+            "scenario_id": scenario.scenario_id,
+            "target_label": scenario.target_label,
+            "targets_json": json.dumps(scenario.targets),
+            "delivery_method": scenario.delivery_method,
+            "pass_name": pass_name,
+            "repeat_idx": 1,
+            "restart_idx": 1,
+            "trial_idx": int(trial_idx),
+            "profile": "Autoregressive",
+            "sequence": final_seq,
+            "score": float(best_score),
+            "score_raw": float(best_score),
+            "score_calibrated": float(self._calibrate_score(best_score)),
+            "score_gain_vs_target": float(best_score - baseline_score),
+            "stability": 0.0,
+            "binding": 0.0,
+            "identity": float(seq_identity),
+            "n_mutations": int(len(all_muts)),
+            "mutations_json": json.dumps(all_muts),
+            "mut_positions_json": json.dumps(mut_positions),
+            "uncertainty": 0.0,
+            "ood_distance": 0.0,
+            "rescue_dms_mean": float(rescue_dms_mean),
+            "n_functional_rescues": int(n_functional_rescues),
+            "n_rescue_mutations": int(len(rescue_muts)),
+            "meets_constraints": bool(seq_identity >= 90.0),
+            "selection_reason": "autoregressive_sampling",
+            "receptor_source": "n/a",
+            "docking_backend": "n/a",
+            "md_status": "n/a",
+        }
+
+        traj_rows = []
+        for row in trajectory:
+            payload = dict(row)
+            payload["candidate_uid"] = candidate_uid
+            payload["scenario_id"] = scenario.scenario_id
+            payload["target_label"] = scenario.target_label
+            payload["delivery_method"] = scenario.delivery_method
+            payload["pass_name"] = pass_name
+            payload["profile"] = "Autoregressive"
             traj_rows.append(payload)
 
         return candidate, traj_rows
@@ -1041,9 +1538,16 @@ class CampaignRunner:
         with torch.no_grad():
             z, logits, _ = self.embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != 320:
-                pooled = pooled[:, :320]
-            raw_score = float(self.oracle.model(pooled).item())
+            if pooled.shape[-1] != self.oracle.input_dim:
+                pooled = pooled[:, :self.oracle.input_dim]
+            _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
+            if _uses_attention:
+                z_oracle = z
+                if z_oracle.shape[-1] != self.oracle.input_dim:
+                    z_oracle = z_oracle[:, :, :self.oracle.input_dim]
+                raw_score = float(self.oracle.model(z_oracle).item())
+            else:
+                raw_score = float(self.oracle.model(pooled).item())
             logits_aa = logits[:, :, AA_IDS]
             stability = float(F.log_softmax(logits_aa, dim=-1).max(dim=-1).values.mean().item())
             probs_full = torch.softmax(logits, dim=-1)
@@ -1053,7 +1557,7 @@ class CampaignRunner:
             raw_score=raw_score,
             pooled=pooled,
             pooled_ref=pooled_target_ref,
-            cached_uncertainty=self._estimate_uncertainty(pooled, mc_samples=mc_samples),
+            cached_uncertainty=self._estimate_uncertainty(pooled, mc_samples=mc_samples, z_full=z),
         )
         return {
             "score": float(bundle["score_adjusted"]),
@@ -1099,16 +1603,18 @@ class CampaignRunner:
         squashed = center + scale * np.tanh((float(raw_score) - center) / scale)
         return float(np.clip(squashed, clip_low, clip_high))
 
-    def _estimate_uncertainty(self, pooled: torch.Tensor, mc_samples: int = 8) -> float:
+    def _estimate_uncertainty(self, pooled: torch.Tensor, mc_samples: int = 8, z_full: Optional[torch.Tensor] = None) -> float:
         assert self.oracle is not None
         n_samples = max(int(mc_samples), 2)
         was_training = self.oracle.model.training
+        _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
+        oracle_input = z_full if (_uses_attention and z_full is not None) else pooled
         preds = []
         try:
             self.oracle.model.train()
             with torch.no_grad():
                 for _ in range(n_samples):
-                    preds.append(float(self.oracle.model(pooled).squeeze(-1).mean().item()))
+                    preds.append(float(self.oracle.model(oracle_input).squeeze(-1).mean().item()))
         except Exception:
             return 0.0
         finally:

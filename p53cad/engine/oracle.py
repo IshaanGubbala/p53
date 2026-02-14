@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, random_split
 from tqdm import tqdm
@@ -14,10 +15,17 @@ from p53cad.engine.latent import ManifoldEmbedder
 
 
 class DMSDataset(Dataset):
-    def __init__(self, sequences: List[str], scores: List[float], embedder: ManifoldEmbedder):
+    def __init__(
+        self,
+        sequences: List[str],
+        scores: List[float],
+        embedder: ManifoldEmbedder,
+        per_position: bool = False,
+    ):
         self.sequences = sequences
         self.scores = torch.tensor(scores, dtype=torch.float32)
         self.embedder = embedder
+        self.per_position = per_position
         self.cache: Dict[str, torch.Tensor] = {}
 
     def __len__(self):
@@ -32,7 +40,10 @@ class DMSDataset(Dataset):
         else:
             with torch.no_grad():
                 raw = self.embedder.encode(seq)  # (1, L, D)
-                emb = raw.mean(dim=1).squeeze(0).cpu()  # (D,)
+                if self.per_position:
+                    emb = raw.squeeze(0).cpu()  # (L, D)
+                else:
+                    emb = raw.mean(dim=1).squeeze(0).cpu()  # (D,)
             self.cache[seq] = emb
 
         return emb, score
@@ -45,7 +56,7 @@ class FunctionalNet(nn.Module):
 
     def __init__(
         self,
-        input_dim: int = 320,
+        input_dim: int = 1280,
         hidden_dim: int = 128,
         num_layers: int = 2,
         dropout: float = 0.2,
@@ -81,15 +92,97 @@ class FunctionalNet(nn.Module):
         return self.net(x)
 
 
+class AttentionPoolingNet(nn.Module):
+    """Oracle with learnable attention pooling over sequence positions.
+
+    Accepts (batch, seq_len, D) and learns which positions matter for
+    functional scoring, eliminating the mean-pooling bottleneck.
+    Also accepts (batch, D) for backward compatibility (passes through MLP head).
+
+    Uses delta encoding: subtracts a cached WT baseline from per-position
+    inputs so that mutated positions stand out as nonzero residuals.
+    Without this, single-AA mutations are invisible among 393 identical positions.
+    """
+
+    def __init__(
+        self,
+        input_dim: int = 1280,
+        hidden_dim: int = 256,
+        n_heads: int = 4,
+        dropout: float = 0.2,
+    ):
+        super().__init__()
+        self.input_dim = input_dim
+
+        # WT baseline for delta encoding (set during training, saved in state_dict)
+        self.register_buffer("wt_baseline", None)
+
+        # Learnable query vector for attention pooling
+        self.query = nn.Parameter(torch.randn(1, 1, input_dim) * 0.02)
+
+        # Multi-head attention: query attends over sequence positions
+        self.attn = nn.MultiheadAttention(
+            embed_dim=input_dim, num_heads=n_heads, dropout=dropout, batch_first=True
+        )
+        self.layer_norm = nn.LayerNorm(input_dim)
+
+        # MLP head: input_dim → hidden → hidden//2 → 1
+        self.head = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, 1),
+        )
+
+    def set_wt_baseline(self, wt_emb: torch.Tensor) -> None:
+        """Register WT per-position embedding for delta encoding.
+
+        Parameters
+        ----------
+        wt_emb : Tensor
+            Shape (L, D) or (1, L, D) — WT hidden states from ESM-2.
+        """
+        if wt_emb.dim() == 3:
+            wt_emb = wt_emb.squeeze(0)
+        self.wt_baseline = wt_emb.detach().clone()
+
+    def forward(self, x):
+        target_device = self.query.device
+        if x.device != target_device:
+            x = x.to(target_device)
+
+        # Backward compat: if already pooled (batch, D), just run MLP head
+        if x.dim() == 2:
+            return self.head(x)
+
+        # Delta encoding: subtract WT baseline so mutation positions have nonzero signal
+        if self.wt_baseline is not None:
+            wt = self.wt_baseline.to(x.device)
+            x = x - wt.unsqueeze(0)  # (batch, L, D) - (1, L, D)
+
+        # x: (batch, seq_len, D)
+        batch_size = x.size(0)
+        query = self.query.expand(batch_size, -1, -1)  # (batch, 1, D)
+
+        # Attention pooling: query attends to all positions
+        pooled, _attn_weights = self.attn(query, x, x)  # (batch, 1, D)
+        pooled = self.layer_norm(pooled.squeeze(1))  # (batch, D)
+
+        return self.head(pooled)
+
+
 class FunctionalOracle:
     def __init__(
         self,
         model_path: Path | str = None,
-        input_dim: int = 320,
+        input_dim: int = 1280,
         hidden_dim: int = 128,
         num_layers: int = 2,
         dropout: float = 0.2,
         use_rtl: bool = False,
+        arch: str = "legacy_mlp",
     ):
         self.logger = get_logger(__name__)
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -97,16 +190,25 @@ class FunctionalOracle:
         self.hidden_dim = hidden_dim
         self.num_layers = max(int(num_layers), 1)
         self.dropout = float(max(0.0, min(dropout, 0.9)))
-        self.arch_name = "legacy_mlp"
-        self.model: nn.Module = FunctionalNet(
-            input_dim=self.input_dim,
-            hidden_dim=self.hidden_dim,
-            num_layers=self.num_layers,
-            dropout=self.dropout,
-        )
+        self.arch_name = arch
+
+        if arch == "attention_pooling":
+            self.model: nn.Module = AttentionPoolingNet(
+                input_dim=self.input_dim,
+                hidden_dim=self.hidden_dim,
+                n_heads=4,
+                dropout=self.dropout,
+            )
+        else:
+            self.model: nn.Module = FunctionalNet(
+                input_dim=self.input_dim,
+                hidden_dim=self.hidden_dim,
+                num_layers=self.num_layers,
+                dropout=self.dropout,
+            )
 
         if use_rtl:
-            self.logger.warning("RTL oracle was removed. Falling back to legacy_mlp.")
+            self.logger.warning("RTL oracle was removed. Falling back to %s.", self.arch_name)
 
         if model_path and Path(model_path).exists():
             self._load_model(model_path)
@@ -125,37 +227,58 @@ class FunctionalOracle:
             self.hidden_dim = int(payload.get("hidden_dim", self.hidden_dim))
             self.num_layers = int(payload.get("num_layers", self.num_layers))
             self.dropout = float(payload.get("dropout", self.dropout))
-            model = FunctionalNet(
-                input_dim=self.input_dim,
-                hidden_dim=self.hidden_dim,
-                num_layers=self.num_layers,
-                dropout=self.dropout,
-            )
 
-            if arch != "legacy_mlp":
+            if arch == "attention_pooling":
+                model = AttentionPoolingNet(
+                    input_dim=self.input_dim,
+                    hidden_dim=self.hidden_dim,
+                    n_heads=int(payload.get("n_heads", 4)),
+                    dropout=self.dropout,
+                )
+            elif arch == "legacy_mlp":
+                model = FunctionalNet(
+                    input_dim=self.input_dim,
+                    hidden_dim=self.hidden_dim,
+                    num_layers=self.num_layers,
+                    dropout=self.dropout,
+                )
+            else:
                 self.logger.warning(
                     "Unsupported oracle architecture '%s' in %s. "
-                    "RTL checkpoints are no longer used; retrain to produce legacy_mlp.",
+                    "Falling back to legacy_mlp.",
                     arch,
                     model_path,
+                )
+                model = FunctionalNet(
+                    input_dim=self.input_dim,
+                    hidden_dim=self.hidden_dim,
+                    num_layers=self.num_layers,
+                    dropout=self.dropout,
                 )
                 self.model = model
                 self.arch_name = "legacy_mlp"
                 return
 
             try:
-                model.load_state_dict(payload["model_state_dict"])
+                sd = payload["model_state_dict"]
+                # wt_baseline registered as None isn't in the expected state_dict;
+                # pre-register with matching shape so load_state_dict can fill it.
+                if "wt_baseline" in sd and hasattr(model, "wt_baseline") and model.wt_baseline is None:
+                    model.register_buffer("wt_baseline", torch.zeros_like(sd["wt_baseline"]))
+                model.load_state_dict(sd)
             except Exception as exc:
                 self.logger.warning(
-                    "Failed to load oracle checkpoint %s: %s. Using fresh legacy_mlp weights.",
+                    "Failed to load oracle checkpoint %s: %s. Using fresh %s weights.",
                     model_path,
                     exc,
+                    arch,
                 )
             else:
                 self.model = model
-                self.arch_name = "legacy_mlp"
+                self.arch_name = arch
                 self.logger.info(
-                    "Loaded oracle architecture: legacy_mlp (input=%d, hidden=%d, layers=%d, dropout=%.2f)",
+                    "Loaded oracle architecture: %s (input=%d, hidden=%d, layers=%d, dropout=%.2f)",
+                    arch,
                     self.input_dim,
                     self.hidden_dim,
                     self.num_layers,
@@ -200,10 +323,24 @@ class FunctionalOracle:
         self.logger.info(f"Training FunctionalOracle on {len(dms_data)} sequences...")
         self.model.train()
 
+        use_per_position = isinstance(self.model, AttentionPoolingNet)
+
+        # For attention oracle: compute WT baseline for delta encoding
+        if use_per_position:
+            from p53cad.data.dms import P53_WT
+
+            with torch.no_grad():
+                wt_emb = embedder.encode(P53_WT).squeeze(0).cpu()  # (L, D)
+            self.model.set_wt_baseline(wt_emb)
+            self.logger.info(
+                "Set WT baseline for delta encoding (%s)", tuple(wt_emb.shape)
+            )
+
         dataset = DMSDataset(
             dms_data["sequence"].tolist(),
             dms_data["score"].tolist(),
             embedder,
+            per_position=use_per_position,
         )
         total_samples = len(dataset)
         val_fraction = float(max(0.0, min(val_split, 0.49)))
@@ -311,7 +448,6 @@ class FunctionalOracle:
                 best_metric,
             )
         self.model.eval()
-        self.arch_name = "legacy_mlp"
         if save_path:
             checkpoint = {
                 "arch": self.arch_name,
@@ -319,6 +455,7 @@ class FunctionalOracle:
                 "hidden_dim": int(self.hidden_dim),
                 "num_layers": int(self.num_layers),
                 "dropout": float(self.dropout),
+                "n_heads": int(self.model.attn.num_heads) if hasattr(self.model, "attn") else 0,
                 "model_state_dict": self.model.state_dict(),
                 "training": {
                     "epochs_requested": int(epochs),
@@ -340,6 +477,9 @@ class FunctionalOracle:
             embedding = torch.tensor(embedding, dtype=torch.float32)
         vec = embedding.to(self.device).float()
         if vec.dim() == 3:
+            # Attention oracle consumes (batch, L, D) directly
+            if isinstance(self.model, AttentionPoolingNet):
+                return vec
             return vec.mean(dim=1)
         if vec.dim() == 2:
             return vec
@@ -363,3 +503,126 @@ class FunctionalOracle:
         Backward-compatible shim: routing diagnostics are removed.
         """
         return {"score": self.predict(embedding), "arch": self.arch_name}
+
+
+def compute_masked_marginal_pll(
+    embedder: ManifoldEmbedder,
+    sequence: str,
+    mutated_positions: List[int],
+) -> float:
+    """Compute masked marginal pseudo-log-likelihood at mutated positions.
+
+    For each position in *mutated_positions* (1-indexed), mask the token,
+    run ESM-2 forward, and accumulate log P(true_aa | context).  This is
+    the gold-standard zero-shot fitness predictor (Meier et al. 2021).
+
+    Too expensive for the inner optimisation loop (one forward pass per
+    position) but ideal for ranking ~30 shortlist candidates.
+
+    Parameters
+    ----------
+    embedder : ManifoldEmbedder
+        Loaded ESM-2 wrapper with tokenizer and model.
+    sequence : str
+        Full-length protein sequence (e.g. 393 AA for p53).
+    mutated_positions : list of int
+        1-indexed residue positions to evaluate.
+
+    Returns
+    -------
+    float
+        Sum of log P(aa_i | context) over mutated positions.
+    """
+    if not mutated_positions:
+        return 0.0
+
+    # Tokenize without special tokens — positions map 1:1 to token indices
+    inputs = embedder.tokenizer(
+        sequence, return_tensors="pt", add_special_tokens=False
+    ).to(embedder.device)
+    input_ids = inputs.input_ids  # (1, L)
+
+    mask_token_id = embedder.tokenizer.mask_token_id
+    total_log_prob = 0.0
+
+    with torch.no_grad():
+        for pos in mutated_positions:
+            idx = pos - 1  # 0-indexed
+            if idx < 0 or idx >= input_ids.shape[1]:
+                continue
+
+            masked_ids = input_ids.clone()
+            masked_ids[0, idx] = mask_token_id
+
+            outputs = embedder.model(input_ids=masked_ids, return_dict=True)
+            logits = outputs.logits  # (1, L, vocab)
+            log_probs = F.log_softmax(logits[0, idx], dim=-1)
+            true_token = input_ids[0, idx].item()
+            total_log_prob += float(log_probs[true_token].item())
+
+    return total_log_prob
+
+
+def compute_conditional_rescue_scores(
+    embedder: ManifoldEmbedder,
+    cancer_seq: str,
+    positions: List[int],
+) -> Dict[int, Dict[str, float]]:
+    """Compute ESM-2 P(aa | cancer_context) at each position.
+
+    Masks each position in the cancer sequence, runs ESM-2 forward, and
+    returns the full amino acid log-probability distribution.  This tells
+    us which substitutions ESM-2 considers favorable *in the cancer context*,
+    enabling conditional DMS scoring.
+
+    Parameters
+    ----------
+    embedder : ManifoldEmbedder
+        Loaded ESM-2 wrapper.
+    cancer_seq : str
+        Full-length cancer-mutant protein sequence.
+    positions : list of int
+        1-indexed residue positions to evaluate.
+
+    Returns
+    -------
+    dict
+        {pos: {aa_letter: log_prob, ...}, ...}
+    """
+    if not positions:
+        return {}
+
+    inputs = embedder.tokenizer(
+        cancer_seq, return_tensors="pt", add_special_tokens=False
+    ).to(embedder.device)
+    input_ids = inputs.input_ids
+    mask_token_id = embedder.tokenizer.mask_token_id
+
+    # Build AA token id → letter mapping
+    aa_letters = "ACDEFGHIKLMNPQRSTVWY"
+    aa_token_ids = []
+    for aa in aa_letters:
+        tid = embedder.tokenizer.convert_tokens_to_ids(aa)
+        aa_token_ids.append(tid)
+
+    result: Dict[int, Dict[str, float]] = {}
+
+    with torch.no_grad():
+        for pos in positions:
+            idx = pos - 1
+            if idx < 0 or idx >= input_ids.shape[1]:
+                continue
+
+            masked_ids = input_ids.clone()
+            masked_ids[0, idx] = mask_token_id
+
+            outputs = embedder.model(input_ids=masked_ids, return_dict=True)
+            logits = outputs.logits
+            log_probs = F.log_softmax(logits[0, idx], dim=-1)
+
+            pos_scores: Dict[str, float] = {}
+            for aa_char, tid in zip(aa_letters, aa_token_ids):
+                pos_scores[aa_char] = float(log_probs[tid].item())
+            result[pos] = pos_scores
+
+    return result
