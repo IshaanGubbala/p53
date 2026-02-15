@@ -341,7 +341,7 @@ class ManifoldEmbedder:
              probs = torch.softmax(logits[0], dim=-1)
         
         if probs is None:
-             return torch.tensor(0.0)
+             return torch.tensor(0.0, device=self.device)
 
         pos_ids = [10, 15, 21] # R, K, H
         l1 = list(range(111, 124))
@@ -350,7 +350,7 @@ class ManifoldEmbedder:
         all_interface = [i for i in (l1 + l2 + l3) if i < probs.shape[0]]
         
         if not all_interface:
-            return torch.tensor(0.0, device=logits.device)
+            return torch.tensor(0.0, device=probs.device)
             
         charge_density = probs[all_interface][:, pos_ids].sum(dim=-1).mean()
         return charge_density
@@ -363,7 +363,7 @@ class ManifoldEmbedder:
              probs = torch.softmax(logits[0], dim=-1)
         
         if probs is None:
-             return torch.tensor(0.0)
+             return torch.tensor(0.0, device=self.device)
 
         # L(4), I(12), V(7), F(18), W(22), M(20)
         hydro_ids = [4, 12, 7, 18, 22, 20]
@@ -375,7 +375,7 @@ class ManifoldEmbedder:
         true_core = [i for i in core_res if i not in loops]
         
         if not true_core:
-            return torch.tensor(0.0, device=logits.device)
+            return torch.tensor(0.0, device=probs.device)
             
         packing_score = probs[true_core][:, hydro_ids].sum(dim=-1).mean()
         return packing_score
