@@ -1026,7 +1026,7 @@ class CampaignRunner:
             # Conditional DMS term: reward mutations that ESM-2 predicts are favorable
             # in the cancer context (not just individually functional on WT).
             if conditional_scores:
-                cond_log_prob = torch.zeros_like(raw_score_t)
+                cond_log_prob = torch.zeros_like(probs_aa[:, 0, 0])
                 for pos, aa_scores in conditional_scores.items():
                     idx = pos - 1
                     if 0 <= idx < probs_aa.shape[1]:
@@ -1034,7 +1034,7 @@ class CampaignRunner:
                             tok_id = self.embedder.tokenizer.convert_tokens_to_ids(aa_char)
                             if tok_id in AA_IDS:
                                 aa_idx = AA_IDS.index(tok_id)
-                                cond_log_prob += probs_aa[:, idx, aa_idx] * lp
+                                cond_log_prob = cond_log_prob + probs_aa[:, idx, aa_idx] * float(lp)
                 cond_rescue_term = -2.0 * cond_log_prob / max(len(conditional_scores), 1)
             else:
                 cond_rescue_term = torch.zeros_like(raw_score_t)
