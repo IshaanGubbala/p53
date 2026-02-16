@@ -700,6 +700,46 @@
         "documentation": {}
     },
     {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Iterable",
         "importPath": "typing",
         "description": "typing",
@@ -1004,6 +1044,30 @@
         "documentation": {}
     },
     {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "asdict",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
         "label": "dataclass",
         "importPath": "dataclasses",
         "description": "dataclasses",
@@ -1033,6 +1097,14 @@
         "description": "collections",
         "isExtraImport": true,
         "detail": "collections",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
         "documentation": {}
     },
     {
@@ -1318,6 +1390,14 @@
         "documentation": {}
     },
     {
+        "label": "get_logger",
+        "importPath": "p53cad.core.logging",
+        "description": "p53cad.core.logging",
+        "isExtraImport": true,
+        "detail": "p53cad.core.logging",
+        "documentation": {}
+    },
+    {
         "label": "bootstrap_runtime",
         "importPath": "p53cad.core.runtime",
         "description": "p53cad.core.runtime",
@@ -1473,6 +1553,22 @@
         "importPath": "plotly.io",
         "description": "plotly.io",
         "detail": "plotly.io",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -2278,6 +2374,15 @@
         "documentation": {}
     },
     {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
         "label": "combinations",
         "importPath": "itertools",
         "description": "itertools",
@@ -2392,6 +2497,102 @@
         "description": "p53cad.engine.pareto",
         "isExtraImport": true,
         "detail": "p53cad.engine.pareto",
+        "documentation": {}
+    },
+    {
+        "label": "MagicMock",
+        "importPath": "unittest.mock",
+        "description": "unittest.mock",
+        "isExtraImport": true,
+        "detail": "unittest.mock",
+        "documentation": {}
+    },
+    {
+        "label": "patch",
+        "importPath": "unittest.mock",
+        "description": "unittest.mock",
+        "isExtraImport": true,
+        "detail": "unittest.mock",
+        "documentation": {}
+    },
+    {
+        "label": "DDGResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "DNABindingInterfaceResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "EnergyMinimizationResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "ESMFoldResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDStabilityResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationPipeline",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationReport",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationResult",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "compute_physics_score",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "_seq_hash",
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "isExtraImport": true,
+        "detail": "p53cad.engine.physics_validation",
         "documentation": {}
     },
     {
@@ -3968,6 +4169,15 @@
         "documentation": {}
     },
     {
+        "label": "validate",
+        "kind": 2,
+        "importPath": "p53cad.cli.main",
+        "description": "p53cad.cli.main",
+        "peekOfCode": "def validate(run_id, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, device, output_dir):\n    \"\"\"Run physics-based validation on a campaign's top candidates.\"\"\"\n    logger = get_logger(\"p53cad.cli.validate\")\n    from p53cad.results.store import CampaignStore\n    store = CampaignStore(base_dir=Path(output_dir))\n    resolved_run_id = run_id or store.latest_run_id()\n    if not resolved_run_id:\n        logger.error(\"No campaign runs found in %s\", output_dir)\n        return\n    bundle = store.load_run_bundle(resolved_run_id)",
+        "detail": "p53cad.cli.main",
+        "documentation": {}
+    },
+    {
         "label": "lab",
         "kind": 2,
         "importPath": "p53cad.cli.main",
@@ -5255,6 +5465,141 @@
         "documentation": {}
     },
     {
+        "label": "ESMFoldResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class ESMFoldResult:\n    \"\"\"Local ESMFold structure prediction result.\"\"\"\n    pdb_string: str\n    plddt_scores: List[float]\n    mean_plddt: float\n    dbd_plddt: float          # residues 94-292\n    ptm_score: Optional[float] = None\n    elapsed_sec: float = 0.0\n    def to_dict(self) -> Dict[str, Any]:\n        d = asdict(self)",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "EnergyMinimizationResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class EnergyMinimizationResult:\n    \"\"\"OpenMM energy minimization result.\"\"\"\n    potential_energy_kcal: float\n    force_field: str = \"amber14\"\n    solvent_model: str = \"OBC2\"\n    n_atoms: int = 0\n    pdbfixer_missing_residues: int = 0\n    pdbfixer_missing_atoms: int = 0\n    elapsed_sec: float = 0.0\n    def to_dict(self) -> Dict[str, Any]:",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "DDGResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class DDGResult:\n    \"\"\"Relative DDG result (rescue vs WT and vs cancer mutant).\"\"\"\n    ddg_vs_wt_kcal: float\n    ddg_vs_cancer_kcal: float\n    interpretation: str  # \"stabilizing\", \"neutral\", \"destabilizing\"\n    def to_dict(self) -> Dict[str, Any]:\n        return asdict(self)\n@dataclass\nclass MDStabilityResult:\n    \"\"\"Short MD stability check result.\"\"\"",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDStabilityResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class MDStabilityResult:\n    \"\"\"Short MD stability check result.\"\"\"\n    rmsd_mean: float         # Angstroms\n    rmsd_std: float\n    rmsd_final: float\n    rmsf_per_residue: List[float]\n    rmsf_dbd_mean: float     # DBD residues 94-292\n    ss_content: Dict[str, float]   # helix, sheet, coil fractions\n    rg_mean: float           # radius of gyration (nm)\n    stability_score: float   # 0-100",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "DNABindingInterfaceResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class DNABindingInterfaceResult:\n    \"\"\"DNA-binding interface preservation analysis.\"\"\"\n    dbd_rmsd: float                          # CA RMSD of DBD vs WT (Angstroms)\n    per_contact_rmsd: Dict[str, float]       # residue label -> CA displacement\n    interface_preservation_score: float      # 0.0 to 1.0\n    elapsed_sec: float = 0.0\n    def to_dict(self) -> Dict[str, Any]:\n        return asdict(self)\n@dataclass\nclass PhysicsValidationResult:",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationResult",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class PhysicsValidationResult:\n    \"\"\"Composite per-candidate validation result.\"\"\"\n    candidate_rank: int\n    target_label: str\n    sequence_hash: str\n    esmfold: Optional[ESMFoldResult] = None\n    energy: Optional[EnergyMinimizationResult] = None\n    ddg: Optional[DDGResult] = None\n    md: Optional[MDStabilityResult] = None\n    dna_binding: Optional[DNABindingInterfaceResult] = None",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationReport",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class PhysicsValidationReport:\n    \"\"\"Full report across all candidates.\"\"\"\n    run_id: str\n    n_candidates: int\n    n_tier2: int\n    wt_energy_kcal: Optional[float] = None\n    candidates: List[Dict[str, Any]] = field(default_factory=list)\n    elapsed_total_sec: float = 0.0\n    def to_dict(self) -> Dict[str, Any]:\n        return {",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "LocalESMFoldPredictor",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class LocalESMFoldPredictor:\n    \"\"\"Predict structures with facebook/esmfold_v1 loaded locally via HuggingFace.\"\"\"\n    _instance: Optional[\"LocalESMFoldPredictor\"] = None\n    def __new__(cls, *args: Any, **kwargs: Any) -> \"LocalESMFoldPredictor\":\n        if cls._instance is None:\n            cls._instance = super().__new__(cls)\n            cls._instance._initialized = False\n        return cls._instance\n    def __init__(self, device: str = \"cpu\", cache_dir: Optional[Path] = None):\n        if self._initialized:",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "OpenMMEnergyCalculator",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class OpenMMEnergyCalculator:\n    \"\"\"Energy minimization via OpenMM with AMBER14 + OBC2 implicit solvent.\"\"\"\n    def prepare_structure(self, pdb_string: str) -> Any:\n        \"\"\"Fix PDB with PDBFixer: add missing atoms + hydrogens.\n        Removes non-standard residues and handles ESMFold output quirks\n        (atoms at origin, missing chain IDs).\n        \"\"\"\n        from pdbfixer import PDBFixer\n        import io\n        fixer = PDBFixer(pdbfile=io.StringIO(pdb_string))",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "MDStabilityChecker",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class MDStabilityChecker:\n    \"\"\"Short implicit-solvent MD for rapid stability screening.\"\"\"\n    def run_stability_check(\n        self,\n        pdb_string: str,\n        output_dir: Optional[Path] = None,\n        name: str = \"candidate\",\n        simulation_ns: float = 0.2,\n    ) -> MDStabilityResult:\n        \"\"\"",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "DNABindingAnalyzer",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class DNABindingAnalyzer:\n    \"\"\"Analyze DNA-binding interface preservation via structural superposition.\"\"\"\n    def __init__(self, wt_pdb_path: Optional[Path] = None):\n        self._wt_pdb_path = wt_pdb_path or Path(\"data/raw/p53_wt.pdb\")\n    def analyze(\n        self,\n        rescue_pdb_string: str,\n        wt_pdb_string: Optional[str] = None,\n    ) -> DNABindingInterfaceResult:\n        \"\"\"",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "PhysicsValidationPipeline",
+        "kind": 6,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "class PhysicsValidationPipeline:\n    \"\"\"Orchestrate tiered physics validation across campaign candidates.\"\"\"\n    def __init__(\n        self,\n        device: str = \"cpu\",\n        cache_dir: Optional[Path] = None,\n        wt_pdb_path: Optional[Path] = None,\n    ):\n        self._device = device\n        self._cache_dir = cache_dir",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "compute_physics_score",
+        "kind": 2,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "def compute_physics_score(\n    esmfold: Optional[ESMFoldResult] = None,\n    ddg: Optional[DDGResult] = None,\n    md: Optional[MDStabilityResult] = None,\n    dna_binding: Optional[DNABindingInterfaceResult] = None,\n) -> Tuple[float, str]:\n    \"\"\"\n    Compute composite 0-100 physics score.\n    Weights: pLDDT 30pts, DDG 25pts, MD 25pts, DNA interface 20pts.\n    Missing components scored as neutral (50% of their weight).",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "logger = get_logger(__name__)\n# ---------------------------------------------------------------------------\n# Result dataclasses\n# ---------------------------------------------------------------------------\n@dataclass\nclass ESMFoldResult:\n    \"\"\"Local ESMFold structure prediction result.\"\"\"\n    pdb_string: str\n    plddt_scores: List[float]\n    mean_plddt: float",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "DNA_CONTACT_RESIDUES",
+        "kind": 5,
+        "importPath": "p53cad.engine.physics_validation",
+        "description": "p53cad.engine.physics_validation",
+        "peekOfCode": "DNA_CONTACT_RESIDUES = {\n    120: \"K120\", 176: \"C176\", 179: \"H179\", 238: \"C238\", 241: \"S241\",\n    242: \"C242\", 248: \"R248\", 273: \"R273\", 277: \"C277\", 280: \"R280\", 283: \"R283\",\n}\nclass DNABindingAnalyzer:\n    \"\"\"Analyze DNA-binding interface preservation via structural superposition.\"\"\"\n    def __init__(self, wt_pdb_path: Optional[Path] = None):\n        self._wt_pdb_path = wt_pdb_path or Path(\"data/raw/p53_wt.pdb\")\n    def analyze(\n        self,",
+        "detail": "p53cad.engine.physics_validation",
+        "documentation": {}
+    },
+    {
         "label": "hydrate_display_candidates",
         "kind": 2,
         "importPath": "p53cad.results.presentation",
@@ -5837,6 +6182,69 @@
         "description": "tests.test_pareto",
         "peekOfCode": "class TestFrontQueries(unittest.TestCase):\n    \"\"\"Test get_front and best_by_crowding queries.\"\"\"\n    def test_get_front_rank_1(self):\n        pf = ParetoFront(objectives=[\"x\", \"y\"])\n        pf.add(ParetoSolution(\"top1\", {\"x\": 5.0, \"y\": 1.0}))\n        pf.add(ParetoSolution(\"top2\", {\"x\": 1.0, \"y\": 5.0}))\n        pf.add(ParetoSolution(\"low\", {\"x\": 0.5, \"y\": 0.5}))\n        rank1 = pf.get_front(rank=1)\n        uids = {s.candidate_uid for s in rank1}\n        self.assertIn(\"top1\", uids)",
         "detail": "tests.test_pareto",
+        "documentation": {}
+    },
+    {
+        "label": "TestSeqHash",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestSeqHash(unittest.TestCase):\n    def test_deterministic(self):\n        h1 = _seq_hash(\"MEEPQ\")\n        h2 = _seq_hash(\"MEEPQ\")\n        self.assertEqual(h1, h2)\n    def test_different_seqs(self):\n        self.assertNotEqual(_seq_hash(\"MEEPQ\"), _seq_hash(\"MEEPX\"))\n    def test_length(self):\n        self.assertEqual(len(_seq_hash(\"MEEPQ\")), 16)\nclass TestDataclassSerialization(unittest.TestCase):",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestDataclassSerialization",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestDataclassSerialization(unittest.TestCase):\n    \"\"\"Dataclass to_dict round-trip — pdb_string must be excluded.\"\"\"\n    def test_esmfold_excludes_pdb(self):\n        r = ESMFoldResult(\n            pdb_string=\"HEADER ...\\nEND\",\n            plddt_scores=[80.0, 85.0],\n            mean_plddt=82.5,\n            dbd_plddt=84.0,\n        )\n        d = r.to_dict()",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestCompositeScoring",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestCompositeScoring(unittest.TestCase):\n    \"\"\"Test the 0-100 composite physics score logic.\"\"\"\n    def test_all_none_gives_neutral(self):\n        score, verdict = compute_physics_score()\n        # All neutral fallbacks: 15+12.5+12.5+10 = 50\n        self.assertAlmostEqual(score, 50.0, places=0)\n        self.assertIn(verdict, (\"PROMISING\", \"UNCERTAIN\"))\n    def test_perfect_scores(self):\n        ef = ESMFoldResult(\"\", [], 90, 90)\n        ddg = DDGResult(-15, -20, \"stabilizing\")",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestPipelineWiring",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestPipelineWiring(unittest.TestCase):\n    \"\"\"Test pipeline orchestration with all steps skipped (verifies wiring only).\"\"\"\n    def test_all_skipped(self):\n        import pandas as pd\n        pipeline = PhysicsValidationPipeline(device=\"cpu\")\n        top_df = pd.DataFrame({\n            \"sequence\": [\"MEEPQ\" * 78 + \"MSD\"],  # 393 residues\n            \"target_label\": [\"R175H+gene_therapy\"],\n        })\n        report = pipeline.validate_campaign(",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestOpenMMIntegration",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestOpenMMIntegration(unittest.TestCase):\n    \"\"\"Real OpenMM energy minimization on a tiny PDB snippet.\"\"\"\n    def test_minimize_small_pdb(self):\n        from p53cad.engine.physics_validation import OpenMMEnergyCalculator\n        # Minimal alanine dipeptide-style PDB\n        pdb = \"\"\"HEADER    TEST\nATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00  0.00           N\nATOM      2  CA  ALA A   1       1.458   0.000   0.000  1.00  0.00           C\nATOM      3  C   ALA A   1       2.009   1.420   0.000  1.00  0.00           C\nATOM      4  O   ALA A   1       1.246   2.390   0.000  1.00  0.00           O",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestMDIntegration",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestMDIntegration(unittest.TestCase):\n    \"\"\"Real short MD simulation on a tiny system.\"\"\"\n    def test_very_short_md(self):\n        from p53cad.engine.physics_validation import MDStabilityChecker\n        # Use a small alanine chain for speed\n        pdb = \"HEADER    TEST\\n\"\n        for i in range(5):\n            x = i * 3.8\n            pdb += (\n                f\"ATOM  {i+1:5d}  CA  ALA A{i+1:4d}    \"",
+        "detail": "tests.test_physics_validation",
+        "documentation": {}
+    },
+    {
+        "label": "TestRuntimeProbes",
+        "kind": 6,
+        "importPath": "tests.test_physics_validation",
+        "description": "tests.test_physics_validation",
+        "peekOfCode": "class TestRuntimeProbes(unittest.TestCase):\n    \"\"\"Verify physics validation probes exist in runtime capabilities.\"\"\"\n    def test_probes_present(self):\n        from p53cad.core.runtime import get_runtime_capabilities\n        caps = get_runtime_capabilities()\n        self.assertIn(\"pdbfixer_installed\", caps)\n        self.assertIn(\"mdtraj_installed\", caps)\n        self.assertIn(\"esmfold_local_available\", caps)\n        self.assertIn(\"physics_validation_ready\", caps)\n        # All should be boolean",
+        "detail": "tests.test_physics_validation",
         "documentation": {}
     },
     {

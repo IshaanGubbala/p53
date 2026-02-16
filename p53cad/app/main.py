@@ -5467,6 +5467,88 @@ with tab2:
     else:
         st.info("Select a generated candidate to run real DMS + physics-based validation.")
 
+    # === 1.5) PHYSICS-BASED VALIDATION (campaign-level) ===
+    st.markdown("---")
+    st.markdown("### 1.5) Physics Validation (OpenMM + ESMFold)")
+    st.caption("Real physics: local ESMFold structure prediction, OpenMM energy minimization, DNA-binding interface analysis, and optional MD stability checks.")
+
+    # Try to load physics_validation.json from the currently loaded campaign
+    _phys_val_data = None
+    _phys_val_run_id = st.session_state.get("_gd_loaded_campaign_run") or st.session_state.get("gd_artifact_run_id")
+    if _phys_val_run_id:
+        _phys_val_path = Path("data/campaigns") / str(_phys_val_run_id) / "physics_validation.json"
+        if _phys_val_path.exists():
+            try:
+                _phys_val_data = json.loads(_phys_val_path.read_text())
+            except Exception:
+                pass
+
+    if _phys_val_data and _phys_val_data.get("candidates"):
+        phys_candidates = _phys_val_data["candidates"]
+        n_phys = len(phys_candidates)
+        n_tier2 = _phys_val_data.get("n_tier2", 0)
+        elapsed_min = _phys_val_data.get("elapsed_total_sec", 0) / 60
+
+        st.success(f"Physics validation loaded: {n_phys} candidates, {n_tier2} with MD, completed in {elapsed_min:.1f} min")
+
+        # Summary metrics
+        pm1, pm2, pm3, pm4 = st.columns(4)
+        plddt_vals = [c.get("esmfold", {}).get("dbd_plddt", 0) for c in phys_candidates if c.get("esmfold")]
+        ddg_vals = [c.get("ddg", {}).get("ddg_vs_wt_kcal", 0) for c in phys_candidates if c.get("ddg")]
+        dna_vals = [c.get("dna_binding", {}).get("interface_preservation_score", 0) for c in phys_candidates if c.get("dna_binding")]
+        score_vals = [c.get("overall_physics_score", 0) for c in phys_candidates]
+
+        pm1.metric("Mean DBD pLDDT", f"{np.mean(plddt_vals):.1f}" if plddt_vals else "-")
+        pm2.metric("Mean DDG vs WT", f"{np.mean(ddg_vals):+.1f} kcal" if ddg_vals else "-")
+        pm3.metric("Mean DNA Preservation", f"{np.mean(dna_vals):.2f}" if dna_vals else "-")
+        pm4.metric("Mean Physics Score", f"{np.mean(score_vals):.0f}/100" if score_vals else "-")
+
+        # Per-candidate table
+        phys_rows = []
+        for c in phys_candidates:
+            ef = c.get("esmfold", {})
+            ddg_info = c.get("ddg", {})
+            dna = c.get("dna_binding", {})
+            md_info = c.get("md", {})
+            phys_rows.append({
+                "Rank": c.get("candidate_rank", 0),
+                "Target": c.get("target_label", "?"),
+                "pLDDT": round(ef.get("dbd_plddt", 0), 1) if ef else None,
+                "DDG vs WT": round(ddg_info.get("ddg_vs_wt_kcal", 0), 1) if ddg_info else None,
+                "DDG Interp": ddg_info.get("interpretation", "-") if ddg_info else "-",
+                "DNA Score": round(dna.get("interface_preservation_score", 0), 2) if dna else None,
+                "RMSD (A)": round(md_info.get("rmsd_mean", 0), 2) if md_info else None,
+                "MD Verdict": md_info.get("stability_verdict", "-") if md_info else "-",
+                "Physics Score": round(c.get("overall_physics_score", 0), 1),
+                "Verdict": c.get("verdict", "?"),
+            })
+
+        phys_df = pd.DataFrame(phys_rows)
+
+        # Color-code verdict column
+        def _verdict_color(val: str) -> str:
+            colors = {"STRONG": "#2EC4B6", "PROMISING": "#FFB703", "UNCERTAIN": "#FB8500", "CONCERNING": "#E63946"}
+            bg = colors.get(val, "#94A3B8")
+            return f"background-color: {bg}; color: white; font-weight: bold"
+
+        styled = phys_df.style.applymap(_verdict_color, subset=["Verdict"])
+        st.dataframe(styled, use_container_width=True, hide_index=True)
+
+        with st.expander("About Physics Validation"):
+            st.markdown("""
+**Tier 1** (all candidates): ESMFold structure prediction + OpenMM AMBER14/OBC2 energy minimization + DDG + DNA-binding interface analysis.
+
+**Tier 2** (top N): Short MD stability simulation (implicit solvent, 200ps production).
+
+**Scoring**: pLDDT (30 pts) + DDG (25 pts) + MD stability (25 pts) + DNA interface preservation (20 pts) = 0-100.
+
+**Verdicts**: STRONG (75+), PROMISING (55+), UNCERTAIN (35+), CONCERNING (<35).
+
+Run `p53cad validate --run-id <id>` for full validation with MD, or `--skip-md` for Tier 1 only.
+            """)
+    else:
+        st.info("No physics validation results found. Run `p53cad validate --run-id <run_id>` to generate.")
+
     # === 2) EXPLAINABILITY ===
     st.markdown("---")
     st.markdown("### 2) 🧠 Explainability")

@@ -591,6 +591,42 @@ class CampaignRunner:
             logger.warning("PyMOL script generation failed: %s", exc)
             results["pymol_error"] = str(exc)
 
+        # 4. Physics-based validation (Tier 1 only — skip MD in auto mode)
+        try:
+            from p53cad.engine.physics_validation import PhysicsValidationPipeline
+
+            cancer_sequences = {}
+            if "target_label" in top_df.columns:
+                for tl in top_df["target_label"].unique():
+                    target_mut = str(tl).split("+")[0].strip()
+                    cancer_seq = apply_mutation(P53_WT, target_mut)
+                    if cancer_seq:
+                        cancer_sequences[str(tl)] = cancer_seq
+
+            pipeline = PhysicsValidationPipeline(
+                device="cpu",
+                cache_dir=run_dir / "esmfold_cache",
+            )
+            report = pipeline.validate_campaign(
+                run_id=run_id,
+                top_df=top_df,
+                output_dir=run_dir,
+                wt_sequence=P53_WT,
+                cancer_sequences=cancer_sequences,
+                tier2_top_n=0,   # Skip MD in auto post-campaign mode
+                skip_md=True,
+                skip_esmfold=False,
+                skip_energy=False,
+                skip_dna=False,
+            )
+            val_path = run_dir / "physics_validation.json"
+            val_path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+            results["physics_validation"] = report.n_candidates
+            logger.info("Physics validation: %d candidates -> %s", report.n_candidates, val_path)
+        except Exception as exc:
+            logger.warning("Physics validation failed (non-fatal): %s", exc)
+            results["physics_validation_error"] = str(exc)
+
         return results
 
     def report_run(self, run_id: str, shortlist_n: int = 30) -> Dict[str, Any]:

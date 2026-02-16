@@ -485,6 +485,97 @@ def explain():
         logger.info(f"Position {h['pos']}{h['aa']}: Importance {h['importance']:.4f}")
 
 @cli.command()
+@click.option("--run-id", default=None, help="Campaign run identifier. Defaults to latest run.")
+@click.option("--tier2-top-n", default=3, show_default=True, type=int, help="Number of top candidates for Tier 2 MD simulation.")
+@click.option("--simulation-ns", default=0.2, show_default=True, type=float, help="MD production length in nanoseconds.")
+@click.option("--skip-md", is_flag=True, help="Skip Tier 2 MD stability simulations (fastest mode).")
+@click.option("--skip-esmfold", is_flag=True, help="Skip local ESMFold structure prediction.")
+@click.option("--skip-energy", is_flag=True, help="Skip OpenMM energy minimization.")
+@click.option("--skip-dna", is_flag=True, help="Skip DNA-binding interface analysis.")
+@click.option("--device", default="cpu", show_default=True, type=click.Choice(["cpu", "cuda", "mps"]), help="Device for ESMFold inference.")
+@click.option(
+    "--output-dir",
+    default="data/campaigns",
+    show_default=True,
+    type=click.Path(),
+    help="Campaign artifact base directory.",
+)
+def validate(run_id, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, device, output_dir):
+    """Run physics-based validation on a campaign's top candidates."""
+    logger = get_logger("p53cad.cli.validate")
+    from p53cad.results.store import CampaignStore
+
+    store = CampaignStore(base_dir=Path(output_dir))
+    resolved_run_id = run_id or store.latest_run_id()
+    if not resolved_run_id:
+        logger.error("No campaign runs found in %s", output_dir)
+        return
+
+    bundle = store.load_run_bundle(resolved_run_id)
+    top_df = bundle["top30"]
+    if top_df.empty:
+        logger.error("No top-30 candidates found for run %s", resolved_run_id)
+        return
+
+    logger.info("Physics validation: run_id=%s candidates=%d device=%s", resolved_run_id, len(top_df), device)
+
+    from p53cad.engine.physics_validation import PhysicsValidationPipeline
+    from p53cad.data.dms import P53_WT, apply_mutation
+
+    # Build cancer sequence map from targets in top_df
+    cancer_sequences = {}
+    if "target_label" in top_df.columns:
+        for target_label in top_df["target_label"].unique():
+            # Extract first target mutation from the label (e.g. "R175H+gene_therapy" -> "R175H")
+            target_mut = str(target_label).split("+")[0].strip()
+            cancer_seq = apply_mutation(P53_WT, target_mut)
+            if cancer_seq:
+                cancer_sequences[str(target_label)] = cancer_seq
+
+    run_dir = bundle["run_dir"]
+    pipeline = PhysicsValidationPipeline(
+        device=device,
+        cache_dir=Path(run_dir) / "esmfold_cache",
+        wt_pdb_path=Path("data/raw/p53_wt.pdb"),
+    )
+    report = pipeline.validate_campaign(
+        run_id=resolved_run_id,
+        top_df=top_df,
+        output_dir=Path(run_dir),
+        wt_sequence=P53_WT,
+        cancer_sequences=cancer_sequences,
+        tier2_top_n=tier2_top_n,
+        simulation_ns=simulation_ns,
+        skip_esmfold=skip_esmfold,
+        skip_energy=skip_energy,
+        skip_md=skip_md,
+        skip_dna=skip_dna,
+    )
+
+    # Save report
+    val_path = store.write_validation(resolved_run_id, "physics_validation.json", report.to_dict())
+    logger.info("Physics validation saved to %s", val_path)
+
+    # Print summary table
+    logger.info("Physics Validation Summary (%d candidates, %.1f min):",
+                report.n_candidates, report.elapsed_total_sec / 60)
+    logger.info("  %-4s %-20s %-8s %-8s %-10s %-8s %s",
+                "Rank", "Target", "pLDDT", "DDG(WT)", "DNA Score", "Score", "Verdict")
+    for c in report.candidates:
+        ef = c.get("esmfold", {})
+        ddg_info = c.get("ddg", {})
+        dna = c.get("dna_binding", {})
+        logger.info("  %-4d %-20s %-8s %-8s %-10s %-8s %s",
+                     c.get("candidate_rank", 0),
+                     c.get("target_label", "?")[:20],
+                     f"{ef.get('dbd_plddt', 0):.1f}" if ef else "-",
+                     f"{ddg_info.get('ddg_vs_wt_kcal', 0):+.1f}" if ddg_info else "-",
+                     f"{dna.get('interface_preservation_score', 0):.2f}" if dna else "-",
+                     f"{c.get('overall_physics_score', 0):.0f}",
+                     c.get("verdict", "?"))
+
+
+@cli.command()
 def lab():
     """Launch the p53CAD Generative Lab Dashboard."""
     logger = get_logger("p53cad.cli.lab")

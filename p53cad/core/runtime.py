@@ -46,6 +46,16 @@ def get_runtime_capabilities() -> Dict[str, Any]:
         "meeko_installed": _has_module("meeko"),
         "vina_py_installed": _has_module("vina"),
         "vina_cli_available": shutil.which("vina") is not None,
+        "pdbfixer_installed": _has_module("pdbfixer"),
+        "mdtraj_installed": _has_module("mdtraj"),
+        "esmfold_local_available": _has_module("transformers") and _has_module("torch"),
+        "physics_validation_ready": (
+            _has_module("openmm")
+            and _has_module("pdbfixer")
+            and _has_module("mdtraj")
+            and _has_module("transformers")
+            and _has_module("torch")
+        ),
     }
 
     if caps["torch_installed"]:
