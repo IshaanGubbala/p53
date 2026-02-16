@@ -1212,6 +1212,14 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "torch",
         "kind": 6,
         "isExtraImport": true,
@@ -1585,6 +1593,14 @@
         "importPath": "plotly.io",
         "description": "plotly.io",
         "detail": "plotly.io",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -4538,7 +4554,7 @@
         "kind": 5,
         "importPath": "p53cad.engine.campaign",
         "description": "p53cad.engine.campaign",
-        "peekOfCode": "logger = get_logger(__name__)\n@contextmanager\ndef _prevent_sleep():\n    \"\"\"Prevent macOS idle/system sleep during long campaigns via caffeinate.\"\"\"\n    proc = None\n    if platform.system() == \"Darwin\" and shutil.which(\"caffeinate\"):\n        try:\n            proc = subprocess.Popen(\n                [\"caffeinate\", \"-is\"],\n                stdout=subprocess.DEVNULL,",
+        "peekOfCode": "logger = get_logger(__name__)\n@contextmanager\ndef _prevent_sleep():\n    \"\"\"Prevent idle/system sleep during long campaigns.\n    macOS: ``caffeinate -is`` subprocess.\n    Windows: ``SetThreadExecutionState`` via ctypes (process-scoped, auto-reverts).\n    Linux: no-op (most servers don't sleep).\n    \"\"\"\n    proc = None\n    _win_reset = False",
         "detail": "p53cad.engine.campaign",
         "documentation": {}
     },
@@ -5998,6 +6014,87 @@
         "description": "scripts.run_full_campaign",
         "peekOfCode": "project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\nsys.path.insert(0, project_root)\nfrom p53cad.core.runtime import bootstrap_runtime\nbootstrap_runtime()\ndef main():\n    parser = argparse.ArgumentParser(description=\"Run full p53 rescue campaign\")\n    parser.add_argument(\"--budget\", default=\"medium\", choices=[\"fast\", \"medium\", \"high\"],\n                        help=\"Compute budget (fast=~5min, medium=~80min, high=~4hr)\")\n    parser.add_argument(\"--seed\", type=int, default=42, help=\"Random seed\")\n    parser.add_argument(\"--shortlist-n\", type=int, default=30, help=\"Number of shortlist candidates\")",
         "detail": "scripts.run_full_campaign",
+        "documentation": {}
+    },
+    {
+        "label": "fix_symlinks",
+        "kind": 2,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "def fix_symlinks() -> None:\n    _header(\"Checking symlinks\")\n    if not RECEPTORS_DIR.exists():\n        _info(f\"Receptor directory not found ({RECEPTORS_DIR}), skipping.\")\n        return\n    canonical = RECEPTORS_DIR / \"p53_wt.pdbqt\"\n    if not canonical.exists():\n        _warn(f\"Canonical receptor {canonical} missing — nothing to fix against.\")\n        return\n    fixed = 0",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "ensure_cuda_pytorch",
+        "kind": 2,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "def ensure_cuda_pytorch() -> None:\n    _header(\"Checking PyTorch CUDA support\")\n    has_gpu = _detect_nvidia_gpu()\n    torch_ver = _torch_version()\n    if not has_gpu:\n        if platform.system() == \"Darwin\":\n            _ok(\"macOS detected — MPS acceleration will be used (no CUDA needed)\")\n        else:\n            _info(\"No NVIDIA GPU detected — CPU-only PyTorch is fine\")\n        return",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "check_dependencies",
+        "kind": 2,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "def check_dependencies() -> None:\n    _header(\"Dependency check\")\n    missing_required = []\n    missing_optional = []\n    for mod, label, required in DEPS:\n        found = _has_module(mod)\n        tag = \"required\" if required else \"optional\"\n        if found:\n            _ok(f\"{label:<28s} ({tag})\")\n        elif required:",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "device_summary",
+        "kind": 2,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "def device_summary() -> None:\n    _header(\"Device summary\")\n    try:\n        os.environ.setdefault(\"KMP_DUPLICATE_LIB_OK\", \"TRUE\")\n        import torch\n        if torch.cuda.is_available():\n            name = torch.cuda.get_device_name(0)\n            mem = torch.cuda.get_device_properties(0).total_mem / (1024 ** 3)\n            _ok(f\"CUDA: {name} ({mem:.1f} GB) — torch {torch.__version__}+cu{torch.version.cuda}\")\n        elif hasattr(torch.backends, \"mps\") and torch.backends.mps.is_available():",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "def main() -> None:\n    print(f\"p53CAD Environment Setup — {platform.system()} {platform.machine()}\")\n    print(f\"Python {platform.python_version()} at {sys.executable}\")\n    fix_symlinks()\n    ensure_cuda_pytorch()\n    check_dependencies()\n    device_summary()\n    print(f\"\\n{'=' * 60}\")\n    print(\"  Setup complete. Run 'p53cad doctor' for full diagnostics.\")\n    print(f\"{'=' * 60}\\n\")",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "SCRIPT_DIR",
+        "kind": 5,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "SCRIPT_DIR = Path(__file__).resolve().parent\nPROJECT_ROOT = SCRIPT_DIR.parent\nRECEPTORS_DIR = PROJECT_ROOT / \"data\" / \"raw\" / \"receptors\"\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\ndef _header(msg: str) -> None:\n    print(f\"\\n{'=' * 60}\")\n    print(f\"  {msg}\")\n    print(f\"{'=' * 60}\")",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "PROJECT_ROOT",
+        "kind": 5,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "PROJECT_ROOT = SCRIPT_DIR.parent\nRECEPTORS_DIR = PROJECT_ROOT / \"data\" / \"raw\" / \"receptors\"\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\ndef _header(msg: str) -> None:\n    print(f\"\\n{'=' * 60}\")\n    print(f\"  {msg}\")\n    print(f\"{'=' * 60}\")\ndef _ok(msg: str) -> None:",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "RECEPTORS_DIR",
+        "kind": 5,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "RECEPTORS_DIR = PROJECT_ROOT / \"data\" / \"raw\" / \"receptors\"\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\ndef _header(msg: str) -> None:\n    print(f\"\\n{'=' * 60}\")\n    print(f\"  {msg}\")\n    print(f\"{'=' * 60}\")\ndef _ok(msg: str) -> None:\n    print(f\"  [OK]   {msg}\")",
+        "detail": "scripts.setup_env",
+        "documentation": {}
+    },
+    {
+        "label": "DEPS",
+        "kind": 5,
+        "importPath": "scripts.setup_env",
+        "description": "scripts.setup_env",
+        "peekOfCode": "DEPS = [\n    (\"torch\",              \"PyTorch\",             True),\n    (\"transformers\",       \"HuggingFace Transformers\", True),\n    (\"click\",              \"Click CLI\",           True),\n    (\"pandas\",             \"Pandas\",              True),\n    (\"numpy\",              \"NumPy\",               True),\n    (\"matplotlib\",         \"Matplotlib\",          True),\n    (\"seaborn\",            \"Seaborn\",             True),\n    (\"scipy\",              \"SciPy\",               True),\n    (\"pyarrow\",            \"PyArrow\",             True),",
+        "detail": "scripts.setup_env",
         "documentation": {}
     },
     {

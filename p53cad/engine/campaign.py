@@ -38,9 +38,17 @@ logger = get_logger(__name__)
 
 @contextmanager
 def _prevent_sleep():
-    """Prevent macOS idle/system sleep during long campaigns via caffeinate."""
+    """Prevent idle/system sleep during long campaigns.
+
+    macOS: ``caffeinate -is`` subprocess.
+    Windows: ``SetThreadExecutionState`` via ctypes (process-scoped, auto-reverts).
+    Linux: no-op (most servers don't sleep).
+    """
     proc = None
-    if platform.system() == "Darwin" and shutil.which("caffeinate"):
+    _win_reset = False
+    system = platform.system()
+
+    if system == "Darwin" and shutil.which("caffeinate"):
         try:
             proc = subprocess.Popen(
                 ["caffeinate", "-is"],
@@ -50,6 +58,20 @@ def _prevent_sleep():
             logger.info("Sleep prevention enabled (caffeinate PID %d)", proc.pid)
         except OSError:
             logger.debug("Failed to start caffeinate, continuing without sleep prevention")
+
+    elif system == "Windows":
+        try:
+            import ctypes
+            ES_CONTINUOUS = 0x80000000
+            ES_SYSTEM_REQUIRED = 0x00000001
+            ctypes.windll.kernel32.SetThreadExecutionState(
+                ES_CONTINUOUS | ES_SYSTEM_REQUIRED
+            )
+            _win_reset = True
+            logger.info("Sleep prevention enabled (SetThreadExecutionState)")
+        except Exception:
+            logger.debug("Failed to set Windows execution state, continuing without sleep prevention")
+
     try:
         yield
     finally:
@@ -57,6 +79,14 @@ def _prevent_sleep():
             proc.terminate()
             proc.wait(timeout=5)
             logger.info("Sleep prevention disabled")
+        if _win_reset:
+            try:
+                import ctypes
+                ES_CONTINUOUS = 0x80000000
+                ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
+                logger.info("Sleep prevention disabled (SetThreadExecutionState reset)")
+            except Exception:
+                pass
 
 
 AA_IDS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
