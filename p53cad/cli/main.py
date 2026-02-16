@@ -56,8 +56,8 @@ def doctor():
     "--budget",
     default="high",
     show_default=True,
-    type=click.Choice(["fast", "medium", "high"]),
-    help="Campaign compute budget profile.",
+    type=click.Choice(["quick", "fast", "medium", "high"]),
+    help="Campaign compute budget profile (quick ~4-6h, fast ~8-12h, medium ~20h, high ~44h).",
 )
 @click.option("--seed", default=42, show_default=True, type=int, help="Base random seed.")
 @click.option("--resume/--no-resume", default=True, show_default=True, help="Resume an existing run id if present.")
@@ -486,6 +486,7 @@ def explain():
 
 @cli.command()
 @click.option("--run-id", default=None, help="Campaign run identifier. Defaults to latest run.")
+@click.option("--top-n", default=None, type=int, help="Only validate top N candidates (by oracle rank). Default: all.")
 @click.option("--tier2-top-n", default=3, show_default=True, type=int, help="Number of top candidates for Tier 2 MD simulation.")
 @click.option("--simulation-ns", default=0.2, show_default=True, type=float, help="MD production length in nanoseconds.")
 @click.option("--skip-md", is_flag=True, help="Skip Tier 2 MD stability simulations (fastest mode).")
@@ -500,7 +501,7 @@ def explain():
     type=click.Path(),
     help="Campaign artifact base directory.",
 )
-def validate(run_id, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, device, output_dir):
+def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, device, output_dir):
     """Run physics-based validation on a campaign's top candidates."""
     logger = get_logger("p53cad.cli.validate")
     from p53cad.results.store import CampaignStore
@@ -544,6 +545,7 @@ def validate(run_id, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_ene
         output_dir=Path(run_dir),
         wt_sequence=P53_WT,
         cancer_sequences=cancer_sequences,
+        tier1_top_n=top_n,
         tier2_top_n=tier2_top_n,
         simulation_ns=simulation_ns,
         skip_esmfold=skip_esmfold,

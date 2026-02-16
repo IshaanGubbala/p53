@@ -112,7 +112,23 @@ The campaign runner evaluates all combinations of:
 
 This produces 108 scenarios in Pass A (screening), then deep-refines the top scenarios in Pass B with multiple random restarts and autoregressive trials. An evidence-weighted, diversity-aware shortlist selects the top 30 candidates across targets, delivery methods, and optimization profiles — ranking by oracle score, clinical impact, DMS rescue quality, and mutation novelty.
 
-### Experimental Validation
+### Physics-Based Validation Pipeline
+
+After candidate generation, the pipeline runs **real physics validation** to check whether the designed proteins are structurally sound:
+
+1. **ESMFold Structure Prediction** — Predicts 3D structure for each rescue candidate using the local ESMFold model (facebook/esmfold_v1 via HuggingFace). Returns per-residue pLDDT confidence scores and a full PDB structure. No external API calls — runs entirely on local hardware.
+
+2. **OpenMM Energy Minimization** — Takes each predicted structure through PDBFixer (add missing atoms, hydrogens at pH 7.0), then runs AMBER14 force field energy minimization with OBC2 implicit solvent. Computes potential energy in kcal/mol and calculates DDG relative to both wild-type and cancer-mutant structures.
+
+3. **Short MD Stability Check** (top candidates only) — Runs 200ps of molecular dynamics simulation to test whether the structure stays folded. Analyzes CA RMSD over time, per-residue RMSF, radius of gyration, and secondary structure content via DSSP. Verdict: "stable" (<2A RMSD), "metastable" (2-3.5A), or "unstable" (>3.5A).
+
+4. **DNA-Binding Interface Analysis** — Superposes each candidate's predicted DNA-binding domain (residues 94-292) onto the AlphaFold wild-type structure and measures CA displacement at 11 key DNA-contact residues (K120, C176, H179, C238, S241, C242, R248, R273, C277, R280, R283). Returns an interface preservation score from 0 to 1.
+
+Results are combined into a composite **physics score** (0-100) with weighted components: pLDDT (30 pts), DDG (25 pts), MD stability (25 pts), DNA interface preservation (20 pts). Each candidate receives a verdict: STRONG (>=75), PROMISING (55-74), UNCERTAIN (35-54), or CONCERNING (<35).
+
+The pipeline runs in two tiers: **Tier 1** (all 30 candidates, ~2-4 hours) covers ESMFold + energy + DNA-binding. **Tier 2** (top 3-5 candidates, ~1-3 additional hours) adds MD stability simulations. Predictions are SHA-256 cached so re-runs skip already-computed structures.
+
+### Experimental Data
 
 The functional oracle is trained on the **Giacomelli et al. 2018** saturation mutagenesis dataset — 7,844 p53 variants tested in a cell-based Nutlin-3 selection assay. This is real experimental data measuring whether each p53 variant retains tumor suppressor activity. The oracle achieves validation loss of 0.2798 and generalizes to multi-mutation combinations through delta encoding.
 
@@ -140,11 +156,19 @@ pip install -e .
 p53cad doctor
 ```
 
-### Optional (for drug docking and MD simulations)
+### Optional Dependencies
 
 ```bash
+# Physics validation pipeline (ESMFold + OpenMM + mdtraj)
+conda install -c conda-forge openmm pdbfixer mdtraj
+pip install transformers    # for local ESMFold
+
+# Drug docking
 pip install rdkit meeko
-conda install -c conda-forge openmm openff-toolkit
+# vina CLI: brew install autodock-vina (macOS) or apt install autodock-vina (Linux)
+
+# Molecular dynamics (extended)
+conda install -c conda-forge openff-toolkit openmmforcefields
 ```
 
 ---
@@ -174,6 +198,11 @@ p53cad campaign-list
 # Generate report for a campaign
 p53cad campaign-report --run-id <run_id>
 
+# Run physics validation on a campaign's top candidates
+p53cad validate --run-id <run_id>                     # Full pipeline (ESMFold + energy + DNA + MD)
+p53cad validate --run-id <run_id> --skip-md           # Tier 1 only (faster, ~2-4 hours)
+p53cad validate --tier2-top-n 5 --simulation-ns 0.5   # More MD candidates, longer simulations
+
 # Launch web interface
 streamlit run p53cad/app/main.py
 ```
@@ -195,9 +224,10 @@ p53cad/
 │   ├── campaign.py          # Multi-scenario campaign runner (FMR + autoregressive)
 │   ├── oracle.py            # Functional prediction model (attention-pooling + delta encoding)
 │   ├── latent.py            # ESM-2 embedder and latent forward ascent
+│   ├── physics_validation.py # Physics pipeline (ESMFold, OpenMM, MD, DNA-binding)
 │   ├── explainability.py    # Attention attribution and mechanism analysis
 │   ├── drug_generator.py    # Small molecule stabilizer generation
-│   └── md_validation.py     # Molecular dynamics simulation scripts
+│   └── md_validation.py     # Legacy heuristic validation + MD script generation
 ├── results/
 │   ├── schema.py            # Scenario matrix, shortlist selection, dedup
 │   ├── store.py             # Campaign artifact persistence (Parquet)
@@ -214,7 +244,7 @@ p53cad/
 │   ├── runtime.py           # Environment bootstrap
 │   └── logging.py           # Structured logging
 ├── cli/
-│   └── main.py              # Click CLI (10 commands)
+│   └── main.py              # Click CLI (12 commands)
 └── viz/
     └── pymol.py             # PyMOL visualization scripts
 

@@ -355,7 +355,7 @@ class CampaignRunner:
             if resume and key in done_pairs:
                 continue
             logger.info("Pass A [%d/%d] %s", idx, len(scenario_objs), sc.scenario_id)
-            out = self._run_scenario(sc, pass_name="screen", config=pass_a_cfg, seed=seed)
+            out = self._run_scenario(sc, pass_name="screen", config=pass_a_cfg, seed=seed, budget=budget)
             self._append_rows(candidates_jsonl, out["candidates"])
             self._append_rows(trajectories_jsonl, out["trajectories"])
             self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
@@ -377,7 +377,7 @@ class CampaignRunner:
         screen_df = screen_df[screen_df["pass_name"] == "screen"].copy()
         screen_df["best_score"] = pd.to_numeric(screen_df["best_score"], errors="coerce").fillna(-np.inf)
         screen_df = screen_df.sort_values("best_score", ascending=False)
-        top_count = max(1, int(np.ceil(len(screen_df) * 0.4)))
+        top_count = max(1, int(np.ceil(len(screen_df) * 0.33)))
 
         # Delivery diversity floor: ensure at least top-2 per delivery method
         # reach Pass B, then fill remaining with global top scores.
@@ -432,7 +432,7 @@ class CampaignRunner:
                 continue
             prune = profile_map.get(sc.scenario_id)
             logger.info("Pass B [%d/%d] %s  profiles=%s", idx, len(selected_objs), sc.scenario_id, prune or "all")
-            out = self._run_scenario(sc, pass_name="deep", config=pass_b_cfg, seed=seed, allowed_profiles=prune)
+            out = self._run_scenario(sc, pass_name="deep", config=pass_b_cfg, seed=seed, allowed_profiles=prune, budget=budget)
             self._append_rows(candidates_jsonl, out["candidates"])
             self._append_rows(trajectories_jsonl, out["trajectories"])
             self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
@@ -492,7 +492,7 @@ class CampaignRunner:
         )
 
         # Post-campaign analysis: ESMFold validation, MD scripts, PyMOL scripts
-        post_results = self._post_campaign_analysis(run_id, top30, paths)
+        post_results = self._post_campaign_analysis(run_id, top30, paths, budget=budget)
 
         return {
             "run_id": run_id,
@@ -509,6 +509,7 @@ class CampaignRunner:
         run_id: str,
         top_df: pd.DataFrame,
         paths: Any,
+        budget: str = "high",
     ) -> Dict[str, Any]:
         """Run post-campaign analysis: ESMFold validation, MD scripts, PyMOL scripts."""
         results: Dict[str, Any] = {}
@@ -592,40 +593,47 @@ class CampaignRunner:
             results["pymol_error"] = str(exc)
 
         # 4. Physics-based validation (Tier 1 only — skip MD in auto mode)
-        try:
-            from p53cad.engine.physics_validation import PhysicsValidationPipeline
+        # Budget-aware: quick skips physics entirely, fast validates top 10 only
+        if budget == "quick":
+            logger.info("Skipping physics validation (budget=quick)")
+        else:
+            # Determine how many candidates to validate based on budget
+            tier1_top_n = 10 if budget == "fast" else None  # None = all candidates
+            try:
+                from p53cad.engine.physics_validation import PhysicsValidationPipeline
 
-            cancer_sequences = {}
-            if "target_label" in top_df.columns:
-                for tl in top_df["target_label"].unique():
-                    target_mut = str(tl).split("+")[0].strip()
-                    cancer_seq = apply_mutation(P53_WT, target_mut)
-                    if cancer_seq:
-                        cancer_sequences[str(tl)] = cancer_seq
+                cancer_sequences = {}
+                if "target_label" in top_df.columns:
+                    for tl in top_df["target_label"].unique():
+                        target_mut = str(tl).split("+")[0].strip()
+                        cancer_seq = apply_mutation(P53_WT, target_mut)
+                        if cancer_seq:
+                            cancer_sequences[str(tl)] = cancer_seq
 
-            pipeline = PhysicsValidationPipeline(
-                device="cpu",
-                cache_dir=run_dir / "esmfold_cache",
-            )
-            report = pipeline.validate_campaign(
-                run_id=run_id,
-                top_df=top_df,
-                output_dir=run_dir,
-                wt_sequence=P53_WT,
-                cancer_sequences=cancer_sequences,
-                tier2_top_n=0,   # Skip MD in auto post-campaign mode
-                skip_md=True,
-                skip_esmfold=False,
-                skip_energy=False,
-                skip_dna=False,
-            )
-            val_path = run_dir / "physics_validation.json"
-            val_path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
-            results["physics_validation"] = report.n_candidates
-            logger.info("Physics validation: %d candidates -> %s", report.n_candidates, val_path)
-        except Exception as exc:
-            logger.warning("Physics validation failed (non-fatal): %s", exc)
-            results["physics_validation_error"] = str(exc)
+                pipeline = PhysicsValidationPipeline(
+                    device="cpu",
+                    cache_dir=run_dir / "esmfold_cache",
+                )
+                report = pipeline.validate_campaign(
+                    run_id=run_id,
+                    top_df=top_df,
+                    output_dir=run_dir,
+                    wt_sequence=P53_WT,
+                    cancer_sequences=cancer_sequences,
+                    tier1_top_n=tier1_top_n,
+                    tier2_top_n=0,   # Skip MD in auto post-campaign mode
+                    skip_md=True,
+                    skip_esmfold=False,
+                    skip_energy=False,
+                    skip_dna=False,
+                )
+                val_path = run_dir / "physics_validation.json"
+                val_path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+                results["physics_validation"] = report.n_candidates
+                logger.info("Physics validation: %d candidates -> %s", report.n_candidates, val_path)
+            except Exception as exc:
+                logger.warning("Physics validation failed (non-fatal): %s", exc)
+                results["physics_validation_error"] = str(exc)
 
         return results
 
@@ -653,6 +661,8 @@ class CampaignRunner:
         }
 
     def _pass_a_config(self, budget: str) -> Dict[str, Any]:
+        if budget == "quick":
+            return {"steps": 25, "restarts": 1, "repeats": 1, "mc_samples": 1}
         if budget == "fast":
             return {"steps": 40, "restarts": 1, "repeats": 1, "mc_samples": 2}
         if budget == "medium":
@@ -660,12 +670,22 @@ class CampaignRunner:
         return {"steps": 80, "restarts": 1, "repeats": 1, "mc_samples": 4}
 
     def _pass_b_config(self, budget: str) -> Dict[str, Any]:
+        if budget == "quick":
+            return {"steps": 60, "restarts": 1, "repeats": 1, "mc_samples": 2}
         if budget == "fast":
             return {"steps": 120, "restarts": 1, "repeats": 1, "mc_samples": 4}
         if budget == "medium":
             return {"steps": 200, "restarts": 2, "repeats": 2, "mc_samples": 8}
         # High: reduced from 3×3=9 to 2×2=4 trials per profile (55% fewer trials)
         return {"steps": 280, "restarts": 2, "repeats": 2, "mc_samples": 12}
+
+    def _early_stop_patience(self, budget: str) -> int:
+        """Number of check-intervals (each = 5 steps) without improvement before early stop."""
+        if budget == "quick":
+            return 3   # 15 gradient steps
+        if budget == "fast":
+            return 4   # 20 gradient steps
+        return 6       # 30 gradient steps (medium/high)
 
     def _run_scenario(
         self,
@@ -675,6 +695,7 @@ class CampaignRunner:
         config: Dict[str, int],
         seed: int,
         allowed_profiles: Optional[List[str]] = None,
+        budget: str = "high",
     ) -> Dict[str, Any]:
         assert self.embedder is not None
         assert self.oracle is not None
@@ -754,6 +775,7 @@ class CampaignRunner:
                         baseline_score=float(baseline["score"]),
                         dms_quality=dms_quality,
                         conditional_scores=conditional_scores,
+                        early_stop_patience=self._early_stop_patience(budget),
                     )
                     candidates.append(cand)
                     trajectories.extend(traj_rows)
@@ -839,6 +861,7 @@ class CampaignRunner:
         baseline_score: float,
         dms_quality: Optional[torch.Tensor] = None,
         conditional_scores: Optional[Dict[int, Dict[str, float]]] = None,
+        early_stop_patience: int = 6,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         assert self.embedder is not None
         assert self.oracle is not None
@@ -1189,7 +1212,10 @@ class CampaignRunner:
                     checks_without_improve = 0
                 else:
                     checks_without_improve += 1
-                if step_idx >= 40 and checks_without_improve >= 6:
+                # Early stop: min step threshold scales with patience (quick=15, fast=20, med/high=30)
+                min_step_for_stop = early_stop_patience * 5
+                if step_idx >= min_step_for_stop and checks_without_improve >= early_stop_patience:
+                    logger.debug("Early stopping at step %d (no improvement for %d checks)", step_idx, early_stop_patience)
                     break
 
         final_state = best_valid_state if best_valid_state is not None else trajectory[-1]

@@ -383,6 +383,16 @@ class LocalESMFoldPredictor:
 class OpenMMEnergyCalculator:
     """Energy minimization via OpenMM with AMBER14 + OBC2 implicit solvent."""
 
+    def __init__(self):
+        self._forcefield = None
+
+    def _get_forcefield(self):
+        """Cached ForceField to avoid re-parsing AMBER14 XML on every candidate."""
+        if self._forcefield is None:
+            import openmm.app as app
+            self._forcefield = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
+        return self._forcefield
+
     def prepare_structure(self, pdb_string: str) -> Any:
         """Fix PDB with PDBFixer: add missing atoms + hydrogens.
 
@@ -410,14 +420,30 @@ class OpenMMEnergyCalculator:
         max_iterations: int = 200,
     ) -> EnergyMinimizationResult:
         """Run energy minimization and return potential energy."""
+        t0 = time.time()
+        fixer, missing_res, missing_atoms = self.prepare_structure(pdb_string)
+        result = self.minimize_from_fixer(fixer, max_iterations=max_iterations)
+        result.pdbfixer_missing_residues = missing_res
+        result.pdbfixer_missing_atoms = missing_atoms
+        result.elapsed_sec = round(time.time() - t0, 1)
+        return result
+
+    def minimize_from_fixer(
+        self,
+        fixer: Any,
+        max_iterations: int = 200,
+    ) -> EnergyMinimizationResult:
+        """Run energy minimization from an already-prepared PDBFixer object.
+
+        Reuses the cached ForceField to avoid re-parsing AMBER14 XML per candidate.
+        """
         import openmm
         import openmm.app as app
         import openmm.unit as unit
 
         t0 = time.time()
-        fixer, missing_res, missing_atoms = self.prepare_structure(pdb_string)
 
-        forcefield = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
+        forcefield = self._get_forcefield()
         system = forcefield.createSystem(
             fixer.topology,
             nonbondedMethod=app.NoCutoff,
@@ -440,17 +466,17 @@ class OpenMMEnergyCalculator:
         n_atoms = sum(1 for _ in fixer.topology.atoms())
         elapsed = time.time() - t0
 
-        logger.info("Energy minimization: %.1f kcal/mol (%d atoms, %d missing res, %.1fs)",
-                     energy_kcal, n_atoms, missing_res, elapsed)
+        logger.info("Energy minimization: %.1f kcal/mol (%d atoms, %.1fs)",
+                     energy_kcal, n_atoms, elapsed)
 
         return EnergyMinimizationResult(
             potential_energy_kcal=energy_kcal,
             force_field="amber14",
             solvent_model="OBC2",
             n_atoms=n_atoms,
-            pdbfixer_missing_residues=missing_res,
-            pdbfixer_missing_atoms=missing_atoms,
-            elapsed_sec=elapsed,
+            pdbfixer_missing_residues=0,
+            pdbfixer_missing_atoms=0,
+            elapsed_sec=round(elapsed, 1),
         )
 
     def compute_ddg(
@@ -490,6 +516,7 @@ class MDStabilityChecker:
         output_dir: Optional[Path] = None,
         name: str = "candidate",
         simulation_ns: float = 0.2,
+        fixer: Any = None,
     ) -> MDStabilityResult:
         """
         Run a short MD simulation and analyze trajectory.
@@ -497,6 +524,8 @@ class MDStabilityChecker:
         Pipeline: PDBFixer -> AMBER14/OBC2 -> equilibration -> production -> analysis.
         Default 0.2 ns production (~200 ps) balances speed and signal for gross
         instability detection (RMSD blowup, unfolding).
+
+        If *fixer* is provided (already-prepared PDBFixer), skip re-preparation.
         """
         import openmm
         import openmm.app as app
@@ -507,11 +536,12 @@ class MDStabilityChecker:
 
         t0 = time.time()
 
-        # Prepare
+        # Prepare (reuse fixer if provided)
         calc = OpenMMEnergyCalculator()
-        fixer, _, _ = calc.prepare_structure(pdb_string)
+        if fixer is None:
+            fixer, _, _ = calc.prepare_structure(pdb_string)
 
-        forcefield = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
+        forcefield = calc._get_forcefield()
         system = forcefield.createSystem(
             fixer.topology,
             nonbondedMethod=app.NoCutoff,
@@ -850,6 +880,7 @@ class PhysicsValidationPipeline:
         output_dir: Path,
         wt_sequence: str,
         cancer_sequences: Optional[Dict[str, str]] = None,
+        tier1_top_n: Optional[int] = None,
         tier2_top_n: int = 3,
         simulation_ns: float = 0.2,
         skip_esmfold: bool = False,
@@ -860,10 +891,19 @@ class PhysicsValidationPipeline:
         """
         Run tiered physics validation.
 
-        Tier 1 (all candidates): ESMFold + energy minimization + DDG + DNA interface
-        Tier 2 (top N): Short MD stability simulation
+        Tier 1 (all or top-N candidates): ESMFold + energy minimization + DDG + DNA interface
+        Tier 2 (top N by Tier 1 score): Short MD stability simulation
+
+        Args:
+            tier1_top_n: If set, only validate the top N candidates (by oracle rank).
+                         Default None = validate all candidates in top_df.
         """
         import pandas as pd
+
+        # Selective Tier 1: validate only top N candidates if requested
+        if tier1_top_n is not None and tier1_top_n < len(top_df):
+            logger.info("Selective Tier 1: validating top %d of %d candidates", tier1_top_n, len(top_df))
+            top_df = top_df.head(tier1_top_n)
 
         t0 = time.time()
         physics_pdb_dir = output_dir / "physics_pdbs"
@@ -893,8 +933,13 @@ class PhysicsValidationPipeline:
         # DNA binding analyzer
         dna_analyzer = DNABindingAnalyzer(wt_pdb_path=self._wt_pdb_path) if not skip_dna else None
 
+        # Shared energy calculator (caches ForceField across candidates)
+        energy_calc = OpenMMEnergyCalculator() if not skip_energy else None
+
         # Process all candidates (Tier 1)
         results: List[PhysicsValidationResult] = []
+        # Map rank -> prepared fixer for reuse in Tier 2 MD
+        fixer_cache: Dict[int, Any] = {}
 
         for idx, row in top_df.iterrows():
             rank = int(row.get("rank", idx + 1)) if "rank" in top_df.columns else idx + 1
@@ -924,11 +969,21 @@ class PhysicsValidationPipeline:
                     logger.warning("ESMFold failed for rank %d: %s", rank, e)
                     result.errors.append(f"esmfold: {e}")
 
-            # Energy minimization + DDG
-            if not skip_energy and pdb_string:
+            # Prepare PDBFixer once per candidate (reused for energy + MD)
+            fixer = None
+            if pdb_string and energy_calc:
                 try:
-                    calc = OpenMMEnergyCalculator()
-                    energy_result = calc.minimize_and_get_energy(pdb_string)
+                    fixer, missing_res, missing_atoms = energy_calc.prepare_structure(pdb_string)
+                    fixer_cache[rank] = fixer
+                except Exception as e:
+                    logger.warning("PDBFixer failed for rank %d: %s", rank, e)
+
+            # Energy minimization + DDG (reuse prepared fixer)
+            if not skip_energy and fixer and energy_calc:
+                try:
+                    energy_result = energy_calc.minimize_from_fixer(fixer)
+                    energy_result.pdbfixer_missing_residues = missing_res
+                    energy_result.pdbfixer_missing_atoms = missing_atoms
                     result.energy = energy_result
                     self._energy_cache[seq_h] = energy_result.potential_energy_kcal
 
@@ -936,7 +991,7 @@ class PhysicsValidationPipeline:
                     e_rescue = energy_result.potential_energy_kcal
                     e_wt_ref = wt_energy if wt_energy is not None else e_rescue
                     e_cancer_ref = cancer_energies.get(target_label, e_wt_ref)
-                    result.ddg = calc.compute_ddg(e_wt_ref, e_cancer_ref, e_rescue)
+                    result.ddg = energy_calc.compute_ddg(e_wt_ref, e_cancer_ref, e_rescue)
                 except Exception as e:
                     logger.warning("Energy calc failed for rank %d: %s", rank, e)
                     result.errors.append(f"energy: {e}")
@@ -976,9 +1031,12 @@ class PhysicsValidationPipeline:
                     continue
                 try:
                     name = f"rank{res.candidate_rank:02d}_{res.target_label.replace('+', '_')}"
+                    # Reuse cached fixer from Tier 1 if available
+                    cached_fixer = fixer_cache.get(res.candidate_rank)
                     res.md = checker.run_stability_check(
                         pdb_str, output_dir=output_dir / "md_trajectories",
                         name=name, simulation_ns=simulation_ns,
+                        fixer=cached_fixer,
                     )
                     # Recompute composite score with MD
                     res.overall_physics_score, res.verdict = compute_physics_score(
