@@ -16,51 +16,62 @@ Once p53 loses function, cells can divide uncontrollably. Restoring p53 activity
 
 **p53-proteoMgCAD** designs **second-site rescue mutations** — additional amino acid changes that compensate for the structural damage caused by cancer mutations and restore wild-type tumor suppressor function. This approach, called *intragenic suppression*, has been validated experimentally (Nikolova et al. 2000, Baroni et al. 2004, Otsuka et al. 2007).
 
-The pipeline uses **ESM-2 protein language model embeddings** combined with a **functional oracle trained on experimental deep mutational scanning data** (Giacomelli et al. 2018) to navigate protein sequence space via gradient-based optimization, discovering rescue mutations that maximize predicted function while maintaining >90% sequence identity to wild-type human p53.
+The pipeline uses **ESM-2 (650M parameter) protein language model embeddings** combined with a **delta-encoded attention-pooling oracle trained on experimental deep mutational scanning data** (Giacomelli et al. 2018) to navigate protein sequence space via gradient-based optimization and autoregressive sampling, discovering rescue mutations that maximize predicted function while maintaining >90% sequence identity to wild-type human p53.
 
 ---
 
 ## Results
 
-### DMS-Aware Campaign: 152 Scenarios, 8 Cancer Hotspots, 3 Delivery Methods
+### Latest Campaign: 650M ESM-2 + Attention Oracle, 108 Scenarios, 44 Hours
 
 | Metric | Value |
 |--------|-------|
-| Campaign scenarios | 108 screen + 44 deep refinement |
-| Total candidates evaluated | 1,176 (528 deep) |
+| ESM-2 model | 650M parameters (facebook/esm2_t33_650M_UR50D) |
+| Oracle architecture | Attention-pooling with delta encoding (val loss 0.2798) |
+| Campaign scenarios | 108 screen + 36 deep refinement |
+| Total candidates evaluated | 1,152 |
 | Shortlist | **30/30 slots filled** |
-| Best oracle score | **1.711** |
-| Best rescue DMS Z-score | **-2.00** (strongly functional individually) |
-| Candidates with functional rescues | **73%** (22/30 shortlisted) |
-| Mean shortlist DMS Z-score | **-0.691** |
-| Sequence identity to WT | >99% (1-5 mutations from wild-type) |
-| Delivery methods covered | Gene therapy (20), mRNA therapy (8), Protein therapy (2) |
-| Unique target combinations | 11 |
+| Candidates with positive oracle score | **23/30 shortlisted** |
+| Best oracle score | **+1.628** (R249S rescue) |
+| Mean shortlist identity | **91.2%** |
+| All 30 have functional rescues | Yes (n_functional_rescues > 0) |
+| Cancer hotspots covered | 8 singles + 28 pairs = 36 target combinations |
+| Delivery methods | Gene therapy (22), mRNA therapy (6), Protein therapy (2) |
+| Unique targets in shortlist | 18 |
 
-### Top Rescue Candidates (Ranked by Oracle Score)
+### Top Rescue Candidates
 
-| # | Target Mutation | Rescue Mutation | Oracle Score | DMS Z-score | Delivery |
-|---|-----------------|-----------------|--------------|-------------|----------|
-| 1 | R249S + R273H | **F341K** | 1.695 | **-1.73** | Gene therapy |
-| 2 | R249S + R282W | **L344E** | 1.711 | **-1.95** | mRNA therapy |
-| 3 | R249S + R282W | **L344E** | 1.711 | **-1.95** | Protein therapy |
-| 4 | R248Q + R282W | **M340Q + F341M** | 1.648 | **-1.16** | Gene therapy |
-| 5 | G245S + R282W | **A39M + S241R + K305I** | 1.691 | **-0.57** | Gene therapy |
-| 6 | R249S + R282W | **L344E + G389E** | 1.680 | **-1.13** | Gene therapy |
-| 7 | G245S + R175H | **M340S** | 1.675 | **-1.79** | Gene therapy |
-| 8 | R175H + R273H | **L344K** | 1.671 | **-1.69** | mRNA therapy |
-| 9 | G245S + R282W | **F338E** | 1.658 | **-2.00** | Gene therapy |
-
-All top 9 candidates have rescue mutations that are **independently functional** in the Giacomelli 2018 DMS assay (negative Z-score = wild-type-like function retained). The DMS-aware optimizer steers toward rescue mutations with direct experimental evidence of individual function.
+| # | Target | Rescue Mutations | Oracle Score | Identity | Delivery |
+|---|--------|-----------------|--------------|----------|----------|
+| 1 | R249S | 24 rescue mutations | **+1.628** | 93.6% | Gene therapy |
+| 2 | R248Q | 21 rescue mutations | **+0.441** | 94.4% | mRNA therapy |
+| 3 | R248Q | 21 rescue mutations | **+0.441** | 94.4% | Protein therapy |
+| 4 | G245S + R273C | 25 rescue mutations | **+1.141** | 93.1% | Gene therapy |
+| 5 | R248Q | 25 rescue mutations | **+0.921** | 93.4% | Gene therapy |
+| 6 | R248W + R273H | 21 rescue mutations | **+0.621** | 94.1% | Gene therapy |
+| 7 | G245S + R273H | 23 rescue mutations | **+0.612** | 93.6% | Gene therapy |
+| 8 | R248Q + R273C | 25 rescue mutations | **+0.831** | 93.1% | Gene therapy |
+| 9 | G245S + R248W | 20 rescue mutations | **+0.413** | 94.4% | Gene therapy |
+| 10 | R248Q + R249S | 23 rescue mutations | **+0.591** | 93.6% | Gene therapy |
 
 Key findings:
-- **L344E** (tetramerization domain) is the strongest single rescue mutation, compensating for R249S+R282W double mutants with DMS Z = -1.95
-- **Positions 340-344** are a rescue mutation hotspot in the tetramerization domain, appearing in 10/30 shortlisted candidates
-- **All 3 delivery methods** are represented in the shortlist, including protein therapy candidates
+- **Autoregressive sampling dominates**: 23 of 30 shortlisted candidates come from the autoregressive strategy, which adds mutations one-by-one via greedy ESM-2-guided selection
+- **Multi-mutation rescue patterns**: The 650M model discovers rescue combinations of 18-30 mutations (mean 25.7 for positive-score candidates), concentrated in the DNA-binding core and tetramerization domain
+- **Score range**: Wild-type p53 scores +0.04; cancer mutants score -1.2 to -1.6; the best rescue reaches +1.628 — exceeding wild-type predicted function
+- **All 3 delivery methods** are represented in the shortlist, with candidates satisfying delivery-specific identity constraints (gene therapy ≥92%, mRNA therapy ≥92%, protein therapy ≥92%)
+
+### Oracle Model
+
+The functional oracle uses **delta-encoded attention pooling** — a critical architectural choice for ESM-2 embeddings:
+
+1. The wild-type p53 embedding is subtracted from each candidate embedding (delta encoding)
+2. This makes mutated positions stand out as nonzero residuals, since all 7,844 DMS sequences differ from wild-type at only 1 of 393 positions
+3. A learnable query attends over the delta-encoded positions via multi-head attention (4 heads), then an MLP (1280→256→128→1) predicts functional score
+4. Without delta encoding, attention collapses — all sequences produce identical scores because the signal-to-noise ratio at 1/393 changed positions is too low
 
 ### 3D-Printable Protein Model
 
-The best rescue candidate (G245S+R175H rescued by M340S) is exported as a 3MF file for 3D printing with per-triangle material coloring: **black** = protein surface, **red** = cancer mutation sites (R175H, G245S), **green** = rescue mutation site (M340S), **blue** = DNA-binding domain (residues 94-292). Generated from the AlphaFold wild-type p53 structure (AF-P04637-F1-model_v6). Compatible with OrcaSlicer, PrusaSlicer, and Flashforge slicers.
+The best rescue candidate is exported as a 3MF file for 3D printing with per-triangle material coloring: **black** = protein surface, **red** = cancer mutation sites, **green** = rescue mutation sites, **blue** = DNA-binding domain (residues 94-292). Generated from the AlphaFold wild-type p53 structure (AF-P04637-F1-model_v6). Compatible with OrcaSlicer, PrusaSlicer, and Flashforge slicers.
 
 ---
 
@@ -68,30 +79,42 @@ The best rescue candidate (G245S+R175H rescued by M340S) is exported as a 3MF fi
 
 ### Functional Manifold Rescue (FMR) Algorithm
 
-1. **Encode**: The cancer-mutant p53 sequence is embedded into ESM-2's 320-dimensional latent space (per position)
+The pipeline uses two complementary optimization strategies:
+
+**Gradient-Based Optimization:**
+1. **Encode**: The cancer-mutant p53 sequence is embedded into ESM-2's 1280-dimensional latent space (per position)
 2. **Optimize**: Gradient ascent maximizes a multi-objective loss combining:
    - Functional oracle score (trained on 7,844 DMS variants)
-   - **DMS-aware rescue quality** — a differentiable penalty using per-residue experimental fitness data that steers the optimizer toward rescue mutations that are individually functional in the Giacomelli DMS assay
-   - Stability preservation (log-probability packing)
-   - DNA binding maintenance (hotspot charge/latent force)
+   - **DMS-aware rescue quality** — a differentiable penalty using per-residue experimental fitness data
+   - Pseudo-log-likelihood stability (max log-prob per position)
+   - DNA binding force estimation
+   - Contact preservation (cosine similarity of hidden states at structural neighbors)
+   - Cancer-site PLL (focused gradient at cancer mutation positions)
+   - Epistasis scoring (structural proximity + attention coupling between mutating positions)
    - Sequence identity constraint (>90% to wild-type)
    - Target mutation lock (cancer mutations are retained, not "fixed")
-3. **Decode**: The optimized embedding is decoded back to amino acid probabilities, yielding a rescued protein sequence
+3. **Decode**: The optimized embedding is decoded back to amino acid probabilities
 
-The DMS-aware penalty computes expected fitness at each position using `E[Z] = Σ P(aa|pos) × Z(pos, aa)`, where P comes from the softmax over amino acids and Z is the experimental Nutlin-3 Z-score. This is fully differentiable, allowing gradient-based optimization to directly incorporate experimental evidence into the rescue mutation search.
+**Autoregressive Sampling:**
+1. Rank all non-locked positions by ESM-2 attention
+2. At each position, mask and predict top-K amino acid candidates
+3. Accept the first substitution that improves the oracle score
+4. Iterate until convergence — each step adds one greedy rescue mutation
+
+The DMS-aware penalty computes expected fitness at each position using `E[Z] = Σ P(aa|pos) × Z(pos, aa)`, where P comes from the softmax over amino acids and Z is the experimental Nutlin-3 Z-score. This is fully differentiable, allowing gradient-based optimization to directly incorporate experimental evidence.
 
 ### Campaign System
 
 The campaign runner evaluates all combinations of:
 - **8 cancer hotspots** (singles and pairs = 36 target combinations)
 - **3 delivery methods** (gene therapy, mRNA therapy, protein therapy)
-- **3 optimization profiles** (Balanced, Stability-First, Binding-Optimized)
+- **6 optimization profiles** (Balanced, Stability-First, Binding-Optimized, Function-Maximized, Conservative, Experimental) + Autoregressive
 
-This produces 108 scenarios in Pass A (screening), then deep-refines the top 40% in Pass B with multiple random restarts and trials. An evidence-weighted, diversity-aware shortlist selects the top 30 candidates across targets, delivery methods, and optimization profiles — ranking by oracle score, DMS rescue quality, clinical impact, and mutation novelty.
+This produces 108 scenarios in Pass A (screening), then deep-refines the top scenarios in Pass B with multiple random restarts and autoregressive trials. An evidence-weighted, diversity-aware shortlist selects the top 30 candidates across targets, delivery methods, and optimization profiles — ranking by oracle score, clinical impact, DMS rescue quality, and mutation novelty.
 
 ### Experimental Validation
 
-The functional oracle is trained on the **Giacomelli et al. 2018** saturation mutagenesis dataset — 7,844 p53 variants tested in a cell-based Nutlin-3 selection assay. This is real experimental data measuring whether each p53 variant retains tumor suppressor activity. The oracle achieves strong correlation with these experimental measurements and generalizes to multi-mutation combinations.
+The functional oracle is trained on the **Giacomelli et al. 2018** saturation mutagenesis dataset — 7,844 p53 variants tested in a cell-based Nutlin-3 selection assay. This is real experimental data measuring whether each p53 variant retains tumor suppressor activity. The oracle achieves validation loss of 0.2798 and generalizes to multi-mutation combinations through delta encoding.
 
 ---
 
@@ -101,7 +124,7 @@ The functional oracle is trained on the **Giacomelli et al. 2018** saturation mu
 
 - Python 3.11+
 - PyTorch 2.0+
-- ~8 GB RAM
+- ~8 GB RAM (16 GB recommended for 650M ESM-2)
 
 ### Setup
 
@@ -142,7 +165,7 @@ print(f"Shortlist: {result['n_shortlist']} candidates")
 ### Command Line
 
 ```bash
-# Run full campaign (108 scenarios, ~80 min on Apple MPS GPU)
+# Run full campaign (108 scenarios, ~44 hours with 650M ESM-2 on Apple MPS GPU)
 p53cad campaign-run --budget medium --seed 42
 
 # List past campaigns
@@ -169,8 +192,9 @@ streamlit run p53cad/app/main.py
 ```
 p53cad/
 ├── engine/
-│   ├── campaign.py          # Multi-scenario campaign runner (FMR optimizer)
-│   ├── oracle.py            # Functional prediction model (ESM-2 + MLP)
+│   ├── campaign.py          # Multi-scenario campaign runner (FMR + autoregressive)
+│   ├── oracle.py            # Functional prediction model (attention-pooling + delta encoding)
+│   ├── latent.py            # ESM-2 embedder and latent forward ascent
 │   ├── explainability.py    # Attention attribution and mechanism analysis
 │   ├── drug_generator.py    # Small molecule stabilizer generation
 │   └── md_validation.py     # Molecular dynamics simulation scripts
@@ -200,7 +224,7 @@ data/
 │   ├── p53_wt.pdb                     # AlphaFold wild-type structure
 │   └── receptors/                     # Docking receptor PDBQTs
 ├── models/
-│   └── functional_oracle.pt           # Trained oracle weights
+│   └── functional_oracle.pt           # Trained oracle weights (attention-pooling)
 └── campaigns/                         # Campaign artifacts (Parquet)
 ```
 
@@ -221,6 +245,10 @@ Rather than correcting the cancer mutation directly, second-site rescue adds a *
 - **T284R** rescues R175H by restoring zinc coordination geometry (Otsuka et al. 2007)
 
 Our computational pipeline automates the discovery of such rescue mutations using protein language models and experimental fitness data.
+
+### Delta-Encoded Attention Oracle
+
+Standard pooling approaches (mean, max) fail for this problem because cancer-mutant p53 sequences differ from wild-type at only 1-2 of 393 positions. The signal is overwhelmed by 391+ identical positions. Delta encoding subtracts the wild-type embedding, leaving only the mutation signal — positions that changed are nonzero, everything else cancels to zero. Multi-head attention then learns which mutation-induced changes matter for function.
 
 ---
 

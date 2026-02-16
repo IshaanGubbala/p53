@@ -3351,7 +3351,7 @@
         "kind": 2,
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
-        "peekOfCode": "def render_plotly(fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))\ndef render_plotly_in(container, fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))\ndef safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:\n    \"\"\"Safely execute optional DMS physics fallback scoring.\"\"\"\n    if not callable(physics_based_score_fn):\n        return None\n    try:\n        result = physics_based_score_fn(mutation)",
+        "peekOfCode": "def render_plotly(fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), theme=None, **_normalize_plotly_kwargs(kwargs))\ndef render_plotly_in(container, fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), theme=None, **_normalize_plotly_kwargs(kwargs))\ndef safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:\n    \"\"\"Safely execute optional DMS physics fallback scoring.\"\"\"\n    if not callable(physics_based_score_fn):\n        return None\n    try:\n        result = physics_based_score_fn(mutation)",
         "detail": "p53cad.app.main",
         "documentation": {}
     },
@@ -3360,7 +3360,7 @@
         "kind": 2,
         "importPath": "p53cad.app.main",
         "description": "p53cad.app.main",
-        "peekOfCode": "def render_plotly_in(container, fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))\ndef safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:\n    \"\"\"Safely execute optional DMS physics fallback scoring.\"\"\"\n    if not callable(physics_based_score_fn):\n        return None\n    try:\n        result = physics_based_score_fn(mutation)\n    except Exception as err:\n        logger.warning(\"physics_based_score failed for %s: %s\", mutation, err)",
+        "peekOfCode": "def render_plotly_in(container, fig: go.Figure, chart_kind: str = \"default\", **kwargs):\n    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), theme=None, **_normalize_plotly_kwargs(kwargs))\ndef safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:\n    \"\"\"Safely execute optional DMS physics fallback scoring.\"\"\"\n    if not callable(physics_based_score_fn):\n        return None\n    try:\n        result = physics_based_score_fn(mutation)\n    except Exception as err:\n        logger.warning(\"physics_based_score failed for %s: %s\", mutation, err)",
         "detail": "p53cad.app.main",
         "documentation": {}
     },

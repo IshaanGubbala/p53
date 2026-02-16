@@ -1171,11 +1171,11 @@ def _normalize_plotly_kwargs(kwargs: dict) -> dict:
 
 
 def render_plotly(fig: go.Figure, chart_kind: str = "default", **kwargs):
-    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))
+    return st.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), theme=None, **_normalize_plotly_kwargs(kwargs))
 
 
 def render_plotly_in(container, fig: go.Figure, chart_kind: str = "default", **kwargs):
-    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), **_normalize_plotly_kwargs(kwargs))
+    return container.plotly_chart(style_plotly_figure(fig, chart_kind=chart_kind), theme=None, **_normalize_plotly_kwargs(kwargs))
 
 
 def safe_physics_based_score(mutation: str) -> Optional[Dict[str, Any]]:
@@ -4380,8 +4380,11 @@ with tab1:
                             muts_display = "None (no sequence change from baseline)"
                         st.caption(f"**Mutations:** {muts_display}")
 
-                        # Physics scores
-                        st.caption(f"Stability: {cand['stability']:.3f} | Binding: {cand['binding']:.2f}")
+                        # Physics scores (older autoregressive campaigns stored 0.0 before backfill)
+                        _ar_zero = cand.get('profile') == 'Autoregressive' and cand['stability'] == 0.0 and cand['binding'] == 0.0
+                        stab_str = "N/A" if _ar_zero else f"{cand['stability']:.3f}"
+                        bind_str = "N/A" if _ar_zero else f"{cand['binding']:.2f}"
+                        st.caption(f"Stability: {stab_str} | Binding: {bind_str}")
                         st.caption(
                             f"Raw score: {float(cand.get('score_raw', cand['score'])):.3f} | "
                             f"Calibrated: {float(cand.get('score_calibrated', cand['score'])):.3f} | "
@@ -4486,14 +4489,16 @@ with tab1:
             st.metric("🧬 Identity", f"{best_candidate['identity']:.1f}%",
                      delta=f"{int(best_candidate['n_mutations'])} mutations")
         with hero_col3:
-            st.metric("⚡ Stability", f"{best_candidate['stability']:.3f}")
+            _hero_ar_zero = best_candidate.get('profile') == 'Autoregressive' and best_candidate['stability'] == 0.0 and best_candidate['binding'] == 0.0
+            st.metric("⚡ Stability", "N/A" if _hero_ar_zero else f"{best_candidate['stability']:.3f}")
         with hero_col4:
             st.metric("📉 Uncertainty", f"{float(best_candidate.get('uncertainty', 0.0)):.3f}")
+        _hero_bind_str = "N/A" if _hero_ar_zero else f"{best_candidate['binding']:.2f}"
         st.caption(
             f"Raw oracle score: {float(best_candidate.get('score_raw', best_candidate['score'])):.3f} | "
             f"Calibrated score: {float(best_candidate.get('score_calibrated', best_candidate['score'])):.3f} | "
             f"OOD distance: {float(best_candidate.get('ood_distance', 0.0)):.3f} | "
-            f"DNA Binding: {best_candidate['binding']:.2f}"
+            f"DNA Binding: {_hero_bind_str}"
         )
 
         # Two column layout: Mutations + 3D Structure | Graphs
@@ -4669,96 +4674,155 @@ with tab1:
             viz_col1, viz_col2 = st.columns(2)
 
             with viz_col1:
-                # === 3D LATENT SPACE PLOT ===
-                st.markdown("### 🌐 3D Latent Space Trajectory")
-                st.caption("*Surface = estimated loss landscape from sampled optimization states; line = actual optimization path.*")
+                _has_latent = "lx" in traj_df.columns and "ly" in traj_df.columns
 
-                fig_3d = go.Figure()
-                mesh = build_loss_mesh(traj_df, grid_size=40)
-                if mesh is not None:
-                    grid_x, grid_y, grid_z = mesh
+                if _has_latent:
+                    # === 3D LATENT SPACE PLOT (gradient-based trajectories) ===
+                    st.markdown("### 🌐 3D Latent Space Trajectory")
+                    st.caption("*Surface = estimated loss landscape from sampled optimization states; line = actual optimization path.*")
+
+                    fig_3d = go.Figure()
+                    mesh = build_loss_mesh(traj_df, grid_size=40)
+                    if mesh is not None:
+                        grid_x, grid_y, grid_z = mesh
+                        fig_3d.add_trace(
+                            go.Surface(
+                                x=grid_x,
+                                y=grid_y,
+                                z=grid_z,
+                                colorscale="Blues",
+                                opacity=0.55,
+                                name="Estimated loss surface",
+                                showscale=False,
+                                hovertemplate="Latent X: %{x:.2f}<br>Latent Y: %{y:.2f}<br>Loss: %{z:.3f}<extra></extra>",
+                            )
+                        )
+                    else:
+                        st.info(
+                            "Loss surface mesh unavailable for this trajectory (need enough points with `loss_total`). "
+                            "Showing path-only view."
+                        )
+
+                    traj_z = pd.to_numeric(traj_df.get("loss_total", traj_df.get("score")), errors="coerce")
+                    if traj_z.isna().all():
+                        traj_z = pd.to_numeric(traj_df.get("lz", traj_df.get("score")), errors="coerce")
+
                     fig_3d.add_trace(
-                        go.Surface(
-                            x=grid_x,
-                            y=grid_y,
-                            z=grid_z,
-                            colorscale="Blues",
-                            opacity=0.55,
-                            name="Estimated loss surface",
-                            showscale=False,
-                            hovertemplate="Latent X: %{x:.2f}<br>Latent Y: %{y:.2f}<br>Loss: %{z:.3f}<extra></extra>",
+                        go.Scatter3d(
+                            x=traj_df["lx"],
+                            y=traj_df["ly"],
+                            z=traj_z,
+                            mode="lines+markers",
+                            line=dict(color="#0EA5E9", width=6),
+                            marker=dict(
+                                size=5,
+                                color=traj_df["step"],
+                                colorscale=[[0.0, "#1D4ED8"], [0.5, "#0EA5E9"], [1.0, "#10B981"]],
+                                colorbar=dict(title="Step", x=1.02, thickness=12),
+                                opacity=0.95,
+                            ),
+                            text=[
+                                f"Step {s}<br>Score: {sc:.3f}<br>Loss: {lz:.3f}<br>Identity: {ident:.1f}%"
+                                for s, sc, lz, ident in zip(
+                                    traj_df["step"],
+                                    traj_df["score"],
+                                    traj_z,
+                                    traj_df["identity"],
+                                )
+                            ],
+                            hoverinfo="text",
+                            name="Optimization trajectory",
                         )
                     )
-                else:
-                    st.info(
-                        "Loss surface mesh unavailable for this trajectory (need enough points with `loss_total`). "
-                        "Showing path-only view."
+                    fig_3d.add_trace(
+                        go.Scatter3d(
+                            x=[traj_df["lx"].iloc[0]],
+                            y=[traj_df["ly"].iloc[0]],
+                            z=[traj_z.iloc[0]],
+                            mode="markers",
+                            marker=dict(size=13, color="#DC2626", symbol="diamond", line=dict(color="white", width=1)),
+                            name="Start (cancer)",
+                        )
                     )
-
-                traj_z = pd.to_numeric(traj_df.get("loss_total", traj_df.get("score")), errors="coerce")
-                if traj_z.isna().all():
-                    traj_z = pd.to_numeric(traj_df.get("lz", traj_df.get("score")), errors="coerce")
-
-                fig_3d.add_trace(
-                    go.Scatter3d(
-                        x=traj_df["lx"],
-                        y=traj_df["ly"],
-                        z=traj_z,
-                        mode="lines+markers",
-                        line=dict(color="#0EA5E9", width=6),
-                        marker=dict(
-                            size=5,
-                            color=traj_df["step"],
-                            colorscale=[[0.0, "#1D4ED8"], [0.5, "#0EA5E9"], [1.0, "#10B981"]],
-                            colorbar=dict(title="Step", x=1.02, thickness=12),
-                            opacity=0.95,
+                    fig_3d.add_trace(
+                        go.Scatter3d(
+                            x=[traj_df["lx"].iloc[-1]],
+                            y=[traj_df["ly"].iloc[-1]],
+                            z=[traj_z.iloc[-1]],
+                            mode="markers",
+                            marker=dict(size=14, color="#059669", symbol="diamond", line=dict(color="white", width=1)),
+                            name="End (selected)",
+                        )
+                    )
+                    fig_3d.update_layout(
+                        height=560,
+                        margin=dict(l=24, r=20, t=64, b=100),
+                        scene=dict(
+                            xaxis_title="Latent X",
+                            yaxis_title="Latent Y",
+                            zaxis_title="Loss (lower is better)",
+                            camera=dict(eye=dict(x=1.4, y=1.35, z=1.1)),
                         ),
-                        text=[
-                            f"Step {s}<br>Score: {sc:.3f}<br>Loss: {lz:.3f}<br>Identity: {ident:.1f}%"
-                            for s, sc, lz, ident in zip(
-                                traj_df["step"],
-                                traj_df["score"],
-                                traj_z,
-                                traj_df["identity"],
-                            )
-                        ],
+                        legend=dict(orientation="h", yanchor="top", y=-0.24, xanchor="left", x=0.0),
+                    )
+                    render_plotly(fig_3d, chart_kind="3d", width="stretch")
+                    st.caption("Interpretation: good runs move toward lower-surface basins while preserving identity and constraints.")
+                else:
+                    # === 2D MUTATION TRAJECTORY (autoregressive trajectories) ===
+                    st.markdown("### 📈 Mutation Trajectory")
+                    st.caption("*Score improvement as rescue mutations are added one-by-one.*")
+
+                    fig_traj = go.Figure()
+                    hover_texts = []
+                    for _, row in traj_df.iterrows():
+                        mut_label = row.get("mutation_applied", "")
+                        step_label = f"Step {int(row['step'])}"
+                        if mut_label:
+                            step_label += f"<br>Applied: {mut_label}"
+                        step_label += f"<br>Score: {row['score']:.3f}"
+                        if "n_mutations" in traj_df.columns:
+                            step_label += f"<br>Total mutations: {int(row['n_mutations'])}"
+                        hover_texts.append(step_label)
+
+                    fig_traj.add_trace(go.Scatter(
+                        x=traj_df["step"],
+                        y=traj_df["score"],
+                        mode="lines+markers",
+                        line=dict(color="#0EA5E9", width=3),
+                        marker=dict(
+                            size=9,
+                            color=traj_df["score"],
+                            colorscale=[[0.0, "#DC2626"], [0.5, "#F59E0B"], [1.0, "#10B981"]],
+                            colorbar=dict(title="Score", thickness=12),
+                        ),
+                        text=hover_texts,
                         hoverinfo="text",
-                        name="Optimization trajectory",
-                    )
-                )
-                fig_3d.add_trace(
-                    go.Scatter3d(
-                        x=[traj_df["lx"].iloc[0]],
-                        y=[traj_df["ly"].iloc[0]],
-                        z=[traj_z.iloc[0]],
+                        name="Score trajectory",
+                    ))
+                    # Mark start and end
+                    fig_traj.add_trace(go.Scatter(
+                        x=[traj_df["step"].iloc[0]],
+                        y=[traj_df["score"].iloc[0]],
                         mode="markers",
-                        marker=dict(size=13, color="#DC2626", symbol="diamond", line=dict(color="white", width=1)),
-                        name="Start (cancer)",
-                    )
-                )
-                fig_3d.add_trace(
-                    go.Scatter3d(
-                        x=[traj_df["lx"].iloc[-1]],
-                        y=[traj_df["ly"].iloc[-1]],
-                        z=[traj_z.iloc[-1]],
+                        marker=dict(size=14, color="#DC2626", symbol="diamond"),
+                        name="Start (cancer baseline)",
+                    ))
+                    fig_traj.add_trace(go.Scatter(
+                        x=[traj_df["step"].iloc[-1]],
+                        y=[traj_df["score"].iloc[-1]],
                         mode="markers",
-                        marker=dict(size=14, color="#059669", symbol="diamond", line=dict(color="white", width=1)),
-                        name="End (selected)",
+                        marker=dict(size=14, color="#059669", symbol="diamond"),
+                        name="End (best rescue)",
+                    ))
+                    fig_traj.update_layout(
+                        height=560,
+                        margin=dict(l=24, r=20, t=64, b=100),
+                        xaxis_title="Mutation Step",
+                        yaxis_title="Oracle Score",
+                        legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0.0),
                     )
-                )
-                fig_3d.update_layout(
-                    height=560,
-                    margin=dict(l=24, r=20, t=64, b=100),
-                    scene=dict(
-                        xaxis_title="Latent X",
-                        yaxis_title="Latent Y",
-                        zaxis_title="Loss (lower is better)",
-                        camera=dict(eye=dict(x=1.4, y=1.35, z=1.1)),
-                    ),
-                    legend=dict(orientation="h", yanchor="top", y=-0.24, xanchor="left", x=0.0),
-                )
-                render_plotly(fig_3d, chart_kind="3d", width="stretch")
-                st.caption("Interpretation: good runs move toward lower-surface basins while preserving identity and constraints.")
+                    render_plotly(fig_traj, chart_kind="trajectory", width="stretch")
+                    st.caption("Each step adds one greedy rescue mutation. Higher scores indicate improved p53 function.")
 
             with viz_col2:
                 # === MULTI-METRIC COMPARISON ===

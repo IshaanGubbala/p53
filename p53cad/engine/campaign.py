@@ -1365,6 +1365,33 @@ class CampaignRunner:
         mut_positions = [j + 1 for j in range(len(P53_WT)) if P53_WT[j] != best_seq[j]]
         seq_identity = 100.0 * (1.0 - len(all_muts) / float(len(P53_WT)))
 
+        # Compute stability / binding / uncertainty from final sequence
+        final_stability = 0.0
+        final_binding = 0.0
+        final_uncertainty = 0.0
+        final_ood_distance = 0.0
+        try:
+            final_emb = self.embedder.get_embeddings(final_seq).detach()
+            with torch.no_grad():
+                final_z, final_logits, _ = self.embedder.latent_forward_ascent(final_emb)
+                final_logits_aa = final_logits[:, :, AA_IDS]
+                final_stability = float(F.log_softmax(final_logits_aa, dim=-1).max(dim=-1).values.mean().item())
+                final_probs_full = torch.softmax(final_logits, dim=-1)
+                final_binding = float(self._batch_dna_force(final_z, final_probs_full)[0].item())
+                final_pooled = final_z.mean(dim=1)
+                if final_pooled.shape[-1] != self.oracle.input_dim:
+                    final_pooled = final_pooled[:, :self.oracle.input_dim]
+                final_uncertainty = self._estimate_uncertainty(final_pooled, mc_samples=5, z_full=final_z)
+                # OOD distance requires a reference; compute from WT embeddings
+                wt_emb = self.embedder.get_embeddings(P53_WT).detach()
+                wt_z, _, _ = self.embedder.latent_forward_ascent(wt_emb)
+                wt_pooled = wt_z.mean(dim=1)
+                if wt_pooled.shape[-1] != self.oracle.input_dim:
+                    wt_pooled = wt_pooled[:, :self.oracle.input_dim]
+                final_ood_distance = float(torch.norm(final_pooled - wt_pooled, p=2, dim=-1).item())
+        except Exception as err:
+            logger.warning("Autoregressive: failed to compute stability/binding for %s: %s", scenario.scenario_id, err)
+
         # DMS quality for rescue mutations
         target_set = set(str(t).strip().upper() for t in scenario.targets)
         rescue_muts = [m for m in all_muts if m not in target_set]
@@ -1398,14 +1425,14 @@ class CampaignRunner:
             "score_raw": float(best_score),
             "score_calibrated": float(self._calibrate_score(best_score)),
             "score_gain_vs_target": float(best_score - baseline_score),
-            "stability": 0.0,
-            "binding": 0.0,
+            "stability": final_stability,
+            "binding": final_binding,
             "identity": float(seq_identity),
             "n_mutations": int(len(all_muts)),
             "mutations_json": json.dumps(all_muts),
             "mut_positions_json": json.dumps(mut_positions),
-            "uncertainty": 0.0,
-            "ood_distance": 0.0,
+            "uncertainty": final_uncertainty,
+            "ood_distance": final_ood_distance,
             "rescue_dms_mean": float(rescue_dms_mean),
             "n_functional_rescues": int(n_functional_rescues),
             "n_rescue_mutations": int(len(rescue_muts)),
