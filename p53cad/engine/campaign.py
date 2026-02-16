@@ -890,12 +890,14 @@ class CampaignRunner:
                 ni = [r - 1 for r, _ in neighbors if 0 <= r - 1 < len(P53_WT)]
                 contact_neighbor_indices.append(ni)
 
+        # Pre-compute locked position set (used by epistasis, re-embedding, and autoregressive)
+        locked_set = set(locked_indices)
+
         # Pre-compute pairwise Cα distances for epistasis proximity penalty
         # We track pairs of all mutatable (non-locked) positions that are close
         _epistasis_pairs: List[Tuple[int, int, float]] = []  # (idx_i, idx_j, distance)
         if self._ca_coords:
             all_pos = list(range(len(P53_WT)))
-            locked_set = set(locked_indices)
             for i_idx in range(len(all_pos)):
                 if i_idx in locked_set:
                     continue
@@ -923,6 +925,10 @@ class CampaignRunner:
             dists = (torch.arange(seq_len, device=emb.device).float() - li)
             pool_weights += torch.exp(-dists**2 / 200.0)  # σ=10 → 2σ²=200
         pool_weights = pool_weights / pool_weights.sum()  # (L,)
+
+        # Re-embedding interval: project embedding back to protein manifold every N steps.
+        # Quicker budgets re-embed more often (tighter constraint) to prevent drift.
+        reembed_interval = {25: 5, 60: 8, 80: 10, 120: 10, 200: 10, 280: 12}.get(n_steps, 10)
 
         trajectory: List[Dict[str, Any]] = []
         best_valid_state: Optional[Dict[str, Any]] = None
@@ -1130,6 +1136,56 @@ class CampaignRunner:
             loss.backward()
             torch.nn.utils.clip_grad_norm_([emb], max_norm=1.0)
             optimizer.step()
+
+            # --- Periodic re-embedding: project back to protein manifold ---
+            # After gradient steps the continuous embedding drifts off the manifold
+            # of real ESM-2 token embeddings. Decode → hard-cap mutations → re-embed
+            # keeps the optimizer in discrete protein space (projected gradient descent).
+            if step_idx % reembed_interval == 0 and step_idx < n_steps:
+                with torch.no_grad():
+                    # 1. Decode current embedding to discrete sequence
+                    projected_seq = self._decode_sequence(logits_aa)
+
+                    # 2. Hard mutation cap: if too many mutations, keep only top-K
+                    proj_muts = [
+                        j for j in range(len(P53_WT))
+                        if P53_WT[j] != projected_seq[j] and j not in locked_set
+                    ]
+                    n_total_muts = len(proj_muts) + len(locked_indices)
+                    if n_total_muts > max_mutations:
+                        # Rank non-locked mutations by ESM-2 confidence
+                        mut_confidences = []
+                        for j in proj_muts:
+                            aa_idx = torch.argmax(logits_aa[0, j]).item()
+                            conf = float(log_probs[0, j, aa_idx].item())
+                            mut_confidences.append((j, conf))
+                        mut_confidences.sort(key=lambda x: x[1], reverse=True)
+                        budget = max(max_mutations - len(locked_indices), 0)
+                        keep_positions = set(j for j, _ in mut_confidences[:budget])
+                        # Reset low-confidence positions to WT
+                        projected_list = list(projected_seq)
+                        for j in proj_muts:
+                            if j not in keep_positions:
+                                projected_list[j] = P53_WT[j]
+                        projected_seq = "".join(projected_list)
+
+                    # 3. Re-embed the cleaned sequence through ESM-2
+                    new_emb = self.embedder.get_embeddings(projected_seq).detach()
+
+                    # 4. Preserve locked positions from original target embedding
+                    for li in locked_indices:
+                        new_emb[:, li, :] = emb_target_ref[:, li, :]
+
+                    # 5. Replace optimized embedding and reset optimizer
+                    n_after = sum(1 for j in range(len(P53_WT)) if P53_WT[j] != projected_seq[j])
+                    seq_id = 100.0 * (1.0 - n_after / float(len(P53_WT)))
+                    logger.debug(
+                        "Re-embed step %d: %d muts -> %d after cap (identity %.1f%%)",
+                        step_idx, n_total_muts, n_after, seq_id,
+                    )
+                    emb.data.copy_(new_emb)
+                    emb.requires_grad_(True)
+                    optimizer = torch.optim.Adam([emb], lr=0.03)
 
             if step_idx % 5 != 0 and step_idx != n_steps:
                 continue
