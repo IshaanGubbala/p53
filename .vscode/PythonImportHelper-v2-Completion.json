@@ -1446,6 +1446,38 @@
         "documentation": {}
     },
     {
+        "label": "select_device",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "select_device",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "select_device",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "select_device",
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "isExtraImport": true,
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
         "label": "bootstrap_runtime",
         "importPath": "p53cad.core.runtime",
         "description": "p53cad.core.runtime",
@@ -4214,6 +4246,15 @@
         "documentation": {}
     },
     {
+        "label": "select_device",
+        "kind": 2,
+        "importPath": "p53cad.core.runtime",
+        "description": "p53cad.core.runtime",
+        "peekOfCode": "def select_device(preference: Optional[str] = None) -> \"torch.device\":\n    \"\"\"Return the best available torch device.\n    Priority: explicit *preference* > CUDA > MPS > CPU.\n    Passing ``\"auto\"`` or ``None`` triggers auto-detection.\n    \"\"\"\n    import torch  # pylint: disable=import-outside-toplevel\n    if preference and preference != \"auto\":\n        return torch.device(preference)\n    if torch.cuda.is_available():\n        return torch.device(\"cuda\")",
+        "detail": "p53cad.core.runtime",
+        "documentation": {}
+    },
+    {
         "label": "bootstrap_runtime",
         "kind": 2,
         "importPath": "p53cad.core.runtime",
@@ -4974,7 +5015,7 @@
         "kind": 6,
         "importPath": "p53cad.engine.latent",
         "description": "p53cad.engine.latent",
-        "peekOfCode": "class ManifoldEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t33_650M_UR50D\", device: Optional[str] = None, lora_path: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        if device is None:\n            if torch.backends.mps.is_available():",
+        "peekOfCode": "class ManifoldEmbedder:\n    \"\"\"\n    Handles interactions with the ESM-2 Protein Language Model.\n    Focuses on encoding sequences into latent space and decoding them back.\n    \"\"\"\n    def __init__(self, model_name: str = \"facebook/esm2_t33_650M_UR50D\", device: Optional[str] = None, lora_path: Optional[str] = None):\n        self.logger = get_logger(__name__)\n        self.model_name = model_name\n        self.device = select_device(device)\n        self.logger.info(f\"Loading ESM-2 model {model_name} on {self.device}...\")",
         "detail": "p53cad.engine.latent",
         "documentation": {}
     },

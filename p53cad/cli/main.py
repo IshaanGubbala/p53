@@ -1,7 +1,7 @@
 import click
 from pathlib import Path
 import json
-from p53cad.core.runtime import bootstrap_runtime, get_runtime_capabilities, log_runtime_capabilities
+from p53cad.core.runtime import bootstrap_runtime, get_runtime_capabilities, log_runtime_capabilities, select_device
 
 bootstrap_runtime()
 
@@ -72,6 +72,13 @@ def doctor():
     help="Campaign artifact base directory.",
 )
 @click.option("--no-clinical", is_flag=True, help="Skip clinical scoring pass.")
+@click.option(
+    "--device",
+    default="auto",
+    show_default=True,
+    type=click.Choice(["auto", "cpu", "cuda", "mps"]),
+    help="Compute device for models (auto = CUDA > MPS > CPU).",
+)
 def campaign_run(
     run_id,
     budget,
@@ -82,21 +89,24 @@ def campaign_run(
     shortlist_n,
     output_dir,
     no_clinical,
+    device,
 ):
     """Run results-first campaign across hotspot scenarios and delivery methods."""
     logger = get_logger("p53cad.cli.campaign_run")
     from p53cad.engine.campaign import CampaignRunner
     from p53cad.results.store import CampaignStore
 
+    resolved_device = str(select_device(device))
     store = CampaignStore(base_dir=Path(output_dir))
-    runner = CampaignRunner(store=store)
+    runner = CampaignRunner(store=store, device=resolved_device)
     logger.info(
-        "Starting campaign run: run_id=%s budget=%s seed=%d include_pairs=%s max_scenarios=%s",
+        "Starting campaign run: run_id=%s budget=%s seed=%d include_pairs=%s max_scenarios=%s device=%s",
         run_id or "auto",
         budget,
         int(seed),
         bool(include_pairs),
         max_scenarios if max_scenarios is not None else "all",
+        resolved_device,
     )
     result = runner.run(
         run_id=run_id,
@@ -493,7 +503,7 @@ def explain():
 @click.option("--skip-esmfold", is_flag=True, help="Skip local ESMFold structure prediction.")
 @click.option("--skip-energy", is_flag=True, help="Skip OpenMM energy minimization.")
 @click.option("--skip-dna", is_flag=True, help="Skip DNA-binding interface analysis.")
-@click.option("--device", default="cpu", show_default=True, type=click.Choice(["cpu", "cuda", "mps"]), help="Device for ESMFold inference.")
+@click.option("--device", default="auto", show_default=True, type=click.Choice(["auto", "cpu", "cuda", "mps"]), help="Device for ESMFold inference (auto = CUDA > MPS > CPU).")
 @click.option(
     "--output-dir",
     default="data/campaigns",
@@ -518,6 +528,7 @@ def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, s
         logger.error("No top-30 candidates found for run %s", resolved_run_id)
         return
 
+    device = str(select_device(device))
     logger.info("Physics validation: run_id=%s candidates=%d device=%s", resolved_run_id, len(top_df), device)
 
     from p53cad.engine.physics_validation import PhysicsValidationPipeline

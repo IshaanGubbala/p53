@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from tqdm import tqdm
 
 from p53cad.core.logging import get_logger
+from p53cad.core.runtime import select_device
 from p53cad.engine.latent import ManifoldEmbedder
 
 
@@ -183,9 +184,10 @@ class FunctionalOracle:
         dropout: float = 0.2,
         use_rtl: bool = False,
         arch: str = "legacy_mlp",
+        device: Optional[str] = None,
     ):
         self.logger = get_logger(__name__)
-        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        self.device = select_device(device)
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.num_layers = max(int(num_layers), 1)

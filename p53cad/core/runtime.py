@@ -16,6 +16,23 @@ def _has_module(module_name: str) -> bool:
         return False
 
 
+def select_device(preference: Optional[str] = None) -> "torch.device":
+    """Return the best available torch device.
+
+    Priority: explicit *preference* > CUDA > MPS > CPU.
+    Passing ``"auto"`` or ``None`` triggers auto-detection.
+    """
+    import torch  # pylint: disable=import-outside-toplevel
+
+    if preference and preference != "auto":
+        return torch.device(preference)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def bootstrap_runtime(seed: Optional[int] = None) -> None:
     """
     Apply process-level runtime guards before heavy ML/scientific imports.

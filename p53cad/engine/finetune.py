@@ -34,6 +34,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from p53cad.core.logging import get_logger
+from p53cad.core.runtime import select_device
 
 logger = get_logger(__name__)
 
@@ -112,10 +113,7 @@ class ESM2FineTuner:
         from transformers import EsmForMaskedLM, EsmTokenizer
 
         self.model_name = model_name
-        self.device = torch.device(
-            device
-            or ("mps" if torch.backends.mps.is_available() else "cpu")
-        )
+        self.device = select_device(device)
 
         logger.info("Loading ESM-2 for LoRA fine-tuning: %s on %s", model_name, self.device)
         self.tokenizer = EsmTokenizer.from_pretrained(model_name)

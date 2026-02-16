@@ -227,7 +227,7 @@ class CampaignRunner:
         if self.embedder is not None and self.oracle is not None and self.clinical is not None:
             return
         self.embedder = ManifoldEmbedder(device=self.device)
-        self.oracle = FunctionalOracle(model_path=self.oracle_path)
+        self.oracle = FunctionalOracle(model_path=self.oracle_path, device=self.device)
         self.clinical = ClinicalImpactEngine()
 
     def _get_cached_embedding(self, seq: str) -> torch.Tensor:
@@ -611,7 +611,7 @@ class CampaignRunner:
                             cancer_sequences[str(tl)] = cancer_seq
 
                 pipeline = PhysicsValidationPipeline(
-                    device="cpu",
+                    device=str(self.embedder.device) if self.embedder else "cpu",
                     cache_dir=run_dir / "esmfold_cache",
                 )
                 report = pipeline.validate_campaign(

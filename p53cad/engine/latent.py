@@ -9,6 +9,7 @@ from pathlib import Path
 import os
 import logging
 from p53cad.core.logging import get_logger
+from p53cad.core.runtime import select_device
 
 T = TypeVar("T")
 
@@ -84,15 +85,7 @@ class ManifoldEmbedder:
         self.logger = get_logger(__name__)
         self.model_name = model_name
         
-        if device is None:
-            if torch.backends.mps.is_available():
-                self.device = torch.device("mps")
-            elif torch.cuda.is_available():
-                self.device = torch.device("cuda")
-            else:
-                self.device = torch.device("cpu")
-        else:
-            self.device = torch.device(device)
+        self.device = select_device(device)
             
         self.logger.info(f"Loading ESM-2 model {model_name} on {self.device}...")
 
