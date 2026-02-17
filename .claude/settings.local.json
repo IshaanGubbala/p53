@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/setup_env.py:*)",
+      "Bash(pip install:*)",
+      "Bash(/c/Users/rajee/AppData/Local/Programs/Python/Python312/python.exe -m pip install:*)",
+      "Bash(p53cad doctor:*)",
+      "Bash(where:*)",
+      "Bash(/c/Users/rajee/AppData/Local/Programs/Python/Python312/Scripts/p53cad.exe doctor:*)",
+      "Bash(/c/Users/rajee/AppData/Local/Programs/Python/Python312/python.exe -c \"import meeko; print\\(''Meeko version:'', meeko.__version__\\)\")",
+      "Bash(/c/Users/rajee/AppData/Local/Programs/Python/Python312/python.exe:*)",
+      "Read(//c/Users/rajee/Downloads//**)",
+      "Bash(vina --version:*)",
+      "Bash(curl:*)",
+      "Bash(./Miniconda3-latest-Windows-x86_64.exe /S /D=C:Usersrajeeminiconda3)",
+      "Bash(powershell -Command:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(streamlit run:*)",
+      "Bash(STREAMLIT_BROWSER_GATHER_USAGE_STATS=false streamlit run:*)",
+      "Bash(conda --version:*)",
+      "Bash(C:ProgramDataminiconda3Scriptsactivate.bat)",
+      "Bash(conda activate:*)",
+      "Bash(C:/ProgramData/miniconda3/envs/openmm-cuda/python.exe:*)",
+      "Bash(\"/c/Users/rajee/.conda/envs/openmm-cuda/python.exe\":*)",
+      "Bash(dir:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}

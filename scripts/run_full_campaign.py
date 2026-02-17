@@ -21,15 +21,22 @@ import os
 import sys
 import time
 
+# Enable multicore CPU processing for PyTorch/NumPy/MKL
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["OMP_NUM_THREADS"] = str(os.cpu_count() or 8)  # Use all CPU cores
+os.environ["MKL_NUM_THREADS"] = str(os.cpu_count() or 8)
+os.environ["NUMEXPR_NUM_THREADS"] = str(os.cpu_count() or 8)
+os.environ["OPENBLAS_NUM_THREADS"] = str(os.cpu_count() or 8)
 
 # Ensure project root is on path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 from p53cad.core.runtime import bootstrap_runtime
+from p53cad.core.logging import setup_logging
 
 bootstrap_runtime()
+setup_logging()  # Enable logging to workflow log file
 
 
 def main():
@@ -44,6 +51,13 @@ def main():
     args = parser.parse_args()
 
     from p53cad.engine.campaign import CampaignRunner
+
+    # Enable PyTorch multicore processing
+    import torch
+    num_threads = os.cpu_count() or 8
+    torch.set_num_threads(num_threads)
+    torch.set_num_interop_threads(num_threads)
+    print(f"  PyTorch threads: {num_threads} (multicore enabled)")
 
     print(f"\n{'='*70}")
     print(f"  p53 Rescue Campaign — Full v2 Pipeline")

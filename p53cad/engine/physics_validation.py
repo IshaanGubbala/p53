@@ -393,6 +393,18 @@ class OpenMMEnergyCalculator:
             self._forcefield = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
         return self._forcefield
 
+    @staticmethod
+    def _select_platform(openmm: Any) -> Any:
+        """Prefer CUDA when available, otherwise fall back to CPU."""
+        try:
+            platform = openmm.Platform.getPlatformByName("CUDA")
+            logger.info("OpenMM platform selected: CUDA")
+            return platform
+        except Exception:
+            platform = openmm.Platform.getPlatformByName("CPU")
+            logger.info("OpenMM platform selected: CPU (CUDA unavailable)")
+            return platform
+
     def prepare_structure(self, pdb_string: str) -> Any:
         """Fix PDB with PDBFixer: add missing atoms + hydrogens.
 
@@ -417,7 +429,7 @@ class OpenMMEnergyCalculator:
     def minimize_and_get_energy(
         self,
         pdb_string: str,
-        max_iterations: int = 200,
+        max_iterations: int = 1000,
     ) -> EnergyMinimizationResult:
         """Run energy minimization and return potential energy."""
         t0 = time.time()
@@ -431,7 +443,7 @@ class OpenMMEnergyCalculator:
     def minimize_from_fixer(
         self,
         fixer: Any,
-        max_iterations: int = 200,
+        max_iterations: int = 1000,
     ) -> EnergyMinimizationResult:
         """Run energy minimization from an already-prepared PDBFixer object.
 
@@ -452,8 +464,7 @@ class OpenMMEnergyCalculator:
         integrator = openmm.LangevinMiddleIntegrator(
             310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
         )
-        # Prefer CPU for reproducibility and availability
-        platform = openmm.Platform.getPlatformByName("CPU")
+        platform = self._select_platform(openmm)
         simulation = app.Simulation(fixer.topology, system, integrator, platform)
         simulation.context.setPositions(fixer.positions)
 
@@ -462,6 +473,17 @@ class OpenMMEnergyCalculator:
         state = simulation.context.getState(getEnergy=True)
         energy_kj = state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
         energy_kcal = energy_kj / 4.184
+
+        # Positive energy = not converged; retry with 2x iterations
+        if energy_kcal > 0:
+            logger.warning(
+                "Energy minimization did not converge (E=%.1f kcal/mol), retrying with %d iterations",
+                energy_kcal, max_iterations * 2,
+            )
+            simulation.minimizeEnergy(maxIterations=max_iterations * 2)
+            state = simulation.context.getState(getEnergy=True)
+            energy_kj = state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
+            energy_kcal = energy_kj / 4.184
 
         n_atoms = sum(1 for _ in fixer.topology.atoms())
         elapsed = time.time() - t0
@@ -550,7 +572,7 @@ class MDStabilityChecker:
         integrator = openmm.LangevinMiddleIntegrator(
             310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
         )
-        platform = openmm.Platform.getPlatformByName("CPU")
+        platform = calc._select_platform(openmm)
         simulation = app.Simulation(fixer.topology, system, integrator, platform)
         simulation.context.setPositions(fixer.positions)
 

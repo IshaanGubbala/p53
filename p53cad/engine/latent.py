@@ -227,11 +227,38 @@ class ManifoldEmbedder:
         -------
         Tuple of (last_hidden_state, logits, probabilities[, hidden][, attentions])
         """
-        esm_outputs = self.model.esm(
-            inputs_embeds=embeddings,
+        # For transformers >= 4.50, we need to bypass the embeddings layer's mask token check
+        # We do this by directly calling the encoder and skipping the embeddings layer
+        batch_size, seq_len = embeddings.shape[:2]
+
+        # Create attention mask (all ones, no padding)
+        attention_mask = torch.ones(
+            (batch_size, seq_len),
+            dtype=torch.long,
+            device=embeddings.device
+        )
+
+        # Get the extended attention mask that the encoder expects
+        # This is what ESMModel.forward normally does
+        extended_attention_mask = self.model.esm.get_extended_attention_mask(
+            attention_mask, (batch_size, seq_len)
+        )
+
+        # Directly call the encoder with our embeddings
+        encoder_outputs = self.model.esm.encoder(
+            embeddings,
+            attention_mask=extended_attention_mask,
             output_hidden_states=True,
             output_attentions=return_attention,
             return_dict=True,
+        )
+
+        # Create a compatible output object
+        from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
+        esm_outputs = BaseModelOutputWithPoolingAndCrossAttentions(
+            last_hidden_state=encoder_outputs.last_hidden_state,
+            hidden_states=encoder_outputs.hidden_states,
+            attentions=encoder_outputs.attentions,
         )
         h = esm_outputs.last_hidden_state
 

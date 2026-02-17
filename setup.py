@@ -19,7 +19,7 @@ setup(
         "plotly>=5.0",
     ],
     extras_require={
-        "drug": ["rdkit", "meeko", "vina"],
+        "drug": ["rdkit", "meeko"],
         "md": ["openmm", "openff-toolkit", "openff-interchange", "openmmforcefields"],
         "explainability": ["scipy>=1.10"],
     },

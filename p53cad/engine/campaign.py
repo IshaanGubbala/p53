@@ -314,7 +314,9 @@ class CampaignRunner:
         budget: str = "high",
         with_clinical: bool = True,
     ) -> Dict[str, Any]:
+        print("[DEBUG] _run_inner: Starting...")
         self._load_models()
+        print("[DEBUG] _run_inner: Models loaded")
         assert self.embedder is not None
         assert self.oracle is not None
         assert self.clinical is not None
@@ -322,13 +324,17 @@ class CampaignRunner:
         # Clear per-run caches
         self._emb_cache.clear()
         self._baseline_cache.clear()
+        print("[DEBUG] _run_inner: Caches cleared")
 
         run_id = run_id or build_run_id("campaign")
+        print(f"[DEBUG] _run_inner: Run ID = {run_id}")
+        print("[DEBUG] _run_inner: Building scenario matrix...")
         scenarios = build_scenario_matrix(
             hotspots=hotspots or BIG8_HOTSPOTS,
             delivery_methods=delivery_methods or DEFAULT_DELIVERY_METHODS,
             include_pairs=include_pairs,
         )
+        print(f"[DEBUG] _run_inner: Built {len(scenarios)} scenarios")
         if max_scenarios is not None:
             scenarios = scenarios[: int(max_scenarios)]
 
@@ -349,8 +355,11 @@ class CampaignRunner:
             "device": str(self.embedder.device),
             "oracle_path": str(self.oracle_path),
         }
+        print("[DEBUG] _run_inner: Calling store.init_run...")
         paths = self.store.init_run(run_id, config=config, runtime_caps=runtime_caps, resume=resume)
+        print("[DEBUG] _run_inner: Run initialized")
         self.store.update_manifest(run_id, {"status": "running"})
+        print("[DEBUG] _run_inner: Manifest updated")
 
         ckpt_dir = paths.checkpoint_state_path.parent
         candidates_jsonl = ckpt_dir / "candidates.jsonl"
@@ -358,7 +367,9 @@ class CampaignRunner:
         clinical_jsonl = ckpt_dir / "clinical.jsonl"
         scenarios_jsonl = ckpt_dir / "scenario_metrics.jsonl"
 
+        print("[DEBUG] _run_inner: Loading scenario checkpoints...")
         done_df = self.store.load_scenario_checkpoints(run_id)
+        print(f"[DEBUG] _run_inner: Loaded {len(done_df)} checkpoint rows")
         done_pairs = set()
         if not done_df.empty:
             for _, row in done_df.iterrows():
@@ -379,11 +390,14 @@ class CampaignRunner:
         ]
 
         # Pass A screening
+        print(f"[DEBUG] _run_inner: Starting Pass A screening ({len(scenario_objs)} scenarios)...")
         pass_a_best: Dict[str, float] = {}
         for idx, sc in enumerate(scenario_objs, start=1):
             key = (sc.scenario_id, "screen")
             if resume and key in done_pairs:
+                print(f"[DEBUG] Pass A [{idx}/{len(scenario_objs)}] {sc.scenario_id} - SKIPPED (already done)")
                 continue
+            print(f"[DEBUG] Pass A [{idx}/{len(scenario_objs)}] {sc.scenario_id} - STARTING")
             logger.info("Pass A [%d/%d] %s", idx, len(scenario_objs), sc.scenario_id)
             out = self._run_scenario(sc, pass_name="screen", config=pass_a_cfg, seed=seed, budget=budget)
             self._append_rows(candidates_jsonl, out["candidates"])
@@ -727,20 +741,35 @@ class CampaignRunner:
         allowed_profiles: Optional[List[str]] = None,
         budget: str = "high",
     ) -> Dict[str, Any]:
+        print(f"[DEBUG] _run_scenario: Starting scenario {scenario.scenario_id}, pass={pass_name}")
         assert self.embedder is not None
         assert self.oracle is not None
 
+        print(f"[DEBUG] _run_scenario: Building target sequence...")
         target_seq = self._build_target_sequence(scenario.targets)
+        print(f"[DEBUG] _run_scenario: Target seq length = {len(target_seq)}")
+
+        print(f"[DEBUG] _run_scenario: Getting cached embedding...")
         emb_target_ref = self._get_cached_embedding(target_seq)
+        print(f"[DEBUG] _run_scenario: Embedding shape = {emb_target_ref.shape}")
+        print(f"[DEBUG] _run_scenario: Getting WT embedding...")
         emb_wt = self._get_cached_embedding(P53_WT)
+        print(f"[DEBUG] _run_scenario: WT embedding shape = {emb_wt.shape}")
+
+        print(f"[DEBUG] _run_scenario: Starting torch.no_grad() block...")
         with torch.no_grad():
+            print(f"[DEBUG] _run_scenario: Calling latent_forward_ascent (THIS MIGHT HANG)...")
             z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref)
+            print(f"[DEBUG] _run_scenario: latent_forward_ascent completed! Shape = {z_target_ref.shape}")
             pooled_target_ref = z_target_ref.mean(dim=1)
+            print(f"[DEBUG] _run_scenario: Pooled shape = {pooled_target_ref.shape}")
             if pooled_target_ref.shape[-1] != self.oracle.input_dim:
                 pooled_target_ref = pooled_target_ref[:, :self.oracle.input_dim]
 
+        print(f"[DEBUG] _run_scenario: Getting WT AA tensor...")
         wt_aa_tensor = self._wt_aa_tensor(device=emb_target_ref.device)
 
+        print(f"[DEBUG] _run_scenario: Setting up constraints...")
         min_identity = self._delivery_identity_floor(scenario.delivery_method)
         min_stability = -0.2
         min_binding = 5.0
@@ -754,17 +783,26 @@ class CampaignRunner:
         max_mutations = int(len(P53_WT) * (100 - min_identity) / 100)
         locked_indices = [p - 1 for p in lock_positions_sorted]
 
+        print(f"[DEBUG] _run_scenario: Getting cached baseline (THIS MIGHT HANG)...")
         baseline = self._get_cached_baseline(target_seq, pooled_target_ref, mc_samples=config["mc_samples"])
+        print(f"[DEBUG] _run_scenario: Baseline computed")
+
+        print(f"[DEBUG] _run_scenario: Getting DMS quality tensor...")
         dms_quality = self._get_dms_quality_tensor(emb_target_ref.device)
+        print(f"[DEBUG] _run_scenario: DMS quality tensor ready")
 
         # Pre-compute conditional rescue scores: ESM-2 P(aa | cancer_context)
         # at candidate positions in the DNA-binding domain (DBD).
+        print(f"[DEBUG] _run_scenario: Computing conditional rescue scores (THIS MIGHT HANG)...")
         candidate_positions = [p for p in range(94, 293) if (p - 1) not in locked_indices]
+        print(f"[DEBUG] _run_scenario: Candidate positions = {len(candidate_positions)}")
         conditional_scores: Optional[Dict[int, Dict[str, float]]] = None
         try:
+            print(f"[DEBUG] _run_scenario: Calling compute_conditional_rescue_scores...")
             conditional_scores = compute_conditional_rescue_scores(
                 self.embedder, target_seq, candidate_positions[:50]
             )
+            print(f"[DEBUG] _run_scenario: Conditional scores computed")
         except Exception as exc:
             logger.warning("Conditional rescue score computation failed: %s", exc)
 
@@ -809,6 +847,14 @@ class CampaignRunner:
                     )
                     candidates.append(cand)
                     trajectories.extend(traj_rows)
+
+                    # Log progress every 5 trials
+                    if trial_counter % 5 == 0:
+                        logger.info("Progress: %d/%d trials, %d candidates, best=%.3f",
+                                    trial_counter,
+                                    int(config["repeats"]) * len(profiles) * int(config["restarts"]),
+                                    len(candidates),
+                                    max((c.get("score", -999) for c in candidates), default=-999))
 
         # Run one autoregressive trial per scenario for diversity
         try:
@@ -863,6 +909,9 @@ class CampaignRunner:
             "baseline_score": float(baseline["score"]),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         }
+
+        logger.info("Scenario %s complete: %d candidates, best_score=%.3f, baseline=%.3f",
+                    scenario.scenario_id, len(candidates), best_score, baseline["score"])
 
         return {"candidates": candidates, "trajectories": trajectories, "scenario_metrics": metrics}
 
