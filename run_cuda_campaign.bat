@@ -11,18 +11,24 @@ call conda activate openmm-cuda
 cd /d "%PROJECT%"
 
 echo.
-echo [1/3] Installing p53cad project dependencies...
+echo [1/4] Installing p53cad project dependencies...
 pip install -e ".[dev,drug]" --quiet
 pip install psutil pynvml --quiet
 echo Done.
 echo.
 
-echo [2/3] Verifying CUDA OpenMM...
-python -c "import openmm; p=[openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]; print('Platforms:',p); print('CUDA ready:', 'CUDA' in p)"
+echo [2/4] Installing CUDA torch (overrides CPU version from setup.py)...
+pip install torch --index-url https://download.pytorch.org/whl/cu121 --force-reinstall --quiet
+echo Done.
 echo.
 
-echo [3/3] Starting fresh campaign with CUDA...
+echo [3/4] Verifying CUDA torch + OpenMM...
+python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA torch:', torch.cuda.is_available()); import openmm; p=[openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]; print('OpenMM CUDA:', 'CUDA' in p)"
 echo.
-python scripts\run_full_campaign.py --budget medium
+
+echo [4/4] Resuming campaign with CUDA...
+echo.
+REM Resumes existing run — skips already-completed scenarios automatically
+python scripts\run_full_campaign.py --budget medium --run-id campaign_20260217_060021
 
 pause

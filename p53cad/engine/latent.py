@@ -137,17 +137,37 @@ class ManifoldEmbedder:
                     )
                     return EsmForMaskedLM.from_pretrained(model_name, local_files_only=True)
 
+            # Use BF16 on CUDA for faster inference and halved VRAM usage
+            import torch as _torch
+            _cuda = _torch.cuda.is_available()
+            _dtype = _torch.bfloat16 if _cuda else None
+
             if offline:
-                self.model = _load_model_offline().to(self.device)
+                raw = _load_model_offline()
             else:
-                self.model = _load_with_retry(
+                raw = _load_with_retry(
                     load_fn=_load_model,
                     description=f"ESM-2 model ({model_name})",
                     logger=self.logger,
-                ).to(self.device)
+                )
+
+            if _dtype is not None:
+                raw = raw.to(dtype=_dtype)
+            self.model = raw.to(self.device)
 
             # Ensure hidden states are always returned to avoid NoneType errors during navigation
             self.model.config.output_hidden_states = True
+
+            # torch.compile requires Triton which is Linux-only; skip on Windows
+            import platform as _platform
+            if _cuda and _platform.system() != "Windows":
+                try:
+                    self.model.esm.encoder = _torch.compile(
+                        self.model.esm.encoder, mode="reduce-overhead"
+                    )
+                    self.logger.info("ESM-2 encoder compiled with torch.compile (reduce-overhead)")
+                except Exception as exc:
+                    self.logger.warning("torch.compile skipped: %s", exc)
 
             # Optional LoRA adapter loading (requires peft library)
             if lora_path is not None:
@@ -245,24 +265,27 @@ class ManifoldEmbedder:
         )
 
         # Directly call the encoder with our embeddings
-        encoder_outputs = self.model.esm.encoder(
-            embeddings,
-            attention_mask=extended_attention_mask,
-            output_hidden_states=True,
-            output_attentions=return_attention,
-            return_dict=True,
-        )
+        # Use autocast for BF16 on CUDA (faster matmuls, half the memory)
+        _use_autocast = embeddings.device.type == "cuda"
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=_use_autocast):
+            encoder_outputs = self.model.esm.encoder(
+                embeddings,
+                attention_mask=extended_attention_mask,
+                output_hidden_states=True,
+                output_attentions=return_attention,
+                return_dict=True,
+            )
 
-        # Create a compatible output object
-        from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
-        esm_outputs = BaseModelOutputWithPoolingAndCrossAttentions(
-            last_hidden_state=encoder_outputs.last_hidden_state,
-            hidden_states=encoder_outputs.hidden_states,
-            attentions=encoder_outputs.attentions,
-        )
-        h = esm_outputs.last_hidden_state
+            # Create a compatible output object
+            from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
+            esm_outputs = BaseModelOutputWithPoolingAndCrossAttentions(
+                last_hidden_state=encoder_outputs.last_hidden_state,
+                hidden_states=encoder_outputs.hidden_states,
+                attentions=encoder_outputs.attentions,
+            )
+            h = esm_outputs.last_hidden_state
 
-        logits = self.model.lm_head(h)
+            logits = self.model.lm_head(h)
         probs = torch.softmax(logits[0], dim=-1)
 
         result = [h, logits, probs]

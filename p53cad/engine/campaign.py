@@ -995,6 +995,14 @@ class CampaignRunner:
                         _epistasis_pairs.append((i_idx, j_idx, dist))
         cached_epistasis_loss = torch.zeros(1, device=emb.device)
 
+        # Pre-compute epistasis pair indices as tensors to avoid .item() sync stalls in the loop
+        if _epistasis_pairs:
+            _ep_i = torch.tensor([p[0] for p in _epistasis_pairs], dtype=torch.long, device=emb.device)
+            _ep_j = torch.tensor([p[1] for p in _epistasis_pairs], dtype=torch.long, device=emb.device)
+            _ep_decay = torch.tensor([math.exp(-p[2] / 5.0) for p in _epistasis_pairs], dtype=torch.float32, device=emb.device)
+        else:
+            _ep_i = _ep_j = _ep_decay = None
+
         # Pre-compute position-weighted pooling kernel for mutation-neighborhood oracle.
         # Gaussian centered on each locked_index with σ=10 residues — upweights positions
         # near cancer sites so the oracle sees a stronger signal from rescue mutations.
@@ -1100,32 +1108,25 @@ class CampaignRunner:
             # Uses detached probs to avoid stale-graph errors on subsequent backward().
             if _epistasis_pairs and step_idx % 10 == 1:
                 probs_aa_d = probs_aa.detach()
-                wt_probs_d = wt_probs.detach()
 
-                # A. Structural proximity: penalize co-mutations at close positions
-                proximity_val = 0.0
-                for i_idx, j_idx, dist in _epistasis_pairs:
-                    mp_i = float((1.0 - probs_aa_d[:, i_idx, wt_aa_tensor[i_idx]]).item())
-                    mp_j = float((1.0 - probs_aa_d[:, j_idx, wt_aa_tensor[j_idx]]).item())
-                    proximity_val += mp_i * mp_j * math.exp(-dist / 5.0)
-                n_pairs = max(len(_epistasis_pairs), 1)
-                proximity_val /= n_pairs
+                # A. Structural proximity: vectorized — no per-pair .item() sync stalls
+                wt_aa_i = wt_aa_tensor[_ep_i]  # (n_pairs,)
+                wt_aa_j = wt_aa_tensor[_ep_j]  # (n_pairs,)
+                mp_i_t = 1.0 - probs_aa_d[0, _ep_i, wt_aa_i]  # (n_pairs,)
+                mp_j_t = 1.0 - probs_aa_d[0, _ep_j, wt_aa_j]  # (n_pairs,)
+                proximity_val = float((mp_i_t * mp_j_t * _ep_decay).mean().item())
 
-                # B. Attention coupling: high mutual attention = functionally coupled
+                # B. Attention coupling: vectorized after single forward pass
                 attn_val = 0.0
                 try:
                     with torch.no_grad():
                         _, _, _, attns = self.embedder.latent_forward_ascent(
                             emb.detach(), return_attention=True
                         )
-                    # attns is a tuple of (1, heads, L, L) per layer — average all
+                    # attns: tuple of (1, heads, L, L) per layer — average all
                     attn_stack = torch.stack([a.mean(dim=1) for a in attns]).mean(dim=0)  # (1, L, L)
-                    for i_idx, j_idx, _ in _epistasis_pairs:
-                        mp_i = float((1.0 - probs_aa_d[:, i_idx, wt_aa_tensor[i_idx]]).item())
-                        mp_j = float((1.0 - probs_aa_d[:, j_idx, wt_aa_tensor[j_idx]]).item())
-                        mutual_attn = float(((attn_stack[:, i_idx, j_idx] + attn_stack[:, j_idx, i_idx]) / 2.0).item())
-                        attn_val += mp_i * mp_j * mutual_attn
-                    attn_val /= n_pairs
+                    mutual_attn_t = (attn_stack[0, _ep_i, _ep_j] + attn_stack[0, _ep_j, _ep_i]) / 2.0  # (n_pairs,)
+                    attn_val = float((mp_i_t * mp_j_t * mutual_attn_t).mean().item())
                 except Exception:
                     pass
 

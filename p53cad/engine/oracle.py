@@ -218,6 +218,16 @@ class FunctionalOracle:
         self.model = self.model.to(self.device)
         self.model.eval()
 
+        # torch.compile requires Triton which is Linux-only; skip on Windows
+        import platform as _platform
+        if self.device.type == "cuda" and _platform.system() != "Windows":
+            try:
+                import torch as _torch
+                self.model = _torch.compile(self.model, mode="reduce-overhead")
+                self.logger.info("Oracle compiled with torch.compile (reduce-overhead)")
+            except Exception as exc:
+                self.logger.warning("torch.compile skipped for oracle: %s", exc)
+
     def _load_model(self, model_path: Path | str) -> None:
         self.logger.info(f"Loading oracle from {model_path}")
         payload = torch.load(model_path, map_location=self.device)
