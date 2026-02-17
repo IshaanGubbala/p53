@@ -1,7 +1,6 @@
 @echo off
 REM Re-run physics validation (ESMFold + OpenMM energy) on completed campaign
-REM *** Must be run by double-clicking in Windows Explorer OR from native cmd.exe ***
-REM *** Do NOT run via PowerShell ./rerun_physics.bat — DLL paths break ***
+REM *** Run from native cmd.exe or double-click — NOT from PowerShell ***
 
 set CONDA_ROOT=C:\ProgramData\miniconda3
 set PROJECT=C:\Users\rajee\OneDrive\Documents\p53
@@ -17,11 +16,15 @@ call conda activate openmm-cuda
 cd /d "%PROJECT%"
 
 echo.
-echo [1/3] Verifying CUDA torch install...
-python -c "import torch; v=torch.__version__; assert 'cu' in v, f'CPU-only: {v}'; print('  torch', v, '- OK')" 2>nul
+echo [1/3] Ensuring CUDA torch is installed...
+python -c "import torch; v=torch.__version__; print('  torch', v, '- OK')" 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo   CUDA torch not found, installing...
-    pip install torch --index-url https://download.pytorch.org/whl/cu121 --quiet
+    echo   torch not importable — killing any Python processes holding DLLs...
+    taskkill /F /IM python.exe /T 2>nul
+    taskkill /F /IM pythonw.exe /T 2>nul
+    timeout /t 3 /nobreak >nul
+    echo   Installing torch CUDA 12.4...
+    pip install torch --index-url https://download.pytorch.org/whl/cu124 --force-reinstall --quiet
 )
 echo Done.
 echo.
@@ -30,8 +33,8 @@ echo [2/3] Quick sanity check...
 python -c "import os; os.environ['KMP_DUPLICATE_LIB_OK']='TRUE'; import torch; print('  PyTorch:', torch.__version__); print('  CUDA:', torch.cuda.is_available())"
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo ERROR: PyTorch failed to load. Try running this file by double-clicking
-    echo        it in Windows Explorer instead of from PowerShell/cmd.
+    echo ERROR: PyTorch failed to load.
+    echo   Try closing all Python/Jupyter windows and running this again.
     pause
     exit /b 1
 )

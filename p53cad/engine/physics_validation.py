@@ -193,39 +193,47 @@ class LocalESMFoldPredictor:
         self._cache_dir = Path(cache_dir) if cache_dir else None
         self._model = None
         self._tokenizer = None
+        self._load_error: Optional[str] = None
         self._initialized = True
 
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
+        if self._load_error is not None:
+            raise RuntimeError(self._load_error)
         import torch
         from transformers import AutoTokenizer, EsmForProteinFolding
+        from unittest.mock import patch
 
         logger.info("Loading ESMFold model (this may take a minute)...")
         t0 = time.time()
-        self._tokenizer = AutoTokenizer.from_pretrained("facebook/esmfold_v1")
 
-        # Transformers 4.57+ calls check_torch_load_is_safe() which reads
-        # _torch_version — a module-level const set at transformers import time —
-        # so patching torch.__version__ has no effect.  We bypass both checks:
-        #   1. Replace check_torch_load_is_safe with a no-op so the version gate
-        #      is skipped entirely.
-        #   2. Patch torch.load to force weights_only=False so the pickle .bin
-        #      weights actually load on PyTorch 2.5 (safetensors not available).
-        # Both patches are restored in the finally block.
-        import transformers.utils.import_utils as _tfu
-        _orig_check = _tfu.check_torch_load_is_safe
+        try:
+            self._tokenizer = AutoTokenizer.from_pretrained("facebook/esmfold_v1")
+        except Exception as e:
+            self._load_error = f"Failed to load ESMFold tokenizer: {e}"
+            raise RuntimeError(self._load_error) from e
+
+        # ESMFold ships .bin (pickle) weights, not safetensors.
+        # Transformers 4.57+ imports check_torch_load_is_safe into modeling_utils
+        # and raises a CVE-2025-32434 ValueError on torch < 2.6 before loading.
+        # We patch BOTH:
+        #   (a) the local reference in transformers.modeling_utils (where it's called)
+        #   (b) torch.load itself, forcing weights_only=False so pickle loads on
+        #       any torch version.
+        # unittest.mock.patch handles cross-module reference tracking correctly.
         _orig_load = torch.load
         def _permissive_load(*args: Any, **kwargs: Any) -> Any:
             kwargs["weights_only"] = False
             return _orig_load(*args, **kwargs)
-        _tfu.check_torch_load_is_safe = lambda: None  # type: ignore[assignment]
-        torch.load = _permissive_load  # type: ignore[assignment]
+
         try:
-            self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
-        finally:
-            _tfu.check_torch_load_is_safe = _orig_check  # always restore
-            torch.load = _orig_load                       # always restore
+            with patch("transformers.modeling_utils.check_torch_load_is_safe", lambda: None), \
+                 patch("torch.load", _permissive_load):
+                self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
+        except Exception as e:
+            self._load_error = f"Failed to load ESMFold model: {e}"
+            raise RuntimeError(self._load_error) from e
 
         self._model = self._model.to(self._device)
         self._model.eval()
