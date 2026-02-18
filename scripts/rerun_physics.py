@@ -2,11 +2,6 @@
 """
 Re-run physics validation for a completed campaign.
 
-The original physics validation failed because PyTorch 2.5 blocks torch.load
-on pickle-format weights (CVE-2025-32434). That fix is now in place — run this
-script to get proper ESMFold pLDDT + OpenMM energy scores for all 30 shortlisted
-candidates.
-
 Usage (in openmm-cuda conda env):
     python scripts/rerun_physics.py --run-id campaign_20260217_060021
     python scripts/rerun_physics.py  # auto-picks most recent campaign
