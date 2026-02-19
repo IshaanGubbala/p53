@@ -88,6 +88,80 @@ Key findings:
 - **Score range context**: Wild-type p53 oracle score = **+0.04**; cancer mutants = **−1.2 to −1.6**; best rescue = **+1.628** — 40× above WT, 196 standard units above the mean cancer baseline
 - **All 3 delivery methods** are represented in the shortlist, with candidates satisfying delivery-specific identity constraints (gene therapy ≥92%, mRNA therapy ≥92%, protein therapy ≥92%)
 
+### Physics Validation Results
+
+All 30 shortlisted candidates were validated with **ESMFold structure prediction** (pLDDT confidence) and **OpenMM energy minimization** (AMBER14 force field, OBC2 implicit solvent). Total runtime: ~1,236 minutes (~20.6 hours) on NVIDIA RTX 3060.
+
+**Verdict distribution (n=30):**
+
+| Verdict | Score Range | Count | % |
+|---------|------------|-------|---|
+| STRONG | ≥75 | 0 | 0% |
+| PROMISING | 55–74 | 16 | 53% |
+| UNCERTAIN | 35–54 | 6 | 20% |
+| CONCERNING | <35 | 8 | 27% |
+
+**Full results, ranked by physics score:**
+
+| Oracle Rank | Target | pLDDT | Energy (kcal/mol) | Physics Score | Verdict |
+|------------|--------|-------|------------------|---------------|---------|
+| 16 | R248Q+R249S | 0.70 | −13,198 | **56.3** | PROMISING |
+| 2 | R248Q+R273C | 0.80 | −12,539 | 56.0 | PROMISING |
+| 3 | R248Q+R273C | 0.80 | −12,455 | 56.0 | PROMISING |
+| 4 | R248Q+R273H | 0.80 | −13,076 | 55.7 | PROMISING |
+| 13 | R248Q+R273H | 0.80 | −13,103 | 55.7 | PROMISING |
+| 14 | R273C+R282W | 0.70 | −12,617 | 55.7 | PROMISING |
+| 17 | R273C+R282W | 0.70 | −12,551 | 55.7 | PROMISING |
+| 18 | R273C | 0.80 | −12,770 | 55.6 | PROMISING |
+| 28 | R248Q+R273C | 0.70 | −12,883 | 55.6 | PROMISING |
+| 9 | R248Q+R273H | 0.70 | −14,159 | 55.5 | PROMISING |
+| 11 | R248Q+R273H | 0.70 | −14,173 | 55.5 | PROMISING |
+| 7 | R175H+R248Q | 0.70 | −13,353 | 55.4 | PROMISING |
+| 19 | G245S+R273H | 0.70 | −13,595 | 55.4 | PROMISING |
+| 15 | G245S+R175H | 0.80 | −13,578 | 55.3 | PROMISING |
+| 10 | R175H | 0.70 | −13,318 | 55.2 | PROMISING |
+| 1 | R273C | 0.70 | −12,677 | 55.0 | PROMISING |
+| 6 | R175H | 0.70 | −12,718 | 54.5 | UNCERTAIN |
+| 12 | R248W+R273H | 0.70 | −12,648 | 53.5 | UNCERTAIN |
+| 25 | R175H+R248Q | 0.70 | −12,959 | 53.2 | UNCERTAIN |
+| 8 | R273C+R282W | 0.70 | −12,466 | 52.8 | UNCERTAIN |
+| 24 | R273C | 0.70 | −12,689 | 52.7 | UNCERTAIN |
+| 5 | G245S+R249S | 0.70 | −13,308 | 52.6 | UNCERTAIN |
+| 20 | R249S+R282W | 0.70 | −11,324 | 30.7 | CONCERNING |
+| 23 | R248Q+R249S | 0.70 | −10,824 | 30.3 | CONCERNING |
+| 30 | R175H | 0.70 | −12,265 | 30.3 | CONCERNING |
+| 27 | G245S+R175H | 0.80 | −11,859 | 30.2 | CONCERNING |
+| 29 | R249S+R273H | 0.70 | −12,143 | 29.2 | CONCERNING |
+| 22 | R273C+R282W | 0.60 | −11,694 | 28.7 | CONCERNING |
+| 26 | G245S+R273H | 0.70 | −11,628 | 26.8 | CONCERNING |
+| 21 | R248W+R273H | 0.50 | −11,394 | 20.9 | CONCERNING |
+
+**Interpretation:**
+
+- **53% PROMISING, 0% STRONG**: Physics validation broadly supports the computational predictions — 16/30 candidates fold confidently (pLDDT 0.7–0.8) and minimize to stable energies (≤−12,455 kcal/mol). No candidate reached the STRONG threshold (≥75), consistent with the structures lacking MD stability confirmation (the physics score caps without the +25-point MD component, which requires extended simulation).
+
+- **R248Q combinations are structurally robust**: Candidates targeting double hotspots that include R248Q (R248Q+R273C, R248Q+R273H, R248Q+R249S) claim 7 of the top 10 physics slots. R248Q mutations may enable a particularly favorable compensatory geometry in the DNA-binding loop.
+
+- **Most energetically stable: R248Q+R273H** (ranks 9 and 11) at −14,159 and −14,173 kcal/mol — ~1,700 kcal/mol more negative than the CONCERNING candidates, indicating tighter packing after energy minimization.
+
+- **CONCERNING candidates share a pattern**: 7 of the 8 CONCERNING candidates have energies above −12,300 kcal/mol (less negative), suggesting their predicted structures are less well-packed or contain strained geometries. R249S-containing double mutants (R249S+R282W, R248Q+R249S oracle rank 23, R249S+R273H) and several R175H-only candidates fall here.
+
+- **Worst candidate: R248W+R273H (oracle rank 21)**, physics score 20.9, pLDDT 0.50 — the only candidate below 0.6 pLDDT, indicating ESMFold predicted a disordered or ambiguous structure for this double mutant. This candidate should be deprioritized for experimental follow-up.
+
+- **Oracle rank vs. physics rank divergence**: The highest oracle-scored candidate (rank 1, R273C, oracle score −1.225) receives a physics score of only 55.0, while oracle rank 16 (R248Q+R249S) tops the physics leaderboard at 56.3. This divergence is expected and informative — the oracle measures predicted functional activity while physics measures structural soundness. Candidates that rank highly on *both* metrics (R248Q+R273C ranks 2–3, R248Q+R273H ranks 4, 13) represent the most confident predictions.
+
+**Recommended experimental priority** based on combined oracle + physics ranking:
+
+| Priority | Target | Oracle Rank | Physics Score | Rationale |
+|----------|--------|-------------|---------------|-----------|
+| 1 | R248Q+R273C | 2/3 | 56.0 | High oracle, high pLDDT (0.8), good energy |
+| 2 | R248Q+R273H | 4/13 | 55.7 | High pLDDT (0.8), most stable energy (−14,173 kcal) |
+| 3 | R273C+R282W | 14/17 | 55.7 | Two independent PROMISING hits for same target |
+| 4 | G245S+R175H | 15 | 55.3 | High pLDDT (0.8), covers two major hotspots |
+| 5 | R175H+R248Q | 7 | 55.4 | Covers two of the most common hotspots |
+
+---
+
 ### Statistical Rigor
 
 **Oracle score distribution across all 1,152 candidates (campaign_20260217_060021):**
