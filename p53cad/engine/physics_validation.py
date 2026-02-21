@@ -232,8 +232,30 @@ class LocalESMFoldPredictor:
 
         logger.info("Loading ESMFold model (this may take a minute)...")
         t0 = time.time()
-        self._tokenizer = AutoTokenizer.from_pretrained("facebook/esmfold_v1")
-        self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
+
+        try:
+            self._tokenizer = AutoTokenizer.from_pretrained("facebook/esmfold_v1")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load ESMFold tokenizer: {e}") from e
+
+        # ESMFold ships .bin (pickle) weights, not safetensors.
+        # Transformers 4.57+ raises a CVE-2025-32434 ValueError on torch < 2.6 before loading.
+        # Patch both the safety check and torch.load to allow pickle weights on any torch version.
+        from unittest.mock import patch
+
+        _orig_load = torch.load
+
+        def _permissive_load(*args: Any, **kwargs: Any) -> Any:
+            kwargs["weights_only"] = False
+            return _orig_load(*args, **kwargs)
+
+        try:
+            with patch("transformers.modeling_utils.check_torch_load_is_safe", lambda: None), \
+                 patch("torch.load", _permissive_load):
+                self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load ESMFold model: {e}") from e
+
         self._model = self._model.to(self._device)
         self._model.eval()
         # chunk_size=64 trades memory for speed on long sequences
@@ -415,6 +437,18 @@ class OpenMMEnergyCalculator:
     def __init__(self):
         self._forcefield = None
 
+    @staticmethod
+    def _select_platform(openmm: Any) -> Any:
+        """Prefer CUDA when available, otherwise fall back to CPU."""
+        try:
+            platform = openmm.Platform.getPlatformByName("CUDA")
+            logger.info("OpenMM platform selected: CUDA")
+            return platform
+        except Exception:
+            platform = openmm.Platform.getPlatformByName("CPU")
+            logger.info("OpenMM platform selected: CPU (CUDA unavailable)")
+            return platform
+
     def _get_forcefield(self):
         """Cached ForceField to avoid re-parsing AMBER14 XML on every candidate."""
         if self._forcefield is None:
@@ -446,7 +480,7 @@ class OpenMMEnergyCalculator:
     def minimize_and_get_energy(
         self,
         pdb_string: str,
-        max_iterations: int = 200,
+        max_iterations: int = 1000,
     ) -> EnergyMinimizationResult:
         """Run energy minimization and return potential energy."""
         t0 = time.time()
@@ -460,7 +494,7 @@ class OpenMMEnergyCalculator:
     def minimize_from_fixer(
         self,
         fixer: Any,
-        max_iterations: int = 200,
+        max_iterations: int = 1000,
     ) -> EnergyMinimizationResult:
         """Run energy minimization from an already-prepared PDBFixer object.
 
@@ -481,16 +515,25 @@ class OpenMMEnergyCalculator:
         integrator = openmm.LangevinMiddleIntegrator(
             310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
         )
-        # Prefer CPU for reproducibility and availability
-        platform = openmm.Platform.getPlatformByName("CPU")
+        platform = self._select_platform(openmm)
         simulation = app.Simulation(fixer.topology, system, integrator, platform)
         simulation.context.setPositions(fixer.positions)
 
-        # Minimize
+        # Minimize; retry with 2× iterations if energy didn't converge (positive = not converged)
         simulation.minimizeEnergy(maxIterations=max_iterations)
         state = simulation.context.getState(getEnergy=True)
         energy_kj = state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
         energy_kcal = energy_kj / 4.184
+
+        if energy_kcal > 0:
+            logger.warning(
+                "Energy minimization did not converge (E=%.1f kcal/mol), retrying with %d iterations",
+                energy_kcal, max_iterations * 2,
+            )
+            simulation.minimizeEnergy(maxIterations=max_iterations * 2)
+            state = simulation.context.getState(getEnergy=True)
+            energy_kj = state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
+            energy_kcal = energy_kj / 4.184
 
         n_atoms = sum(1 for _ in fixer.topology.atoms())
         elapsed = time.time() - t0
@@ -579,7 +622,7 @@ class MDStabilityChecker:
         integrator = openmm.LangevinMiddleIntegrator(
             310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
         )
-        platform = openmm.Platform.getPlatformByName("CPU")
+        platform = calc._select_platform(openmm)
         simulation = app.Simulation(fixer.topology, system, integrator, platform)
         simulation.context.setPositions(fixer.positions)
 
@@ -1028,9 +1071,9 @@ class DNABindingSimulator:
         integrator = openmm.LangevinMiddleIntegrator(
             310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
         )
-        # Try OpenCL (Apple GPU) first, fall back to CPU
+        # Try CUDA, then OpenCL (Apple GPU), then CPU
         platform = None
-        for pname in ("OpenCL", "CPU"):
+        for pname in ("CUDA", "OpenCL", "CPU"):
             try:
                 platform = openmm.Platform.getPlatformByName(pname)
                 break

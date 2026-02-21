@@ -301,7 +301,7 @@ def device_summary() -> None:
 
         if torch.cuda.is_available():
             name = torch.cuda.get_device_name(0)
-            mem = torch.cuda.get_device_properties(0).total_mem / (1024 ** 3)
+            mem = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
             _ok(f"CUDA: {name} ({mem:.1f} GB) — torch {torch.__version__}+cu{torch.version.cuda}")
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             _ok(f"MPS (Apple Silicon) — torch {torch.__version__}")

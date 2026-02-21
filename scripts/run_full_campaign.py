@@ -22,14 +22,21 @@ import sys
 import time
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# Enable multicore CPU processing for PyTorch/NumPy/MKL
+os.environ["OMP_NUM_THREADS"] = str(os.cpu_count() or 8)
+os.environ["MKL_NUM_THREADS"] = str(os.cpu_count() or 8)
+os.environ["NUMEXPR_NUM_THREADS"] = str(os.cpu_count() or 8)
+os.environ["OPENBLAS_NUM_THREADS"] = str(os.cpu_count() or 8)
 
 # Ensure project root is on path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 from p53cad.core.runtime import bootstrap_runtime
+from p53cad.core.logging import setup_logging
 
 bootstrap_runtime()
+setup_logging()
 
 
 def main():
@@ -41,9 +48,27 @@ def main():
     parser.add_argument("--no-pairs", action="store_true", help="Skip multi-hotspot combos")
     parser.add_argument("--hotspots", nargs="+", default=None,
                         help="Specific hotspots (default: all BIG8)")
+    parser.add_argument("--run-id", default=None,
+                        help="Resume an existing campaign run (e.g. campaign_20260217_060021)")
     args = parser.parse_args()
 
     from p53cad.engine.campaign import CampaignRunner
+
+    # Enable PyTorch multicore processing
+    import torch
+    num_threads = os.cpu_count() or 8
+    torch.set_num_threads(num_threads)
+    torch.set_num_interop_threads(num_threads)
+    print(f"  PyTorch threads: {num_threads} (multicore enabled)")
+
+    # Ampere (RTX 30xx) TF32 — faster matmuls with negligible precision loss
+    if torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        print(f"  TF32 matmul: enabled (Ampere+)")
+        # Warm up CUDA context to avoid first-step latency
+        _ = torch.zeros(1, device="cuda")
+        torch.cuda.synchronize()
 
     print(f"\n{'='*70}")
     print(f"  p53 Rescue Campaign — Full v2 Pipeline")
@@ -77,9 +102,13 @@ def main():
         include_pairs=not args.no_pairs,
         shortlist_n=args.shortlist_n,
         with_clinical=True,
+        resume=True,
     )
     if args.hotspots:
         run_kwargs["hotspots"] = args.hotspots
+    if args.run_id:
+        run_kwargs["run_id"] = args.run_id
+        print(f"  Resuming run: {args.run_id}")
 
     result = runner.run(**run_kwargs)
     elapsed = time.time() - t0
