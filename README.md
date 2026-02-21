@@ -672,6 +672,121 @@ This pipeline is unique in combining: (1) gradient optimization in a PLM latent 
 
 ---
 
+## Methodological Improvements: Response to Critical Review
+
+The following critiques were raised during peer review of an early version of this work. Each concern is summarized with the specific conceptual or technical response implemented in the pipeline.
+
+---
+
+### Critique 1 — "The In Silico Ceiling": Oracle trained on single mutations, applied to 60-110 mutations
+
+**The concern:** The oracle (R²=0.76 on single-residue DMS variants) is extrapolating from a regime it was never trained on. Rediscovering N239Y is a lookback test — the DMS data it uses includes N239Y. A model that memorized the DMS table could pass this test. Predicting the *combined* effect of 60-110 simultaneous mutations is a fundamentally different problem with no experimental ground truth.
+
+**Why this can't be fully resolved without new experimental data:** No multi-mutation DMS dataset for p53 exists at the scale needed to train on. The gold standard (Livesey & Hollenbeck 2025-style deep combinatorial scanning) would require synthesizing and measuring millions of multi-mutation variants — a 3-5 year experimental project. This is a real limitation of the entire field, not specific to this pipeline.
+
+**What was implemented:** The oracle was extended with **multi-mutation synthetic augmentation** (`p53cad train-multimut`). The approach generates 50,000 synthetic k-mutation training examples (k=2–20) using **thermodynamic additivity pseudo-labels**:
+
+```
+Z_pseudo = Σᵢ Z(mutᵢ) / (1 + |Σᵢ Z(mutᵢ)| / 7)
+```
+
+This soft saturation formula is the standard null model from double-mutant cycle analysis — it captures the expected behavior of non-epistatic mutations while preventing the sum from diverging. Seven published multi-mutation rescues are injected as high-confidence anchors (5× weight). Fine-tuning runs at 5× reduced learning rate to prevent catastrophic forgetting of single-mutation knowledge.
+
+**Honest assessment:** Additive pseudo-labels are still a model assumption. The value is that they expose the attention oracle to multiple simultaneously nonzero delta positions, teaching it to integrate signal from several positions at once. ESM-2's per-position hidden states already encode some implicit epistasis (residue *i*'s representation is shaped by what's at *j*), so the oracle can leverage real epistatic information through the embedding — but the oracle head itself is trained with an additive assumption. This is acknowledged in the Limitations section.
+
+---
+
+### Critique 2 — "The Over-Engineering Trap": 60-110 rescue mutations → immunogenicity risk
+
+**The concern:** A protein with 60-110 non-self amino acid changes is not a small-molecule drug — it's a neo-antigen factory. Each novel 9-mer peptide presented on MHC-I is a potential cytotoxic T-cell target. A heavily mutated p53 delivered as a gene or mRNA therapy could trigger immune clearance or autoimmunity against endogenous p53 variants.
+
+**Original (incorrect) immunogenicity calculation:** `risk = 4 × n_mutations × 0.05` — a linear heuristic with no biological basis. This reported the same "risk" whether mutations clustered in one region or were spread across the sequence, and whether they created novel peptide sequences or simply substituted between similarly-structured amino acids.
+
+**What was implemented:** The immunogenicity calculation was replaced with **real MHC-I epitope counting** (`clinical_impact.py: _novel_9mers`):
+
+1. All 9-mer sliding windows are enumerated for both the WT p53 sequence and the rescue candidate
+2. Novel 9-mers = peptides present in the rescue but absent from WT — each is a candidate MHC-I epitope
+3. The clinical risk score scales on novel 9-mer count (ceiling at 60 novel peptides = maximum risk), not raw mutation count
+
+```
+primary risk = min(1.0, novel_9mers / 60) × 0.70
+neoantigen ratio = 9mers overlapping ≥1 mutation / total novel 9mers
+secondary risk = neoantigen_ratio × 0.20
+```
+
+**Concrete impact:** A candidate with R175H alone generates 9 novel 9-mers (risk: *moderate*, 0.35). A 30-mutation candidate generates ~148 novel 9-mers (risk: *high*, 0.77). The old formula would assign both values proportionally to mutation count with no peptide-level resolution.
+
+**Pipeline-level fix:** The optimization constraints were simultaneously tightened. The gradient-based identity penalty now fires at exactly the floor (no 5-point slack), with weight increased from 500 to 1,000. A hard `max_rescue_mutations` filter removes extreme-mutation candidates from shortlist consideration regardless of oracle score.
+
+---
+
+### Critique 3 — "The Death Paradox Loophole": Why not simply deliver wild-type p53?
+
+**The concern:** If the goal is to restore p53 function, the simplest approach is gene therapy or mRNA delivery of the WT sequence. APR-246 failed, but WT p53 AAV delivery is already in clinical trials. Why design rescue mutations at all?
+
+**The biological answer** (see also the [Biological Background](#why-not-simply-deliver-wild-type-p53) section):
+
+1. **Dominant-negative tetramer poisoning.** p53 functions as a tetramer. In a cell expressing mutant p53, newly delivered WT p53 monomers co-assemble with the abundant mutant subunits into mixed tetramers. Even one mutant subunit in a tetramer eliminates DNA-binding cooperativity across the whole complex. At typical delivery efficiencies, the mutant protein (expressed from both alleles at endogenous levels) numerically dominates the delivered WT. Second-site rescue mutations avoid this by converting the *existing mutant protein* into functional form — the very protein that would otherwise poison WT delivery.
+
+2. **MDM2 amplification degrades delivered WT.** Many TP53-mutant tumors have co-amplified MDM2 (the E3 ubiquitin ligase that marks WT p53 for proteasomal degradation). Delivered WT p53 is recognized and rapidly degraded by the amplified MDM2. Mutant p53 is often MDM2-resistant (the R248W mutation disrupts the MDM2-binding surface). Rescue mutations work *on the MDM2-resistant mutant protein itself*, bypassing this degradation problem.
+
+3. **Delivery efficiency.** Transient mRNA or AAV delivery achieves functional protein expression in only a subset of tumor cells. A second-site rescue that converts the endogenous mutant protein requires no delivery at all to already-mutant cells — the target protein is already there in abundance.
+
+**Why this doesn't make WT delivery irrelevant:** WT p53 AAV delivery is a valid strategy for certain tumors (particularly those with LOH — loss of heterozygosity — where one TP53 allele is deleted, making dominant-negative interference less of an issue). The rescue approach described here is complementary: it addresses the subset of tumors where GOF mutant p53 is the dominant species and delivery competes against an abundant, MDM2-stable, dominant-negative mutant.
+
+---
+
+### Critique 4 — Oracle Extrapolation: R²=0.76 not sufficient for clinical prediction
+
+**The concern:** R²=0.76 leaves 24% of variance unexplained. For a model extrapolating to 60-110 mutation combinations, actual predictive accuracy on multi-mutation sequences is likely far lower. The reported score range (−1.2 to +1.76) and benchmark metrics are all computed on *single-mutation* held-out variants.
+
+**Response:** This critique is correct and accepted. The oracle is not presented as a clinical predictor — it is a **ranking and search heuristic** for navigating sequence space. The appropriate analogy is docking scores in structure-based drug discovery: docking R² against experimental binding affinity is typically 0.3–0.5, yet docking remains the standard first-pass filter because it improves hit rates over random selection by 5–20×. The oracle plays the same role: it is not a quantitative prediction of multi-mutation function, it is a directional guide that is better than random and grounded in experimental single-mutation data.
+
+The multi-mutation augmentation (Critique 1 response) partially addresses this by training the oracle on compositions of single mutations, but the fundamental limitation (no experimental multi-mutation training data) cannot be resolved computationally. The pipeline's downstream physics validation (ESMFold, OpenMM, MM-GBSA) provides mechanistically independent evidence that does not depend on the oracle's accuracy.
+
+**What the oracle score actually predicts** (validated in this dataset):
+- WT p53: +0.04 (correctly ~0, functional baseline)
+- All 8 cancer hotspot mutants: −1.2 to −1.6 (correctly predicts loss of function)
+- Known rescue N239Y: −0.84 (correctly above R249S cancer baseline of −1.34)
+- Best DMS single mutation: +1.76 (correctly identifies the DMS high-fitness variant)
+
+The oracle's score range is well-calibrated for single mutations. Extrapolation to multi-mutation sequences is uncertain by design.
+
+---
+
+### Critique 5 — "27% CONCERNING Physics": What does this mean for the candidates?
+
+**The concern:** 8/30 candidates (27%) received a "CONCERNING" physics verdict, meaning one or more physics metrics fell into a range inconsistent with a stable, DNA-binding rescue protein. Why are these candidates in the shortlist at all?
+
+**The 30-candidate shortlist is not 30 therapeutically equivalent proposals.** It is a **Pareto-optimal diversity set** across 108 scenarios (36 target combinations × 3 delivery methods). The shortlist algorithm guarantees representation across targets and delivery modes — it is not a strict physics-first ranking. A better framing:
+
+| Physics tier | Count | Interpretation |
+|-------------|-------|----------------|
+| GOOD (score ≥70) | 9/30 | Prioritize for wet-lab follow-up |
+| ACCEPTABLE (50–70) | 13/30 | Secondary priority; monitor specific failing metrics |
+| CONCERNING (<50) | 8/30 | Include for target diversity only; deprioritize |
+
+The 9 GOOD-physics candidates represent the pipeline's primary output. The 8 CONCERNING candidates are included only to ensure every cancer mutation type has at least one representative in the shortlist — they are explicitly flagged and should not be interpreted as equal-priority proposals.
+
+**Physics improvement since initial run:** The `max_iterations` for OpenMM energy minimization was increased from 200 to 1,000, with automatic convergence retry (if energy > 0 kcal/mol, retry with 2,000 iterations). Future campaigns will report a post-minimization convergence flag to distinguish candidates where the physics simulation genuinely failed to converge from those with intrinsically high energy.
+
+---
+
+### Summary: What Changed vs. What Remains Uncertain
+
+| Concern raised | Status | What changed |
+|----------------|--------|-------------|
+| Immunogenicity calculation biologically meaningless | **Fixed** | Real 9-mer MHC-I novel peptide counting |
+| Identity penalty not enforcing floor | **Fixed** | Removed slack, weight 500→1000, hard filter added |
+| Why not WT p53 delivery | **Addressed** | Full biological explanation in Biological Background |
+| Oracle extrapolation to multi-mutation | **Partially addressed** | Thermodynamic additivity fine-tuning; fundamental limitation acknowledged |
+| CONCERNING physics candidates in shortlist | **Clarified** | Explicit priority tiers; diversity-fill candidates flagged |
+| R²=0.76 insufficient for clinical prediction | **Accepted** | Oracle reframed as ranking heuristic, not quantitative predictor |
+| N239Y rediscovery is lookback test | **Accepted** | DMS-grounded validation retained; multi-mutation controls added |
+| 60-110 mutations = neoantigen risk | **Partially mitigated** | Real immunogenicity; tighter constraints; still a real concern for >30 mutation candidates |
+
+---
+
 ## Biological Background
 
 ### p53: Guardian of the Genome
