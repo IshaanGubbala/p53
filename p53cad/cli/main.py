@@ -138,8 +138,25 @@ def campaign_run(
     type=click.Path(),
     help="Campaign artifact base directory.",
 )
-def campaign_report(run_id, shortlist_n, output_dir):
-    """Regenerate Top-N report artifacts from an existing campaign run."""
+@click.option(
+    "--oracle",
+    "oracle_checkpoint",
+    default=None,
+    type=click.Path(exists=True),
+    help=(
+        "Path to an alternative oracle checkpoint (.pt) for re-scoring candidates "
+        "before building the shortlist. Use this to apply a fine-tuned oracle "
+        "(e.g. trained with multi-mutation augmentation) to an existing campaign "
+        "without running a new optimization campaign."
+    ),
+)
+def campaign_report(run_id, shortlist_n, output_dir, oracle_checkpoint):
+    """Regenerate Top-N report artifacts from an existing campaign run.
+
+    Optionally re-scores all candidates with a new oracle checkpoint before
+    shortlist selection, allowing you to apply an improved model without
+    re-running the full optimization campaign (~1 hr vs ~22 hrs).
+    """
     logger = get_logger("p53cad.cli.campaign_report")
     from p53cad.engine.campaign import CampaignRunner
     from p53cad.results.store import CampaignStore
@@ -151,7 +168,11 @@ def campaign_report(run_id, shortlist_n, output_dir):
         return
 
     runner = CampaignRunner(store=store)
-    report = runner.report_run(resolved_run_id, shortlist_n=shortlist_n)
+    report = runner.report_run(
+        resolved_run_id,
+        shortlist_n=shortlist_n,
+        oracle_checkpoint=oracle_checkpoint,
+    )
     logger.info(
         "Campaign report written: run_id=%s shortlist=%d run_dir=%s",
         report.get("run_id"),
@@ -244,6 +265,94 @@ def train(dms, epochs, output, val_split, patience, min_delta, batch_size, seed,
         batch_size=batch_size,
         seed=seed,
     )
+
+@cli.command("train-multimut")
+@click.option('--dms', type=click.Path(exists=True), default="data/raw/p53_DMS_Giacomelli_2018.csv",
+              show_default=True, help="Path to DMS data (same as used for original training).")
+@click.option('--checkpoint', type=click.Path(exists=True), default="data/models/functional_oracle.pt",
+              show_default=True, help="Existing attention_pooling oracle checkpoint to fine-tune.")
+@click.option('--output', type=click.Path(), default="data/models/functional_oracle_multimut.pt",
+              show_default=True, help="Output path for fine-tuned checkpoint.")
+@click.option('--n-synthetic', default=50_000, show_default=True, type=int,
+              help="Number of synthetic k-mutation combinations to generate.")
+@click.option('--k-min', default=2, show_default=True, type=int, help="Minimum mutations per synthetic example.")
+@click.option('--k-max', default=15, show_default=True, type=int, help="Maximum mutations per synthetic example.")
+@click.option('--epochs', default=10, show_default=True, type=int, help="Fine-tuning epochs.")
+@click.option('--lr', default=2e-4, show_default=True, type=float,
+              help="Learning rate (lower than original to prevent catastrophic forgetting).")
+@click.option('--batch-size', default=32, show_default=True, type=int)
+@click.option('--val-split', default=0.1, show_default=True, type=float)
+@click.option('--patience', default=5, show_default=True, type=int, help="Early stopping patience.")
+@click.option('--seed', default=42, show_default=True, type=int)
+def train_multimut(dms, checkpoint, output, n_synthetic, k_min, k_max, epochs, lr, batch_size, val_split, patience, seed):
+    """Fine-tune oracle on synthetic multi-mutation data to fix single-mutation extrapolation.
+
+    The base oracle is trained exclusively on single-residue DMS variants, so during
+    inference on 18-30-mutation rescue candidates the attention mechanism must
+    extrapolate far outside its training distribution.
+
+    This command generates N synthetic k-mutation combinations using the thermodynamic
+    additivity pseudo-label model (Z_pseudo = additive sum with soft saturation), mixes
+    them with the original single-mutation data, and fine-tunes the oracle at a reduced
+    learning rate to prevent catastrophic forgetting.
+
+    Literature-validated multi-mutation rescues (N239Y+R249S, H168R+R249S, T284R+R175H,
+    etc.) are injected as high-confidence anchors (5x upweighted).
+
+    Example:
+        p53cad train-multimut --n-synthetic 50000 --k-max 20 --epochs 15
+    """
+    logger = get_logger("p53cad.cli.train_multimut")
+    from p53cad.data.dms import load_dms_data, hydrate_sequences
+    from p53cad.engine.latent import ManifoldEmbedder
+    from p53cad.engine.oracle import FunctionalOracle
+
+    logger.info("Loading DMS data from %s", dms)
+    df = load_dms_data(dms)
+    if "sequence" not in df.columns:
+        logger.info("Hydrating sequences from mutation names...")
+        df = hydrate_sequences(df)
+        logger.info("Hydrated %d sequences.", len(df))
+
+    logger.info("Loading embedder (ESM-2 650M)...")
+    embedder = ManifoldEmbedder()
+
+    logger.info("Loading oracle checkpoint: %s", checkpoint)
+    oracle = FunctionalOracle(
+        model_path=checkpoint,
+        input_dim=embedder.hidden_size,
+        arch="attention_pooling",
+    )
+
+    if oracle.arch_name != "attention_pooling":
+        raise click.ClickException(
+            "train-multimut requires an attention_pooling oracle. "
+            f"Loaded checkpoint has arch='{oracle.arch_name}'. "
+            "Re-train with: p53cad train --arch attention_pooling"
+        )
+
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    oracle.train_multimut(
+        dms_data=df,
+        embedder=embedder,
+        n_synthetic=n_synthetic,
+        k_range=(k_min, k_max),
+        epochs=epochs,
+        save_path=output_path,
+        val_split=val_split,
+        early_stopping_patience=patience,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+    )
+    logger.info("Multi-mutation fine-tuned oracle saved to %s", output_path)
+    logger.info(
+        "To use: p53cad campaign-run --oracle %s  (or copy to data/models/functional_oracle.pt)",
+        output_path,
+    )
+
 
 @cli.command()
 @click.argument('targets', nargs=-1)
@@ -503,6 +612,7 @@ def explain():
 @click.option("--skip-esmfold", is_flag=True, help="Skip local ESMFold structure prediction.")
 @click.option("--skip-energy", is_flag=True, help="Skip OpenMM energy minimization.")
 @click.option("--skip-dna", is_flag=True, help="Skip DNA-binding interface analysis.")
+@click.option("--skip-binding-sim", is_flag=True, help="Skip MM-GBSA DNA-binding simulation (expensive).")
 @click.option("--device", default="auto", show_default=True, type=click.Choice(["auto", "cpu", "cuda", "mps"]), help="Device for ESMFold inference (auto = CUDA > MPS > CPU).")
 @click.option(
     "--output-dir",
@@ -511,7 +621,7 @@ def explain():
     type=click.Path(),
     help="Campaign artifact base directory.",
 )
-def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, device, output_dir):
+def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, skip_energy, skip_dna, skip_binding_sim, device, output_dir):
     """Run physics-based validation on a campaign's top candidates."""
     logger = get_logger("p53cad.cli.validate")
     from p53cad.results.store import CampaignStore
@@ -563,6 +673,7 @@ def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, s
         skip_energy=skip_energy,
         skip_md=skip_md,
         skip_dna=skip_dna,
+        skip_binding_sim=skip_binding_sim,
     )
 
     # Save report
@@ -570,22 +681,40 @@ def validate(run_id, top_n, tier2_top_n, simulation_ns, skip_md, skip_esmfold, s
     logger.info("Physics validation saved to %s", val_path)
 
     # Print summary table
+    has_binding_sim = any(c.get("dna_binding_sim") for c in report.candidates)
     logger.info("Physics Validation Summary (%d candidates, %.1f min):",
                 report.n_candidates, report.elapsed_total_sec / 60)
-    logger.info("  %-4s %-20s %-8s %-8s %-10s %-8s %s",
-                "Rank", "Target", "pLDDT", "DDG(WT)", "DNA Score", "Score", "Verdict")
+    if has_binding_sim:
+        logger.info("  %-4s %-20s %-8s %-8s %-10s %-10s %-8s %-8s %s",
+                    "Rank", "Target", "pLDDT", "DDG(WT)", "DNA Geom", "Bind dG", "H-bonds", "Score", "Verdict")
+    else:
+        logger.info("  %-4s %-20s %-8s %-8s %-10s %-8s %s",
+                    "Rank", "Target", "pLDDT", "DDG(WT)", "DNA Score", "Score", "Verdict")
     for c in report.candidates:
         ef = c.get("esmfold", {})
         ddg_info = c.get("ddg", {})
         dna = c.get("dna_binding", {})
-        logger.info("  %-4d %-20s %-8s %-8s %-10s %-8s %s",
-                     c.get("candidate_rank", 0),
-                     c.get("target_label", "?")[:20],
-                     f"{ef.get('dbd_plddt', 0):.1f}" if ef else "-",
-                     f"{ddg_info.get('ddg_vs_wt_kcal', 0):+.1f}" if ddg_info else "-",
-                     f"{dna.get('interface_preservation_score', 0):.2f}" if dna else "-",
-                     f"{c.get('overall_physics_score', 0):.0f}",
-                     c.get("verdict", "?"))
+        bsim = c.get("dna_binding_sim", {})
+        if has_binding_sim:
+            logger.info("  %-4d %-20s %-8s %-8s %-10s %-10s %-8s %-8s %s",
+                         c.get("candidate_rank", 0),
+                         c.get("target_label", "?")[:20],
+                         f"{ef.get('dbd_plddt', 0):.1f}" if ef else "-",
+                         f"{ddg_info.get('ddg_vs_wt_kcal', 0):+.1f}" if ddg_info else "-",
+                         f"{dna.get('interface_preservation_score', 0):.2f}" if dna else "-",
+                         f"{bsim.get('delta_binding_kcal', 0):+.1f}" if bsim else "-",
+                         f"{bsim.get('n_hbonds_protein_dna', 0)}" if bsim else "-",
+                         f"{c.get('overall_physics_score', 0):.0f}",
+                         c.get("verdict", "?"))
+        else:
+            logger.info("  %-4d %-20s %-8s %-8s %-10s %-8s %s",
+                         c.get("candidate_rank", 0),
+                         c.get("target_label", "?")[:20],
+                         f"{ef.get('dbd_plddt', 0):.1f}" if ef else "-",
+                         f"{ddg_info.get('ddg_vs_wt_kcal', 0):+.1f}" if ddg_info else "-",
+                         f"{dna.get('interface_preservation_score', 0):.2f}" if dna else "-",
+                         f"{c.get('overall_physics_score', 0):.0f}",
+                         c.get("verdict", "?"))
 
 
 @cli.command()

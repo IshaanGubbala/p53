@@ -656,6 +656,7 @@ class CampaignRunner:
                     skip_esmfold=False,
                     skip_energy=False,
                     skip_dna=False,
+                    skip_binding_sim=True,  # Expensive; opt-in via `p53cad validate`
                 )
                 val_path = run_dir / "physics_validation.json"
                 val_path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
@@ -667,11 +668,101 @@ class CampaignRunner:
 
         return results
 
-    def report_run(self, run_id: str, shortlist_n: int = 30) -> Dict[str, Any]:
+    def rescore_candidates(
+        self,
+        candidates_df: pd.DataFrame,
+        *,
+        oracle_checkpoint: "str | Path",
+        batch_log_interval: int = 25,
+    ) -> pd.DataFrame:
+        """Re-score all candidates with a different oracle checkpoint.
+
+        This re-embeds every unique sequence through ESM-2 and evaluates the new
+        oracle, updating the ``score``, ``score_raw``, and ``score_calibrated``
+        columns in-place (preserving all other columns including uncertainty,
+        OOD distance, and DMS fields which were computed during the original run).
+
+        Parameters
+        ----------
+        candidates_df:
+            The full candidates DataFrame from a previous campaign run.
+        oracle_checkpoint:
+            Path to the new oracle ``.pt`` checkpoint file to load.
+        batch_log_interval:
+            How often (every N unique sequences) to log progress.
+
+        Returns
+        -------
+        pd.DataFrame
+            A copy of *candidates_df* with updated score columns.
+        """
+        oracle_checkpoint = Path(oracle_checkpoint)
+        logger.info("Re-scoring %d candidates with oracle: %s", len(candidates_df), oracle_checkpoint)
+
+        # Load new oracle (temporary — does not replace self.oracle)
+        new_oracle = FunctionalOracle(model_path=oracle_checkpoint, device=self.device)
+        new_oracle.model.eval()
+
+        # Ensure embedder is ready (lazy init; only loads ESM-2 once)
+        if self.embedder is None:
+            logger.info("Loading ESM-2 embedder for re-scoring...")
+            self.embedder = ManifoldEmbedder(device=self.device)
+
+        # Build per-sequence score cache (avoid re-embedding duplicates)
+        score_cache: Dict[str, Dict[str, float]] = {}
+        unique_seqs = candidates_df["sequence"].unique() if "sequence" in candidates_df.columns else []
+        n_unique = len(unique_seqs)
+        logger.info("Re-embedding %d unique sequences through ESM-2...", n_unique)
+
+        for idx, seq in enumerate(unique_seqs):
+            if (idx + 1) % batch_log_interval == 0 or idx == 0 or idx == n_unique - 1:
+                logger.info("  Re-scoring sequence %d/%d", idx + 1, n_unique)
+            try:
+                with torch.no_grad():
+                    word_emb = self.embedder.get_embeddings(seq)  # (1, L, D)
+                    h, _logits, _probs = self.embedder.latent_forward_ascent(word_emb)[:3]
+                    # h: (1, L, D) — last hidden state, same input the oracle saw during optimization
+                    raw_score = float(new_oracle.model(h).squeeze(-1).mean().item())
+                calibrated = self._calibrate_score(raw_score)
+                score_cache[seq] = {"score_raw": raw_score, "score_calibrated": calibrated, "score": calibrated}
+            except Exception as exc:
+                logger.warning("Re-scoring failed for sequence [%.30s...]: %s", seq, exc)
+                score_cache[seq] = {}
+
+        # Apply updated scores to a copy of the DataFrame
+        result_df = candidates_df.copy()
+        for col in ("score", "score_raw", "score_calibrated"):
+            if col not in result_df.columns:
+                result_df[col] = float("nan")
+
+        for seq, scores in score_cache.items():
+            if not scores:
+                continue
+            mask = result_df["sequence"] == seq
+            for col, val in scores.items():
+                result_df.loc[mask, col] = val
+
+        logger.info(
+            "Re-scoring complete. score range: [%.3f, %.3f]",
+            result_df["score"].min(),
+            result_df["score"].max(),
+        )
+        return result_df
+
+    def report_run(
+        self,
+        run_id: str,
+        shortlist_n: int = 30,
+        oracle_checkpoint: "str | Path | None" = None,
+    ) -> Dict[str, Any]:
         bundle = self.store.load_run_bundle(run_id)
         candidate_df = bundle["candidates"]
         if candidate_df.empty:
             raise RuntimeError(f"No candidates found for run {run_id}")
+
+        if oracle_checkpoint is not None:
+            logger.info("Oracle re-scoring requested for report_run (checkpoint: %s)", oracle_checkpoint)
+            candidate_df = self.rescore_candidates(candidate_df, oracle_checkpoint=oracle_checkpoint)
 
         top30 = select_presentation_shortlist(
             candidate_df[candidate_df["pass_name"] == "deep"].copy() if "pass_name" in candidate_df.columns else candidate_df,
@@ -1018,8 +1109,8 @@ class CampaignRunner:
             binding_term = -float(profile["binding"]) * dna_force_t
             hydro_term = -3.0 * hydro_packing_t
             ood_penalty = self.ood_loss_weight * F.relu(ood_distance_t - self.ood_radius)
-            mutation_penalty = 50.0 * F.relu(expected_mutations - max_mutations)
-            identity_penalty = 500.0 * F.relu((min_identity - 5.0) - expected_identity)
+            mutation_penalty = 200.0 * F.relu(expected_mutations - max_mutations)
+            identity_penalty = 1000.0 * F.relu(min_identity - expected_identity)
             stability_penalty = 100.0 * F.relu(min_stability - stability_t)
             binding_penalty = 80.0 * F.relu(min_binding - dna_force_t)
             if locked_indices:

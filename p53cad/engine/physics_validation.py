@@ -106,6 +106,32 @@ class DNABindingInterfaceResult:
 
 
 @dataclass
+class DNABindingSimResult:
+    """MM-GBSA DNA-binding functional simulation result."""
+    binding_energy_kcal: float
+    wt_binding_energy_kcal: float
+    delta_binding_kcal: float
+    binding_interpretation: str     # "enhanced", "preserved", "weakened", "disrupted"
+    n_hbonds_protein_dna: int
+    wt_n_hbonds: int
+    hbond_preservation_ratio: float
+    hbond_details: List[Dict[str, Any]]   # [{donor_res, acceptor_res, distance}, ...]
+    n_interface_contacts: int
+    wt_n_contacts: int
+    contact_preservation_ratio: float
+    per_residue_contacts: Dict[str, int]  # residue label -> n_contacts
+    binding_score: float                  # 0-1 composite
+    elapsed_sec: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        # Truncate hbond details if too many
+        if len(d.get("hbond_details", [])) > 30:
+            d["hbond_details"] = d["hbond_details"][:30]
+        return d
+
+
+@dataclass
 class PhysicsValidationResult:
     """Composite per-candidate validation result."""
     candidate_rank: int
@@ -116,6 +142,7 @@ class PhysicsValidationResult:
     ddg: Optional[DDGResult] = None
     md: Optional[MDStabilityResult] = None
     dna_binding: Optional[DNABindingInterfaceResult] = None
+    dna_binding_sim: Optional[DNABindingSimResult] = None
     overall_physics_score: float = 0.0
     verdict: str = "UNKNOWN"
     errors: List[str] = field(default_factory=list)
@@ -139,6 +166,8 @@ class PhysicsValidationResult:
             d["md"] = self.md.to_dict()
         if self.dna_binding:
             d["dna_binding"] = self.dna_binding.to_dict()
+        if self.dna_binding_sim:
+            d["dna_binding_sim"] = self.dna_binding_sim.to_dict()
         return d
 
 
@@ -787,6 +816,558 @@ class DNABindingAnalyzer:
 
 
 # ---------------------------------------------------------------------------
+# Helper: trajectory to PDB string
+# ---------------------------------------------------------------------------
+
+def _traj_to_pdb_string(traj: Any) -> str:
+    """Convert an mdtraj Trajectory to a PDB string."""
+    import tempfile
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w")
+    tmp.close()
+    traj.save_pdb(tmp.name)
+    pdb_str = Path(tmp.name).read_text()
+    Path(tmp.name).unlink(missing_ok=True)
+    return pdb_str
+
+
+# ---------------------------------------------------------------------------
+# DNABindingSimulator (MM-GBSA functional binding simulation)
+# ---------------------------------------------------------------------------
+
+# Standard DNA nucleotide residue names
+_DNA_RESIDUE_NAMES = {"DA", "DT", "DG", "DC", "DA5", "DT5", "DG5", "DC5",
+                       "DA3", "DT3", "DG3", "DC3", "A", "T", "G", "C"}
+
+
+class DNABindingSimulator:
+    """
+    MM-GBSA DNA-binding functional simulation.
+
+    Superimposes a rescue candidate onto PDB 2AHI (p53 DBD + DNA crystal structure),
+    builds a protein-DNA complex, and computes:
+      - MM-GBSA binding free energy (ΔG = E_complex - E_protein - E_DNA)
+      - Protein-DNA hydrogen bond analysis
+      - Interface contact analysis
+
+    Reference: PDB 2AHI — p53 DBD bound to DNA response element (1.85 Å)
+    """
+
+    REFERENCE_PDB_URL = "https://files.rcsb.org/download/2AHI.pdb"
+    REFERENCE_PDB_ID = "2AHI"
+
+    def __init__(
+        self,
+        reference_pdb_path: Optional[Path] = None,
+        cache_dir: Optional[Path] = None,
+    ):
+        self._reference_path = reference_pdb_path or Path("data/raw/2AHI.pdb")
+        self._cache_dir = cache_dir
+        self._ref_protein_traj = None  # cached protein chain from 2AHI
+        self._ref_dna_traj = None      # cached DNA chains from 2AHI
+        self._wt_result: Optional[DNABindingSimResult] = None  # cached WT result
+
+    def _ensure_reference(self) -> bool:
+        """Download 2AHI from RCSB if not present. Returns True on success."""
+        if self._reference_path.exists():
+            return True
+        try:
+            import urllib.request
+            self._reference_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info("Downloading PDB 2AHI from RCSB...")
+            urllib.request.urlretrieve(self.REFERENCE_PDB_URL, str(self._reference_path))
+            logger.info("Downloaded 2AHI to %s", self._reference_path)
+            return True
+        except Exception as e:
+            logger.warning("Failed to download 2AHI: %s", e)
+            return False
+
+    def _load_reference_components(self) -> bool:
+        """Parse 2AHI and separate protein vs DNA chains by residue type."""
+        if self._ref_protein_traj is not None:
+            return True
+
+        import mdtraj
+
+        try:
+            ref = mdtraj.load(str(self._reference_path))
+        except Exception as e:
+            logger.warning("Failed to load 2AHI: %s", e)
+            return False
+
+        # Identify protein vs DNA atoms by residue name
+        protein_indices = []
+        dna_indices = []
+        for atom in ref.topology.atoms:
+            res_name = atom.residue.name.strip()
+            if res_name in _DNA_RESIDUE_NAMES:
+                dna_indices.append(atom.index)
+            elif atom.residue.is_protein:
+                protein_indices.append(atom.index)
+
+        if not protein_indices or not dna_indices:
+            logger.warning("2AHI: could not separate protein (%d) and DNA (%d) atoms",
+                           len(protein_indices), len(dna_indices))
+            return False
+
+        self._ref_protein_traj = ref.atom_slice(protein_indices)
+        self._ref_dna_traj = ref.atom_slice(dna_indices)
+
+        logger.info("2AHI loaded: %d protein atoms, %d DNA atoms",
+                     len(protein_indices), len(dna_indices))
+        return True
+
+    def _build_complex(self, rescue_pdb_string: str) -> Optional[Tuple[str, str, str]]:
+        """
+        Superimpose rescue DBD onto 2AHI protein chain, combine with DNA.
+
+        For full-length p53 (393 residues), extracts only the DBD region
+        (residues 94-293) before building the complex. This cuts system size
+        in half and avoids OpenMM minimization bottlenecks on the non-binding
+        N/C-terminal domains.
+
+        Returns (complex_pdb, protein_pdb, dna_pdb) or None on failure.
+        """
+        import mdtraj
+        import tempfile
+
+        # Load rescue structure
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w")
+        tmp.write(rescue_pdb_string)
+        tmp.close()
+        rescue_traj = mdtraj.load(tmp.name)
+        Path(tmp.name).unlink(missing_ok=True)
+
+        # Get CA atoms for superposition
+        ref_ca = self._ref_protein_traj.topology.select("name CA")
+        rescue_ca = rescue_traj.topology.select("name CA")
+
+        if len(ref_ca) == 0 or len(rescue_ca) == 0:
+            logger.warning("No CA atoms found for superposition")
+            return None
+
+        # If rescue is full-length (393 res), extract DBD only (residues 94-293)
+        # This keeps only the DNA-binding domain for energy computation
+        if len(rescue_ca) > 250:
+            dbd_start = 93   # 0-indexed
+            dbd_end = min(293, len(rescue_ca))
+            # Get all atom indices for DBD residues (not just CA)
+            dbd_residue_indices = list(range(dbd_start, dbd_end))
+            dbd_atom_indices = rescue_traj.topology.select(
+                "resid " + " ".join(str(r) for r in dbd_residue_indices)
+            )
+            if len(dbd_atom_indices) == 0:
+                logger.warning("Could not extract DBD residues from rescue PDB")
+                return None
+            rescue_traj = rescue_traj.atom_slice(dbd_atom_indices)
+            rescue_ca = rescue_traj.topology.select("name CA")
+            logger.info("Extracted DBD: %d atoms, %d CA", len(dbd_atom_indices), len(rescue_ca))
+
+        n_align = min(len(ref_ca), len(rescue_ca))
+        if n_align < 50:
+            logger.warning("Too few CA atoms for reliable superposition (%d)", n_align)
+
+        ref_align_ca = ref_ca[:n_align]
+        rescue_align_ca = rescue_ca[:n_align]
+
+        # Superimpose rescue DBD onto 2AHI protein chain
+        rescue_traj.superpose(
+            self._ref_protein_traj,
+            atom_indices=rescue_align_ca,
+            ref_atom_indices=ref_align_ca,
+        )
+
+        # Build complex: rescue DBD + 2AHI DNA
+        complex_traj = rescue_traj.stack(self._ref_dna_traj)
+
+        # Generate PDB strings for all three systems
+        complex_pdb = _traj_to_pdb_string(complex_traj)
+        protein_pdb = _traj_to_pdb_string(rescue_traj)
+        dna_pdb = _traj_to_pdb_string(self._ref_dna_traj)
+
+        return complex_pdb, protein_pdb, dna_pdb
+
+    @staticmethod
+    def _prepare_complex_structure(pdb_string: str) -> Any:
+        """
+        Prepare a protein-DNA complex with PDBFixer, skipping findMissingResidues.
+
+        Standard PDBFixer workflow calls findMissingResidues() which tries to bridge
+        residue numbering gaps between protein and DNA chains, causing hangs on
+        multi-chain complexes. We skip that step and only fix atoms + hydrogens.
+        """
+        from pdbfixer import PDBFixer
+        import io
+
+        fixer = PDBFixer(pdbfile=io.StringIO(pdb_string))
+        fixer.removeHeterogens(False)
+        # SKIP findMissingResidues — causes hangs on protein-DNA complexes
+        fixer.missingResidues = {}
+        fixer.findNonstandardResidues()
+        fixer.replaceNonstandardResidues()
+        fixer.findMissingAtoms()
+        fixer.addMissingAtoms()
+        fixer.addMissingHydrogens(pH=7.0)
+        return fixer
+
+    def _minimize_complex(self, pdb_string: str, max_iterations: int = 200) -> Optional[float]:
+        """Minimize a protein-DNA system and return energy in kcal/mol.
+
+        Tries OpenCL (GPU on macOS/Apple Silicon) first, then falls back to CPU.
+        """
+        import openmm
+        import openmm.app as app
+        import openmm.unit as unit
+
+        fixer = self._prepare_complex_structure(pdb_string)
+        forcefield = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
+        system = forcefield.createSystem(
+            fixer.topology,
+            nonbondedMethod=app.NoCutoff,
+            constraints=app.HBonds,
+        )
+        integrator = openmm.LangevinMiddleIntegrator(
+            310 * unit.kelvin, 1.0 / unit.picoseconds, 0.002 * unit.picoseconds
+        )
+        # Try OpenCL (Apple GPU) first, fall back to CPU
+        platform = None
+        for pname in ("OpenCL", "CPU"):
+            try:
+                platform = openmm.Platform.getPlatformByName(pname)
+                break
+            except Exception:
+                continue
+        if platform is None:
+            platform = openmm.Platform.getPlatformByName("CPU")
+        simulation = app.Simulation(fixer.topology, system, integrator, platform)
+        simulation.context.setPositions(fixer.positions)
+        simulation.minimizeEnergy(maxIterations=max_iterations)
+        state = simulation.context.getState(getEnergy=True)
+        energy_kj = state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
+        logger.info("Minimized on %s: %.1f kcal/mol (%d atoms)",
+                     platform.getName(), energy_kj / 4.184,
+                     sum(1 for _ in fixer.topology.atoms()))
+        return energy_kj / 4.184
+
+    def _compute_binding_energy(
+        self,
+        complex_pdb: str,
+        protein_pdb: str,
+        dna_pdb: str,
+        max_iterations: int = 200,
+    ) -> Optional[float]:
+        """
+        Compute MM-GBSA binding energy: ΔG = E_complex - E_protein - E_DNA.
+
+        Uses AMBER14 + OBC2 implicit solvent. Minimizes all three systems
+        independently with a complex-safe PDBFixer pipeline that skips
+        findMissingResidues (avoids hangs on protein-DNA complexes).
+        """
+        try:
+            logger.info("Minimizing complex...")
+            e_complex = self._minimize_complex(complex_pdb, max_iterations)
+            logger.info("Minimizing protein...")
+            e_protein = self._minimize_complex(protein_pdb, max_iterations)
+            logger.info("Minimizing DNA...")
+            e_dna = self._minimize_complex(dna_pdb, max_iterations)
+        except Exception as e:
+            logger.warning("MM-GBSA energy computation failed: %s", e)
+            return None
+
+        if e_complex is None or e_protein is None or e_dna is None:
+            return None
+
+        dg = e_complex - e_protein - e_dna
+        logger.info("MM-GBSA: E_complex=%.1f, E_protein=%.1f, E_DNA=%.1f, ΔG=%.1f kcal/mol",
+                     e_complex, e_protein, e_dna, dg)
+        return round(dg, 2)
+
+    def _analyze_hbonds(self, complex_pdb: str) -> Tuple[int, List[Dict[str, Any]]]:
+        """
+        Analyze protein-DNA hydrogen bonds using mdtraj baker_hubbard.
+
+        Returns (n_hbonds, hbond_details) where hbond_details lists cross-interface bonds.
+        """
+        import mdtraj
+        import tempfile
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w")
+        tmp.write(complex_pdb)
+        tmp.close()
+        traj = mdtraj.load(tmp.name)
+        Path(tmp.name).unlink(missing_ok=True)
+
+        # Identify protein vs DNA atom indices
+        protein_atoms = set()
+        dna_atoms = set()
+        for atom in traj.topology.atoms:
+            res_name = atom.residue.name.strip()
+            if res_name in _DNA_RESIDUE_NAMES:
+                dna_atoms.add(atom.index)
+            elif atom.residue.is_protein:
+                protein_atoms.add(atom.index)
+
+        if not protein_atoms or not dna_atoms:
+            return 0, []
+
+        # Compute hydrogen bonds
+        try:
+            hbonds = mdtraj.baker_hubbard(traj, freq=0.0)  # freq=0 returns all H-bonds in the frame
+        except Exception as e:
+            logger.warning("H-bond computation failed: %s", e)
+            return 0, []
+
+        # Filter for cross-interface bonds (one atom in protein, one in DNA)
+        cross_hbonds = []
+        for donor_idx, _h_idx, acceptor_idx in hbonds:
+            donor_in_protein = donor_idx in protein_atoms
+            donor_in_dna = donor_idx in dna_atoms
+            acceptor_in_protein = acceptor_idx in protein_atoms
+            acceptor_in_dna = acceptor_idx in dna_atoms
+
+            if (donor_in_protein and acceptor_in_dna) or (donor_in_dna and acceptor_in_protein):
+                donor_atom = traj.topology.atom(donor_idx)
+                acceptor_atom = traj.topology.atom(acceptor_idx)
+                # Distance between donor and acceptor
+                dist = float(np.linalg.norm(
+                    traj.xyz[0, donor_idx] - traj.xyz[0, acceptor_idx]
+                )) * 10.0  # nm -> Angstroms
+                cross_hbonds.append({
+                    "donor_res": f"{donor_atom.residue.name}{donor_atom.residue.resSeq}",
+                    "acceptor_res": f"{acceptor_atom.residue.name}{acceptor_atom.residue.resSeq}",
+                    "distance_ang": round(dist, 2),
+                })
+
+        return len(cross_hbonds), cross_hbonds
+
+    def _analyze_contacts(self, complex_pdb: str, cutoff_nm: float = 0.45) -> Tuple[int, Dict[str, int]]:
+        """
+        Analyze protein-DNA heavy-atom contacts within cutoff distance.
+
+        Returns (n_contacts, per_residue_contacts) where per_residue_contacts maps
+        DNA-contact residue labels to their contact counts.
+        """
+        import mdtraj
+        import tempfile
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w")
+        tmp.write(complex_pdb)
+        tmp.close()
+        traj = mdtraj.load(tmp.name)
+        Path(tmp.name).unlink(missing_ok=True)
+
+        # Build protein residue -> atom indices and DNA atom indices
+        protein_residue_atoms: Dict[int, List[int]] = {}
+        dna_heavy_atoms: List[int] = []
+
+        for atom in traj.topology.atoms:
+            if atom.element.symbol == "H":
+                continue  # skip hydrogens
+            res_name = atom.residue.name.strip()
+            if res_name in _DNA_RESIDUE_NAMES:
+                dna_heavy_atoms.append(atom.index)
+            elif atom.residue.is_protein:
+                res_seq = atom.residue.resSeq
+                if res_seq not in protein_residue_atoms:
+                    protein_residue_atoms[res_seq] = []
+                protein_residue_atoms[res_seq].append(atom.index)
+
+        if not dna_heavy_atoms or not protein_residue_atoms:
+            return 0, {}
+
+        # Compute contacts: for each protein residue, count heavy atoms within cutoff of any DNA atom
+        dna_atom_set = np.array(dna_heavy_atoms)
+        total_contacts = 0
+        per_residue: Dict[str, int] = {}
+
+        for res_seq, atom_indices in protein_residue_atoms.items():
+            # Compute pairwise distances between this residue's atoms and DNA atoms
+            pairs = []
+            for p_idx in atom_indices:
+                for d_idx in dna_heavy_atoms:
+                    pairs.append([p_idx, d_idx])
+
+            if not pairs:
+                continue
+
+            pairs_arr = np.array(pairs)
+            distances = mdtraj.compute_distances(traj, pairs_arr)[0]  # first frame
+            n_close = int(np.sum(distances < cutoff_nm))
+
+            if n_close > 0:
+                # Check if this is a known DNA contact residue
+                label = DNA_CONTACT_RESIDUES.get(res_seq, f"R{res_seq}")
+                per_residue[label] = n_close
+                total_contacts += n_close
+
+        return total_contacts, per_residue
+
+    def simulate(
+        self,
+        rescue_pdb_string: str,
+        sequence: str,
+        wt_pdb_string: Optional[str] = None,
+    ) -> DNABindingSimResult:
+        """
+        Run full MM-GBSA binding simulation for a rescue candidate.
+
+        Args:
+            rescue_pdb_string: ESMFold-predicted PDB for the rescue candidate
+            sequence: amino acid sequence (for cache key)
+            wt_pdb_string: WT PDB string (used to compute WT reference on first call)
+
+        Returns:
+            DNABindingSimResult with binding energy, H-bonds, contacts, and composite score
+        """
+        t0 = time.time()
+        seq_h = _seq_hash(sequence)
+
+        # Check disk cache
+        if self._cache_dir:
+            cached = self._cache_dir / f"binding_sim_{seq_h}.json"
+            if cached.exists():
+                logger.info("Binding sim cache hit: %s", seq_h)
+                try:
+                    data = json.loads(cached.read_text())
+                    return DNABindingSimResult(**data)
+                except Exception:
+                    pass  # cache corrupted, recompute
+
+        # Ensure reference structure is available
+        if not self._ensure_reference() or not self._load_reference_components():
+            return self._fallback_result(t0)
+
+        # Compute WT reference if not cached
+        if self._wt_result is None and wt_pdb_string:
+            logger.info("Computing WT binding reference...")
+            try:
+                wt_complex = self._build_complex(wt_pdb_string)
+            except Exception as e:
+                logger.warning("Failed to build WT complex: %s", e)
+                wt_complex = None
+            if wt_complex:
+                wt_cpx_pdb, wt_prot_pdb, wt_dna_pdb = wt_complex
+                wt_energy = self._compute_binding_energy(wt_cpx_pdb, wt_prot_pdb, wt_dna_pdb)
+                wt_hbonds, wt_hbond_details = self._analyze_hbonds(wt_cpx_pdb)
+                wt_contacts, wt_per_res = self._analyze_contacts(wt_cpx_pdb)
+                self._wt_result = DNABindingSimResult(
+                    binding_energy_kcal=wt_energy if wt_energy is not None else 0.0,
+                    wt_binding_energy_kcal=wt_energy if wt_energy is not None else 0.0,
+                    delta_binding_kcal=0.0,
+                    binding_interpretation="preserved",
+                    n_hbonds_protein_dna=wt_hbonds,
+                    wt_n_hbonds=wt_hbonds,
+                    hbond_preservation_ratio=1.0,
+                    hbond_details=wt_hbond_details,
+                    n_interface_contacts=wt_contacts,
+                    wt_n_contacts=wt_contacts,
+                    contact_preservation_ratio=1.0,
+                    per_residue_contacts=wt_per_res,
+                    binding_score=1.0,
+                )
+                logger.info("WT binding: ΔG=%.1f kcal/mol, %d H-bonds, %d contacts",
+                            self._wt_result.binding_energy_kcal, wt_hbonds, wt_contacts)
+
+        # Build rescue complex
+        try:
+            complex_result = self._build_complex(rescue_pdb_string)
+        except Exception as e:
+            logger.warning("Failed to build protein-DNA complex: %s", e)
+            complex_result = None
+        if complex_result is None:
+            return self._fallback_result(t0)
+
+        cpx_pdb, prot_pdb, dna_pdb = complex_result
+
+        # MM-GBSA binding energy
+        binding_energy = self._compute_binding_energy(cpx_pdb, prot_pdb, dna_pdb)
+        if binding_energy is None:
+            return self._fallback_result(t0)
+
+        # H-bond analysis
+        n_hbonds, hbond_details = self._analyze_hbonds(cpx_pdb)
+
+        # Contact analysis
+        n_contacts, per_res_contacts = self._analyze_contacts(cpx_pdb)
+
+        # Compare to WT
+        wt_energy = self._wt_result.binding_energy_kcal if self._wt_result else 0.0
+        wt_hbonds = self._wt_result.wt_n_hbonds if self._wt_result else max(n_hbonds, 1)
+        wt_contacts = self._wt_result.wt_n_contacts if self._wt_result else max(n_contacts, 1)
+
+        delta_binding = binding_energy - wt_energy
+
+        # Interpretation: more negative = stronger binding
+        if delta_binding < -5.0:
+            interpretation = "enhanced"
+        elif delta_binding < 5.0:
+            interpretation = "preserved"
+        elif delta_binding < 15.0:
+            interpretation = "weakened"
+        else:
+            interpretation = "disrupted"
+
+        hbond_ratio = min(1.0, n_hbonds / max(wt_hbonds, 1))
+        contact_ratio = min(1.0, n_contacts / max(wt_contacts, 1))
+
+        # Composite binding score (0-1)
+        # 50% energy + 25% H-bond preservation + 25% contact preservation
+        # Energy scoring: ΔΔG < -5 → 1.0, ΔΔG > +20 → 0.0 (linear between)
+        energy_score = max(0.0, min(1.0, (20.0 - delta_binding) / 25.0))
+        binding_score = 0.5 * energy_score + 0.25 * hbond_ratio + 0.25 * contact_ratio
+
+        elapsed = time.time() - t0
+        logger.info("Binding sim: ΔG=%.1f (δ=%.1f), %d H-bonds (%.0f%%), %d contacts (%.0f%%), score=%.2f, %.1fs",
+                     binding_energy, delta_binding, n_hbonds, hbond_ratio * 100,
+                     n_contacts, contact_ratio * 100, binding_score, elapsed)
+
+        result = DNABindingSimResult(
+            binding_energy_kcal=binding_energy,
+            wt_binding_energy_kcal=round(wt_energy, 2),
+            delta_binding_kcal=round(delta_binding, 2),
+            binding_interpretation=interpretation,
+            n_hbonds_protein_dna=n_hbonds,
+            wt_n_hbonds=wt_hbonds,
+            hbond_preservation_ratio=round(hbond_ratio, 3),
+            hbond_details=hbond_details,
+            n_interface_contacts=n_contacts,
+            wt_n_contacts=wt_contacts,
+            contact_preservation_ratio=round(contact_ratio, 3),
+            per_residue_contacts=per_res_contacts,
+            binding_score=round(binding_score, 3),
+            elapsed_sec=round(elapsed, 1),
+        )
+
+        # Cache to disk
+        if self._cache_dir:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            (self._cache_dir / f"binding_sim_{seq_h}.json").write_text(
+                json.dumps(result.to_dict(), indent=2)
+            )
+
+        return result
+
+    def _fallback_result(self, t0: float) -> DNABindingSimResult:
+        """Neutral fallback when simulation cannot be performed."""
+        logger.warning("Binding simulation unavailable, returning neutral fallback")
+        return DNABindingSimResult(
+            binding_energy_kcal=0.0,
+            wt_binding_energy_kcal=0.0,
+            delta_binding_kcal=0.0,
+            binding_interpretation="unknown",
+            n_hbonds_protein_dna=0,
+            wt_n_hbonds=0,
+            hbond_preservation_ratio=0.5,
+            hbond_details=[],
+            n_interface_contacts=0,
+            wt_n_contacts=0,
+            contact_preservation_ratio=0.5,
+            per_residue_contacts={},
+            binding_score=0.5,
+            elapsed_sec=round(time.time() - t0, 1),
+        )
+
+
+# ---------------------------------------------------------------------------
 # Composite scoring
 # ---------------------------------------------------------------------------
 
@@ -795,11 +1376,15 @@ def compute_physics_score(
     ddg: Optional[DDGResult] = None,
     md: Optional[MDStabilityResult] = None,
     dna_binding: Optional[DNABindingInterfaceResult] = None,
+    dna_binding_sim: Optional[DNABindingSimResult] = None,
 ) -> Tuple[float, str]:
     """
     Compute composite 0-100 physics score.
 
     Weights: pLDDT 30pts, DDG 25pts, MD 25pts, DNA interface 20pts.
+    When binding sim is available, the 20 DNA pts are split:
+      - 8 pts geometric (DNABindingInterfaceResult)
+      - 12 pts functional (DNABindingSimResult)
     Missing components scored as neutral (50% of their weight).
     """
     score = 0.0
@@ -832,13 +1417,25 @@ def compute_physics_score(
         score += 12.5
         max_score += 25
 
-    # DNA interface (20 pts): use preservation score (0-1 -> 0-20)
-    if dna_binding:
-        score += 20 * dna_binding.interface_preservation_score
-        max_score += 20
+    # DNA interface (20 pts total)
+    if dna_binding_sim:
+        # Split: 8 pts geometric + 12 pts functional binding sim
+        if dna_binding:
+            score += 8 * dna_binding.interface_preservation_score
+            max_score += 8
+        else:
+            score += 4
+            max_score += 8
+        score += 12 * dna_binding_sim.binding_score
+        max_score += 12
     else:
-        score += 10
-        max_score += 20
+        # No binding sim: all 20 pts from geometric analysis
+        if dna_binding:
+            score += 20 * dna_binding.interface_preservation_score
+            max_score += 20
+        else:
+            score += 10
+            max_score += 20
 
     # Normalize to 0-100
     final = (score / max_score) * 100 if max_score > 0 else 0
@@ -887,6 +1484,7 @@ class PhysicsValidationPipeline:
         skip_energy: bool = False,
         skip_md: bool = False,
         skip_dna: bool = False,
+        skip_binding_sim: bool = False,
     ) -> PhysicsValidationReport:
         """
         Run tiered physics validation.
@@ -932,6 +1530,12 @@ class PhysicsValidationPipeline:
 
         # DNA binding analyzer
         dna_analyzer = DNABindingAnalyzer(wt_pdb_path=self._wt_pdb_path) if not skip_dna else None
+
+        # DNA binding simulator (MM-GBSA functional test)
+        binding_sim: Optional[DNABindingSimulator] = None
+        if not skip_binding_sim:
+            binding_sim_cache = output_dir / "binding_sim_cache"
+            binding_sim = DNABindingSimulator(cache_dir=binding_sim_cache)
 
         # Shared energy calculator (caches ForceField across candidates)
         energy_calc = OpenMMEnergyCalculator() if not skip_energy else None
@@ -1006,12 +1610,25 @@ class PhysicsValidationPipeline:
                     logger.warning("DNA binding analysis failed for rank %d: %s", rank, e)
                     result.errors.append(f"dna_binding: {e}")
 
+            # DNA binding simulation (MM-GBSA functional test)
+            if binding_sim and pdb_string:
+                try:
+                    result.dna_binding_sim = binding_sim.simulate(
+                        rescue_pdb_string=pdb_string,
+                        sequence=seq,
+                        wt_pdb_string=wt_pdb_string,
+                    )
+                except Exception as e:
+                    logger.warning("Binding sim failed for rank %d: %s", rank, e)
+                    result.errors.append(f"binding_sim: {e}")
+
             # Composite score (Tier 1 only, MD will update later)
             result.overall_physics_score, result.verdict = compute_physics_score(
                 esmfold=result.esmfold,
                 ddg=result.ddg,
                 md=result.md,
                 dna_binding=result.dna_binding,
+                dna_binding_sim=result.dna_binding_sim,
             )
 
             results.append(result)
@@ -1044,6 +1661,7 @@ class PhysicsValidationPipeline:
                         ddg=res.ddg,
                         md=res.md,
                         dna_binding=res.dna_binding,
+                        dna_binding_sim=res.dna_binding_sim,
                     )
                     n_md += 1
                 except Exception as e:

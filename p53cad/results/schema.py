@@ -170,6 +170,7 @@ def select_presentation_shortlist(
     delivery_methods: Sequence[str] | None = None,
     min_per_delivery: int = 2,
     max_per_base_mutation: int = 12,
+    max_rescue_mutations: int | None = 60,
 ) -> pd.DataFrame:
     """
     Rank and select presentation candidates with strict rescue semantics.
@@ -239,6 +240,17 @@ def select_presentation_shortlist(
 
     # Strict retain+add filter.
     work = work[work["_retains_targets"] & work["_has_second_site"]].copy()
+
+    # Hard mutation count filter: immunogenicity ceiling.
+    # n_rescue_mutations preferred; fall back to n_mutations - n_targets.
+    if max_rescue_mutations is not None:
+        if "n_rescue_mutations" in work.columns:
+            n_resc = pd.to_numeric(work["n_rescue_mutations"], errors="coerce")
+        else:
+            n_targets_col = work["_target_set"].apply(len)
+            n_resc = pd.to_numeric(work["n_mutations"], errors="coerce") - n_targets_col
+        work = work[n_resc.fillna(0) <= max_rescue_mutations].copy()
+
     if work.empty:
         cols = list(candidates_df.columns)
         for needed in ["selection_score", "diversity_novelty", "max_mutation_overlap", "selection_reason", "presentation_rank"]:

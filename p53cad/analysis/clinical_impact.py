@@ -629,29 +629,49 @@ class ImmunogenicityAssessor:
             mitigation_strategies=mitigations
         )
 
+    def _novel_9mers(self, rescue_sequence: str) -> tuple[set, set]:
+        """Return (novel_9mers, mutation_overlapping_novel_9mers) vs WT p53."""
+        try:
+            from p53cad.data.dms import P53_WT as _WT
+        except ImportError:
+            return set(), set()
+        wt_9mers = {_WT[i:i + 9] for i in range(len(_WT) - 8)}
+        resc = rescue_sequence
+        all_novel = {resc[i:i + 9] for i in range(len(resc) - 8) if resc[i:i + 9] not in wt_9mers}
+        return all_novel, wt_9mers
+
     def _predict_neoantigens(self, mutations: List[str],
-                            sequence: str) -> int:
-        """Predict number of potential neoantigens (simplified)."""
-        # Each mutation creates potential neoantigen
-        # Surface-exposed mutations have higher risk
-        exposed_positions = set(range(1, 50)) | set(range(290, 393))  # N/C termini
-
+                             sequence: str) -> int:
+        """Count novel 9-mer peptides overlapping at least one mutation position."""
+        novel_9mers, _ = self._novel_9mers(sequence)
+        if not novel_9mers:
+            # Fallback: 1 neoantigen candidate per mutation at surface-exposed positions
+            exposed = set(range(1, 50)) | set(range(290, 393))
+            return sum(2 if int(m[1:-1]) in exposed else 1 for m in mutations if m[1:-1].isdigit())
+        # Map novel 9-mers back to their start positions in the rescue sequence
+        mut_positions = set()
+        for m in mutations:
+            try:
+                mut_positions.add(int(m[1:-1]) - 1)  # 0-indexed
+            except (ValueError, IndexError):
+                pass
         count = 0
-        for mut in mutations:
-            pos = int(mut[1:-1])
-            if pos in exposed_positions:
-                count += 2  # Higher risk
-            else:
-                count += 1
-
+        for i in range(len(sequence) - 8):
+            pep = sequence[i:i + 9]
+            if pep in novel_9mers:
+                if any(i <= p < i + 9 for p in mut_positions):
+                    count += 1
         return count
 
     def _estimate_hla_binders(self, mutations: List[str],
-                             sequence: str) -> int:
-        """Estimate HLA-binding peptides from mutations."""
-        # Simplified: each mutation can generate ~4 potential 9-mer peptides
-        # Real implementation would use NetMHC or similar
-        return len(mutations) * 4
+                               sequence: str) -> int:
+        """Count all novel 9-mer peptides in rescue vs WT p53 (MHC-I epitope proxy).
+
+        Each novel 9-mer is a candidate MHC-I peptide. This is a sequence-level
+        upper-bound estimate; actual HLA binding requires NetMHCpan scoring.
+        """
+        novel_9mers, _ = self._novel_9mers(sequence)
+        return len(novel_9mers)
 
     def _identify_risk_factors(self, mutations: List[str],
                               sequence: str) -> List[str]:
@@ -681,19 +701,30 @@ class ImmunogenicityAssessor:
     def _calculate_risk_score(self, mutation_count: int,
                              neoantigens: int, hla_peptides: int,
                              risk_factors: List[str]) -> float:
-        """Calculate overall immunogenicity risk score."""
-        score = 0.1  # Base risk
+        """Calculate overall immunogenicity risk score (0–1).
 
-        # Mutation count contribution
-        score += mutation_count * 0.05
+        Anchored to novel 9-mer peptide count (hla_peptides), which is a
+        sequence-level upper-bound on MHC-I epitope candidates:
+          - 0 novel 9-mers  → score ~0.05 (baseline)
+          - 10 novel 9-mers → score ~0.30 (moderate)
+          - 30 novel 9-mers → score ~0.60 (high)
+          - 60+ novel 9-mers → score ~1.0 (capped)
+        Mutation count and neoantigen overlap add secondary contributions.
+        """
+        # Primary: novel 9-mer count normalised to ~60 as ceiling
+        primary = min(1.0, hla_peptides / 60.0) * 0.70
 
-        # Neoantigen contribution
-        score += neoantigens * 0.03
+        # Secondary: fraction of novel 9-mers that overlap mutation sites
+        if hla_peptides > 0:
+            neoantigen_frac = min(1.0, neoantigens / max(hla_peptides, 1))
+        else:
+            neoantigen_frac = 0.0
+        secondary = neoantigen_frac * 0.20
 
-        # Risk factor contribution
-        score += len(risk_factors) * 0.05
+        # Tertiary: surface-exposed / charged risk factors
+        tertiary = min(0.10, len(risk_factors) * 0.02)
 
-        return min(1.0, score)
+        return min(1.0, primary + secondary + tertiary + 0.05)
 
     def _suggest_mitigations(self, risk_level: str,
                             risk_factors: List[str]) -> List[str]:

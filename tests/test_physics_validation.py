@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 from p53cad.engine.physics_validation import (
     DDGResult,
     DNABindingInterfaceResult,
+    DNABindingSimResult,
     EnergyMinimizationResult,
     ESMFoldResult,
     MDStabilityResult,
@@ -88,6 +89,56 @@ class TestDataclassSerialization(unittest.TestCase):
         self.assertEqual(d["per_contact_rmsd"]["R248"], 0.8)
         json.dumps(d)
 
+    def test_dna_binding_sim_round_trip(self):
+        r = DNABindingSimResult(
+            binding_energy_kcal=-120.5,
+            wt_binding_energy_kcal=-115.0,
+            delta_binding_kcal=-5.5,
+            binding_interpretation="enhanced",
+            n_hbonds_protein_dna=8,
+            wt_n_hbonds=7,
+            hbond_preservation_ratio=1.0,
+            hbond_details=[{"donor_res": "ARG248", "acceptor_res": "DT10", "distance_ang": 2.9}],
+            n_interface_contacts=45,
+            wt_n_contacts=42,
+            contact_preservation_ratio=1.0,
+            per_residue_contacts={"R248": 12, "R273": 8},
+            binding_score=0.85,
+            elapsed_sec=35.2,
+        )
+        d = r.to_dict()
+        self.assertEqual(d["binding_interpretation"], "enhanced")
+        self.assertAlmostEqual(d["binding_score"], 0.85)
+        self.assertEqual(d["n_hbonds_protein_dna"], 8)
+        self.assertEqual(len(d["hbond_details"]), 1)
+        self.assertEqual(d["per_residue_contacts"]["R248"], 12)
+        # Must be JSON-serializable
+        json.dumps(d)
+
+    def test_dna_binding_sim_hbond_truncation(self):
+        """H-bond details should be truncated to 30 entries in to_dict."""
+        hbond_details = [
+            {"donor_res": f"ARG{i}", "acceptor_res": f"DT{i}", "distance_ang": 2.8}
+            for i in range(50)
+        ]
+        r = DNABindingSimResult(
+            binding_energy_kcal=-100.0,
+            wt_binding_energy_kcal=-100.0,
+            delta_binding_kcal=0.0,
+            binding_interpretation="preserved",
+            n_hbonds_protein_dna=50,
+            wt_n_hbonds=50,
+            hbond_preservation_ratio=1.0,
+            hbond_details=hbond_details,
+            n_interface_contacts=100,
+            wt_n_contacts=100,
+            contact_preservation_ratio=1.0,
+            per_residue_contacts={},
+            binding_score=0.75,
+        )
+        d = r.to_dict()
+        self.assertEqual(len(d["hbond_details"]), 30)
+
     def test_physics_result_composite(self):
         r = PhysicsValidationResult(
             candidate_rank=1,
@@ -154,6 +205,44 @@ class TestCompositeScoring(unittest.TestCase):
         self.assertGreater(score, 50)
         self.assertIn(verdict, ("PROMISING", "STRONG"))
 
+    def test_with_binding_sim(self):
+        """Test scoring with binding sim splits DNA points 8+12."""
+        ef = ESMFoldResult("", [], 90, 90)
+        ddg = DDGResult(-15, -20, "stabilizing")
+        md = MDStabilityResult(0.5, 0.1, 0.5, [], 0.3, {}, 1.5, 100, "stable")
+        dna = DNABindingInterfaceResult(0.5, {}, 1.0)
+        bsim = DNABindingSimResult(
+            binding_energy_kcal=-120, wt_binding_energy_kcal=-115,
+            delta_binding_kcal=-5, binding_interpretation="enhanced",
+            n_hbonds_protein_dna=8, wt_n_hbonds=7,
+            hbond_preservation_ratio=1.0, hbond_details=[],
+            n_interface_contacts=50, wt_n_contacts=42,
+            contact_preservation_ratio=1.0, per_residue_contacts={},
+            binding_score=0.9,
+        )
+        score_with, verdict_with = compute_physics_score(ef, ddg, md, dna, bsim)
+        score_without, _ = compute_physics_score(ef, ddg, md, dna)
+        # Both should be STRONG with perfect inputs
+        self.assertEqual(verdict_with, "STRONG")
+        self.assertGreater(score_with, 85)
+        # Scores should differ since weights change
+        self.assertNotAlmostEqual(score_with, score_without, places=0)
+
+    def test_binding_sim_only_no_geometric(self):
+        """Binding sim without geometric DNA analysis."""
+        bsim = DNABindingSimResult(
+            binding_energy_kcal=-100, wt_binding_energy_kcal=-100,
+            delta_binding_kcal=0, binding_interpretation="preserved",
+            n_hbonds_protein_dna=5, wt_n_hbonds=5,
+            hbond_preservation_ratio=1.0, hbond_details=[],
+            n_interface_contacts=30, wt_n_contacts=30,
+            contact_preservation_ratio=1.0, per_residue_contacts={},
+            binding_score=0.75,
+        )
+        score, _ = compute_physics_score(dna_binding_sim=bsim)
+        # Should include 12 * 0.75 from binding sim + neutral geometric (4/8)
+        self.assertGreater(score, 40)
+
     def test_verdict_boundaries(self):
         """Test verdict string thresholds."""
         # Create results that target specific score ranges
@@ -193,6 +282,7 @@ class TestPipelineWiring(unittest.TestCase):
             skip_energy=True,
             skip_md=True,
             skip_dna=True,
+            skip_binding_sim=True,
         )
 
         self.assertEqual(report.n_candidates, 1)
@@ -203,6 +293,33 @@ class TestPipelineWiring(unittest.TestCase):
         self.assertEqual(c["target_label"], "R175H+gene_therapy")
         # All steps skipped -> neutral composite score
         self.assertAlmostEqual(c["overall_physics_score"], 50.0, places=0)
+        # No binding sim result when skipped
+        self.assertNotIn("dna_binding_sim", c)
+
+    def test_skip_binding_sim_flag(self):
+        """Verify skip_binding_sim=True produces no binding sim results."""
+        import pandas as pd
+
+        pipeline = PhysicsValidationPipeline(device="cpu")
+        top_df = pd.DataFrame({
+            "sequence": ["MEEPQ" * 78 + "MSD"],
+            "target_label": ["R248Q+mrna_therapy"],
+        })
+
+        report = pipeline.validate_campaign(
+            run_id="test_skip_bsim",
+            top_df=top_df,
+            output_dir=Path("/tmp/test_physics_skip_bsim"),
+            wt_sequence="MEEPQ" * 78 + "MSD",
+            skip_esmfold=True,
+            skip_energy=True,
+            skip_md=True,
+            skip_dna=True,
+            skip_binding_sim=True,
+        )
+
+        c = report.candidates[0]
+        self.assertNotIn("dna_binding_sim", c)
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +408,64 @@ class TestMDIntegration(unittest.TestCase):
         result = checker.run_stability_check(pdb, simulation_ns=0.001, name="tiny_test")
         self.assertIsInstance(result.rmsd_mean, float)
         self.assertIn(result.stability_verdict, ("stable", "metastable", "unstable"))
+
+
+class TestDNABindingSimulatorUnit(unittest.TestCase):
+    """Unit tests for DNABindingSimulator (no heavy deps required)."""
+
+    def test_fallback_result(self):
+        """Fallback gives neutral 0.5 score."""
+        from p53cad.engine.physics_validation import DNABindingSimulator
+        import time
+
+        sim = DNABindingSimulator(reference_pdb_path=Path("/nonexistent/2AHI.pdb"))
+        result = sim._fallback_result(time.time())
+        self.assertAlmostEqual(result.binding_score, 0.5)
+        self.assertEqual(result.binding_interpretation, "unknown")
+        self.assertEqual(result.n_hbonds_protein_dna, 0)
+
+    def test_physics_result_includes_binding_sim(self):
+        """PhysicsValidationResult.to_dict includes binding sim when present."""
+        bsim = DNABindingSimResult(
+            binding_energy_kcal=-100, wt_binding_energy_kcal=-95,
+            delta_binding_kcal=-5, binding_interpretation="enhanced",
+            n_hbonds_protein_dna=6, wt_n_hbonds=5,
+            hbond_preservation_ratio=1.0, hbond_details=[],
+            n_interface_contacts=30, wt_n_contacts=28,
+            contact_preservation_ratio=1.0, per_residue_contacts={},
+            binding_score=0.8,
+        )
+        r = PhysicsValidationResult(
+            candidate_rank=1,
+            target_label="R175H+gene_therapy",
+            sequence_hash="abc123",
+            dna_binding_sim=bsim,
+        )
+        d = r.to_dict()
+        self.assertIn("dna_binding_sim", d)
+        self.assertEqual(d["dna_binding_sim"]["binding_interpretation"], "enhanced")
+        json.dumps(d)
+
+
+@unittest.skipUnless(_has_openmm() and _has_mdtraj(), "OpenMM + mdtraj not installed")
+class TestDNABindingSimIntegration(unittest.TestCase):
+    """Integration test for DNABindingSimulator with real dependencies."""
+
+    def test_simulate_graceful_degradation(self):
+        """Simulator gracefully degrades when 2AHI is not available."""
+        from p53cad.engine.physics_validation import DNABindingSimulator
+
+        sim = DNABindingSimulator(
+            reference_pdb_path=Path("/tmp/nonexistent_2AHI.pdb"),
+            cache_dir=Path("/tmp/test_binding_sim_cache"),
+        )
+        result = sim.simulate(
+            rescue_pdb_string="HEADER TEST\nEND\n",
+            sequence="MEEPQ" * 10,
+        )
+        # Should return fallback result
+        self.assertAlmostEqual(result.binding_score, 0.5)
+        self.assertEqual(result.binding_interpretation, "unknown")
 
 
 class TestRuntimeProbes(unittest.TestCase):
