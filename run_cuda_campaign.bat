@@ -26,9 +26,9 @@ echo [3/4] Verifying CUDA torch + OpenMM...
 python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA torch:', torch.cuda.is_available()); import openmm; p=[openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]; print('OpenMM CUDA:', 'CUDA' in p)"
 echo.
 
-echo [4/4] Resuming campaign with CUDA...
+echo [4/4] Starting fresh campaign with CUDA...
 echo.
-REM Resumes existing run — skips already-completed scenarios automatically
-python scripts\run_full_campaign.py --budget medium --run-id campaign_20260217_060021
+REM Creates new run with auto-generated timestamp ID
+python scripts\run_full_campaign.py --budget medium
 
 pause
