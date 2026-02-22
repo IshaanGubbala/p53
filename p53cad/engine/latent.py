@@ -229,6 +229,7 @@ class ManifoldEmbedder:
         embeddings: torch.Tensor,
         return_hidden: bool = False,
         return_attention: bool = False,
+        use_autocast: bool = False,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, ...]:
         """
         Runs the transformer forward pass starting from soft embeddings.
@@ -242,6 +243,12 @@ class ManifoldEmbedder:
         return_attention : bool
             If True, an additional return value is a tuple of attention tensors,
             one per layer, each of shape (1, heads, L, L).
+        use_autocast : bool
+            If True, wraps the encoder in torch.autocast(bfloat16) on CUDA for
+            faster inference.  Must be False during gradient-based optimization:
+            BF16 has only 7 mantissa bits, so small constraint penalty gradients
+            (identity floor, lock penalty) are rounded to zero by BF16 arithmetic,
+            causing constraints to be silently violated.  Default: False.
 
         Returns
         -------
@@ -261,8 +268,9 @@ class ManifoldEmbedder:
             attention_mask, (batch_size, seq_len)
         )
 
-        # Use autocast for BF16 on CUDA (faster matmuls, half the memory)
-        _use_autocast = embeddings.device.type == "cuda"
+        # Only enable BF16 autocast for pure inference (no gradients).
+        # During optimization, FP32 is required for constraint gradients to propagate.
+        _use_autocast = use_autocast and embeddings.device.type == "cuda"
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=_use_autocast):
             encoder_outputs = self.model.esm.encoder(
                 embeddings,

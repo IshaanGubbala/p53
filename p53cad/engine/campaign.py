@@ -201,7 +201,7 @@ class CampaignRunner:
             return None
         emb_wt = self._get_cached_embedding(P53_WT)
         with torch.no_grad():
-            h, _, _ = self.embedder.latent_forward_ascent(emb_wt)
+            h, _, _ = self.embedder.latent_forward_ascent(emb_wt, use_autocast=True)
             self._wt_hidden = h.detach()
         return self._wt_hidden
 
@@ -720,7 +720,7 @@ class CampaignRunner:
             try:
                 with torch.no_grad():
                     word_emb = self.embedder.get_embeddings(seq)  # (1, L, D)
-                    h, _logits, _probs = self.embedder.latent_forward_ascent(word_emb)[:3]
+                    h, _logits, _probs = self.embedder.latent_forward_ascent(word_emb, use_autocast=True)[:3]
                     # h: (1, L, D) — last hidden state, same input the oracle saw during optimization
                     raw_score = float(new_oracle.model(h).squeeze(-1).mean().item())
                 calibrated = self._calibrate_score(raw_score)
@@ -825,7 +825,7 @@ class CampaignRunner:
         emb_target_ref = self._get_cached_embedding(target_seq)
         emb_wt = self._get_cached_embedding(P53_WT)
         with torch.no_grad():
-            z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref)
+            z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref, use_autocast=True)
             pooled_target_ref = z_target_ref.mean(dim=1)
             if pooled_target_ref.shape[-1] != self.oracle.input_dim:
                 pooled_target_ref = pooled_target_ref[:, :self.oracle.input_dim]
@@ -1178,7 +1178,7 @@ class CampaignRunner:
                 try:
                     with torch.no_grad():
                         _, _, _, attns = self.embedder.latent_forward_ascent(
-                            emb.detach(), return_attention=True
+                            emb.detach(), return_attention=True, use_autocast=True
                         )
                     # attns: tuple of (1, heads, L, L) per layer — average all
                     attn_stack = torch.stack([a.mean(dim=1) for a in attns]).mean(dim=0)  # (1, L, L)
@@ -1527,7 +1527,7 @@ class CampaignRunner:
         # Get attention weights to rank positions by importance
         emb = self.embedder.get_embeddings("".join(current_seq)).detach()
         with torch.no_grad():
-            _, _, _, attns = self.embedder.latent_forward_ascent(emb, return_attention=True)
+            _, _, _, attns = self.embedder.latent_forward_ascent(emb, return_attention=True, use_autocast=True)
             # Average attention across layers and heads → (L, L)
             attn_avg = torch.stack([a.mean(dim=1) for a in attns]).mean(dim=0).squeeze(0)  # (L, L)
             # Per-position attention magnitude = sum of attention received from all other positions
@@ -1581,7 +1581,7 @@ class CampaignRunner:
                     # Score with oracle
                     test_emb = self.embedder.get_embeddings(test_str).detach()
                     with torch.no_grad():
-                        test_z, _, _ = self.embedder.latent_forward_ascent(test_emb)
+                        test_z, _, _ = self.embedder.latent_forward_ascent(test_emb, use_autocast=True)
                         if isinstance(self.oracle.model, AttentionPoolingNet):
                             test_oracle_input = test_z
                             if test_oracle_input.shape[-1] != self.oracle.input_dim:
@@ -1628,7 +1628,7 @@ class CampaignRunner:
         try:
             final_emb = self.embedder.get_embeddings(final_seq).detach()
             with torch.no_grad():
-                final_z, final_logits, _ = self.embedder.latent_forward_ascent(final_emb)
+                final_z, final_logits, _ = self.embedder.latent_forward_ascent(final_emb, use_autocast=True)
                 final_logits_aa = final_logits[:, :, AA_IDS]
                 final_stability = float(F.log_softmax(final_logits_aa, dim=-1).max(dim=-1).values.mean().item())
                 final_probs_full = torch.softmax(final_logits, dim=-1)
@@ -1639,7 +1639,7 @@ class CampaignRunner:
                 final_uncertainty = self._estimate_uncertainty(final_pooled, mc_samples=5, z_full=final_z)
                 # OOD distance requires a reference; compute from WT embeddings
                 wt_emb = self.embedder.get_embeddings(P53_WT).detach()
-                wt_z, _, _ = self.embedder.latent_forward_ascent(wt_emb)
+                wt_z, _, _ = self.embedder.latent_forward_ascent(wt_emb, use_autocast=True)
                 wt_pooled = wt_z.mean(dim=1)
                 if wt_pooled.shape[-1] != self.oracle.input_dim:
                     wt_pooled = wt_pooled[:, :self.oracle.input_dim]
@@ -1818,7 +1818,7 @@ class CampaignRunner:
 
         emb = self.embedder.get_embeddings(target_seq).detach()
         with torch.no_grad():
-            z, logits, _ = self.embedder.latent_forward_ascent(emb)
+            z, logits, _ = self.embedder.latent_forward_ascent(emb, use_autocast=True)
             pooled = z.mean(dim=1)
             if pooled.shape[-1] != self.oracle.input_dim:
                 pooled = pooled[:, :self.oracle.input_dim]
