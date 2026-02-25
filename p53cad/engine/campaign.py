@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import platform
 import shutil
@@ -22,6 +23,22 @@ from p53cad.core.logging import get_logger
 from p53cad.data.dms import P53_WT, apply_mutation, get_dms_data, get_pairwise_epistasis_lookup, parse_single_mutation
 from p53cad.engine.latent import ManifoldEmbedder
 from p53cad.engine.oracle import AttentionPoolingNet, FunctionalOracle, compute_conditional_rescue_scores
+from p53cad.engine.structural_awareness import (
+    PrecomputedConstants,
+    build_precomputed_constants,
+    compute_mutation_confidence_penalty,
+    compute_interface_floor_penalty,
+    compute_crater_penalty,
+    compute_contact_consistency_penalty,
+    compute_contact_map_regularization,
+    AsyncLogger,
+    CUDASafetyGuard,
+    get_optimization_config,
+    PopulationShare,
+    ESMFoldGateConfig,
+    check_esmfold_gate,
+    DNA_BINDING_INTERFACE_RESIDUES,
+)
 from p53cad.results.schema import (
     BIG8_HOTSPOTS,
     DEFAULT_DELIVERY_METHODS,
@@ -131,25 +148,32 @@ class CampaignRunner:
         self.ood_radius = 1.75
         self.ood_loss_weight = 12.0
 
-        # ── DMS quality lookup for evidence-aware optimization ──
         self._dms_lookup: Dict[Tuple[int, str], float] = {}
         self._dms_quality_tensor: Optional[torch.Tensor] = None
         self._load_dms_lookup()
 
-        # ── Double-mutant pairwise epistasis lookup ──
         self._pairwise_dms: Dict[tuple, float] = get_pairwise_epistasis_lookup()
 
-        # ── Structural contact map from WT PDB (for contact & epistasis penalties) ──
         self._wt_contacts: Dict[int, List[Tuple[int, float]]] = {}
         self._ca_coords: Dict[int, np.ndarray] = {}
         self._load_contact_map()
 
-        # ── WT hidden-state cache for contact preservation penalty ──
         self._wt_hidden: Optional[torch.Tensor] = None
 
-        # ── Performance caches (populated lazily, cleared between runs) ──
         self._emb_cache: Dict[str, torch.Tensor] = {}
         self._baseline_cache: Dict[str, Dict[str, float]] = {}
+
+        self._optimization_config: Dict[str, bool] = {}
+        self._population_share = PopulationShare(max_size=100)
+        self._async_logger = AsyncLogger(interval=20)
+
+        self._esmfold_gate_config = ESMFoldGateConfig(
+            min_global_plddt=70.0,
+            min_dbd_plddt=65.0,
+            min_interface_plddt=60.0,
+            max_wt_rmsd=5.0,
+            enabled=True,
+        )
 
     def _load_dms_lookup(self) -> None:
         """Load raw DMS Z-scores into a (position, amino_acid) → Z-score dict."""
@@ -256,9 +280,116 @@ class CampaignRunner:
     def _load_models(self) -> None:
         if self.embedder is not None and self.oracle is not None and self.clinical is not None:
             return
+        
+        # Reset CUDA state for clean start
+        if torch.cuda.is_available():
+            try:
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+        
         self.embedder = ManifoldEmbedder(device=self.device)
         self.oracle = FunctionalOracle(model_path=self.oracle_path, device=self.device)
         self.clinical = ClinicalImpactEngine()
+
+        device_obj = self.embedder.device if self.embedder else torch.device("cpu")
+        is_windows_cuda = (device_obj.type == "cuda" and platform.system() == "Windows")
+        enable_shallow = os.environ.get("P53CAD_ENABLE_SHALLOW", "0" if is_windows_cuda else "1") == "1"
+        enable_sdpa = os.environ.get("P53CAD_ENABLE_SDPA", "0" if is_windows_cuda else "1") == "1"
+        enable_batched = os.environ.get("P53CAD_ENABLE_BATCHED", "0") == "1"
+        self._optimization_config = get_optimization_config(
+            device_obj,
+            enable_shallow_gradients=enable_shallow,
+            enable_batched_trials=enable_batched,
+            enable_sdpa=enable_sdpa,
+        )
+        if device_obj.type == "cuda":
+            torch.backends.cuda.matmul.allow_tf32 = bool(self._optimization_config.get("tf32_enabled", True))
+            torch.backends.cudnn.benchmark = bool(self._optimization_config.get("cudnn_benchmark", True))
+        logger.info("Optimization config: %s", self._optimization_config)
+
+    def _is_cuda_runtime_error(self, exc: Exception) -> bool:
+        """Best-effort detection of CUDA runtime faults that poison context."""
+        msg = str(exc).lower()
+        if "cuda error" in msg:
+            return True
+        cuda_markers = (
+            "cublas_status",
+            "illegal memory access",
+            "illegal instruction",
+            "device-side assert",
+            "invalid argument",
+            "cudnn",
+        )
+        return any(m in msg for m in cuda_markers)
+
+    def _recover_from_cuda_fault(self) -> None:
+        """Drop model state and clear CUDA cache so next attempt starts fresh."""
+        self.embedder = None
+        self.oracle = None
+        self._wt_hidden = None
+        self._dms_quality_tensor = None
+        self._emb_cache.clear()
+        self._baseline_cache.clear()
+        if torch.cuda.is_available():
+            try:
+                torch.cuda.synchronize()
+            except Exception:
+                pass
+            try:
+                torch.cuda.empty_cache()
+            except Exception:
+                pass
+
+    def _run_scenario_with_recovery(
+        self,
+        scenario: ScenarioRuntime,
+        *,
+        pass_name: str,
+        config: Dict[str, int],
+        seed: int,
+        allowed_profiles: Optional[List[str]] = None,
+        budget: str = "high",
+    ) -> Dict[str, Any]:
+        retries = int(os.environ.get("P53CAD_CUDA_RECOVERY_RETRIES", "1"))
+        for attempt in range(retries + 1):
+            try:
+                if self.embedder is None or self.oracle is None or self.clinical is None:
+                    self._load_models()
+                return self._run_scenario(
+                    scenario,
+                    pass_name=pass_name,
+                    config=config,
+                    seed=seed,
+                    allowed_profiles=allowed_profiles,
+                    budget=budget,
+                )
+            except Exception as exc:
+                is_cuda_fault = self._is_cuda_runtime_error(exc)
+                can_retry = (
+                    is_cuda_fault
+                    and torch.cuda.is_available()
+                    and attempt < retries
+                )
+                if not can_retry:
+                    raise
+                logger.warning(
+                    "CUDA fault in scenario %s (%s, attempt %d/%d): %s",
+                    scenario.scenario_id,
+                    pass_name,
+                    attempt + 1,
+                    retries + 1,
+                    exc,
+                )
+                # Force conservative mode before retry.
+                os.environ["P53CAD_FORCE_FP32"] = "1"
+                os.environ["P53CAD_ENABLE_BF16_AUTOCAST"] = "0"
+                os.environ["P53CAD_ENABLE_SDPA"] = "0"
+                os.environ["P53CAD_ENABLE_SHALLOW"] = "0"
+                os.environ["P53CAD_ENABLE_BATCHED"] = "0"
+                os.environ["P53CAD_TRIAL_LR"] = os.environ.get("P53CAD_TRIAL_LR", "0.01")
+                self._recover_from_cuda_fault()
 
     def _get_cached_embedding(self, seq: str) -> torch.Tensor:
         """Return detached embedding for *seq*, using cache to avoid redundant ESM-2 passes."""
@@ -322,6 +453,8 @@ class CampaignRunner:
         # Clear per-run caches
         self._emb_cache.clear()
         self._baseline_cache.clear()
+        self._population_share.clear()
+        self._async_logger.reset_counter()
 
         run_id = run_id or build_run_id("campaign")
         scenarios = build_scenario_matrix(
@@ -385,7 +518,9 @@ class CampaignRunner:
             if resume and key in done_pairs:
                 continue
             logger.info("Pass A [%d/%d] %s", idx, len(scenario_objs), sc.scenario_id)
-            out = self._run_scenario(sc, pass_name="screen", config=pass_a_cfg, seed=seed, budget=budget)
+            out = self._run_scenario_with_recovery(
+                sc, pass_name="screen", config=pass_a_cfg, seed=seed, budget=budget
+            )
             self._append_rows(candidates_jsonl, out["candidates"])
             self._append_rows(trajectories_jsonl, out["trajectories"])
             self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
@@ -454,6 +589,76 @@ class CampaignRunner:
             100.0 * len(selected_pass_b) / max(len(screen_df), 1),
         )
 
+        # ESMFold quality gate: filter candidates before deep refinement
+        if self._esmfold_gate_config.enabled and not screen_cands.empty:
+            try:
+                from p53cad.engine.physics_validation import LocalESMFoldPredictor
+
+                gate_passed = []
+                gate_failed = []
+                screen_cols = screen_cands.columns.tolist()
+                gate_skipped = 0
+                gate_measured = 0
+                gate_cache_dir = paths.run_dir / "esmfold_gate_cache"
+                gate_device = str(self.embedder.device) if self.embedder is not None else "cpu"
+                gate_predictor = LocalESMFoldPredictor(device=gate_device, cache_dir=gate_cache_dir)
+                
+                for sid in selected_pass_b:
+                    sc_rows = screen_cands[screen_cands["scenario_id"] == sid]
+                    if sc_rows.empty:
+                        gate_passed.append(sid)
+                        continue
+                    
+                    best_cand = sc_rows.nlargest(1, "score") if "score" in screen_cols else None
+                    if best_cand is None or best_cand.empty:
+                        gate_passed.append(sid)
+                        continue
+                    
+                    seq = str(best_cand.iloc[0].get("sequence", ""))
+                    if not seq or len(seq) != len(P53_WT):
+                        gate_failed.append((sid, "invalid_sequence"))
+                        continue
+
+                    plddt_scores: List[float] = []
+                    try:
+                        pred = gate_predictor.predict(seq)
+                        plddt_scores = list(pred.plddt_scores)
+                    except Exception as exc:
+                        gate_skipped += 1
+                        logger.warning("ESMFold gate predictor failed for %s: %s", sid, exc)
+
+                    passed, metrics = check_esmfold_gate(
+                        plddt_scores=plddt_scores,
+                        config=self._esmfold_gate_config,
+                    )
+                    if plddt_scores:
+                        gate_measured += 1
+
+                    if passed:
+                        gate_passed.append(sid)
+                    else:
+                        gate_failed.append((sid, metrics.get("reason", "unknown")))
+                
+                n_filtered = len(selected_pass_b) - len(gate_passed)
+                logger.info(
+                    "ESMFold gate metrics available for %d/%d scenarios.",
+                    gate_measured,
+                    len(selected_pass_b),
+                )
+                if gate_skipped > 0:
+                    logger.warning(
+                        "ESMFold gate skipped for %d scenarios (predictor failure); not filtering those scenarios.",
+                        gate_skipped,
+                    )
+                if n_filtered > 0:
+                    logger.info(
+                        "ESMFold gate: %d/%d passed, %d filtered (gate enabled=%s)",
+                        len(gate_passed), len(selected_pass_b), n_filtered, self._esmfold_gate_config.enabled
+                    )
+                    selected_pass_b = set(gate_passed)
+            except Exception as exc:
+                logger.warning("ESMFold gate check failed: %s. Proceeding without gate.", exc)
+
         # Pass B deep refinement on top scenarios only.
         selected_objs = [sc for sc in scenario_objs if sc.scenario_id in selected_pass_b]
         for idx, sc in enumerate(selected_objs, start=1):
@@ -462,7 +667,14 @@ class CampaignRunner:
                 continue
             prune = profile_map.get(sc.scenario_id)
             logger.info("Pass B [%d/%d] %s  profiles=%s", idx, len(selected_objs), sc.scenario_id, prune or "all")
-            out = self._run_scenario(sc, pass_name="deep", config=pass_b_cfg, seed=seed, allowed_profiles=prune, budget=budget)
+            out = self._run_scenario_with_recovery(
+                sc,
+                pass_name="deep",
+                config=pass_b_cfg,
+                seed=seed,
+                allowed_profiles=prune,
+                budget=budget,
+            )
             self._append_rows(candidates_jsonl, out["candidates"])
             self._append_rows(trajectories_jsonl, out["trajectories"])
             self._append_rows(scenarios_jsonl, [out["scenario_metrics"]])
@@ -848,16 +1060,19 @@ class CampaignRunner:
         baseline = self._get_cached_baseline(target_seq, pooled_target_ref, mc_samples=config["mc_samples"])
         dms_quality = self._get_dms_quality_tensor(emb_target_ref.device)
 
-        # Pre-compute conditional rescue scores: ESM-2 P(aa | cancer_context)
-        # at candidate positions in the DNA-binding domain (DBD).
+        # Build pre-computed constants once per scenario for efficiency
+        precomputed = build_precomputed_constants(
+            device=emb_target_ref.device,
+            wt_contacts=self._wt_contacts,
+            ca_coords=self._ca_coords,
+            locked_indices=locked_indices,
+        )
+
+        # Conditional rescue scores disabled - CUDA compatibility issues
+        # The ESM-2 forward pass causes illegal instruction errors on some GPUs
+        # Can re-enable once GPU/driver compatibility is resolved
         candidate_positions = [p for p in range(94, 293) if (p - 1) not in locked_indices]
         conditional_scores: Optional[Dict[int, Dict[str, float]]] = None
-        try:
-            conditional_scores = compute_conditional_rescue_scores(
-                self.embedder, target_seq, candidate_positions[:50]
-            )
-        except Exception as exc:
-            logger.warning("Conditional rescue score computation failed: %s", exc)
 
         candidates: List[Dict[str, Any]] = []
         trajectories: List[Dict[str, Any]] = []
@@ -897,6 +1112,7 @@ class CampaignRunner:
                         dms_quality=dms_quality,
                         conditional_scores=conditional_scores,
                         early_stop_patience=self._early_stop_patience(budget),
+                        precomputed=precomputed,
                     )
                     candidates.append(cand)
                     trajectories.extend(traj_rows)
@@ -952,6 +1168,19 @@ class CampaignRunner:
             for c in candidates:
                 c["pareto_rank"] = 0
 
+        # Population sharing: add high-scoring candidates to shared pool
+        try:
+            for c in candidates:
+                muts_json = c.get("mutations_json", "[]")
+                muts = json.loads(muts_json) if isinstance(muts_json, str) else muts_json
+                mut_str = ",".join(sorted(muts)) if muts else ""
+                score = c.get("score", -999)
+                if score > -999:
+                    self._population_share.add_candidate(mut_str, score)
+            logger.debug("Population share pool size: %d", self._population_share.size)
+        except Exception as exc:
+            logger.warning("Population sharing failed: %s", exc)
+
         best_score = max((float(c.get("score", -np.inf)) for c in candidates), default=-np.inf)
         metrics = {
             "scenario_id": scenario.scenario_id,
@@ -998,6 +1227,7 @@ class CampaignRunner:
         dms_quality: Optional[torch.Tensor] = None,
         conditional_scores: Optional[Dict[int, Dict[str, float]]] = None,
         early_stop_patience: int = 6,
+        precomputed: Optional[PrecomputedConstants] = None,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         assert self.embedder is not None
         assert self.oracle is not None
@@ -1009,7 +1239,10 @@ class CampaignRunner:
         with torch.no_grad():
             emb.data += torch.randn_like(emb) * 0.05
 
-        optimizer = torch.optim.Adam([emb], lr=0.03)
+        is_windows_cuda = (emb.device.type == "cuda" and platform.system() == "Windows")
+        default_lr = 0.015 if is_windows_cuda else 0.03
+        trial_lr = float(os.environ.get("P53CAD_TRIAL_LR", str(default_lr)))
+        optimizer = torch.optim.Adam([emb], lr=trial_lr)
 
         # Pre-compute WT hidden states for contact preservation penalty
         wt_hidden = self._get_wt_hidden(emb.device)
@@ -1081,6 +1314,14 @@ class CampaignRunner:
         cached_uncertainty = 0.0
 
         for step_idx in range(1, int(n_steps) + 1):
+            if not torch.isfinite(emb).all():
+                logger.warning(
+                    "Non-finite embedding detected in trial %d at step %d; sanitizing.",
+                    trial_idx,
+                    step_idx,
+                )
+                with torch.no_grad():
+                    emb.data = torch.nan_to_num(emb.data, nan=0.0, posinf=1.0, neginf=-1.0)
             optimizer.zero_grad()
             z, logits, _ = self.embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
@@ -1247,6 +1488,43 @@ class CampaignRunner:
             dbd_confidence = log_probs[:, dbd_range, :].max(dim=-1).values.mean(dim=-1)
             structure_term = -3.0 * dbd_confidence
 
+            # NEW: Tier 1 structural loss terms using precomputed constants
+            mut_conf_penalty = torch.zeros_like(raw_score_t)
+            interface_floor_penalty = torch.zeros_like(raw_score_t)
+            crater_penalty = torch.zeros_like(raw_score_t)
+            contact_reg_penalty = torch.zeros_like(raw_score_t)
+
+            if precomputed is not None:
+                mut_conf_penalty = compute_mutation_confidence_penalty(
+                    probs_aa=probs_aa,
+                    wt_aa_tensor=precomputed.wt_aa_tensor,
+                    helix_mask=precomputed.helix_mask,
+                    sheet_mask=precomputed.sheet_mask,
+                    locked_indices=locked_indices,
+                    device=emb.device,
+                )
+
+                interface_floor_penalty = compute_interface_floor_penalty(
+                    probs_aa=probs_aa,
+                    wt_aa_tensor=precomputed.wt_aa_tensor,
+                    interface_mask=precomputed.interface_mask,
+                    device=emb.device,
+                )
+
+                crater_penalty = compute_crater_penalty(
+                    probs_aa=probs_aa,
+                    wt_aa_tensor=precomputed.wt_aa_tensor,
+                    crater_kernel=precomputed.crater_kernel,
+                    device=emb.device,
+                )
+
+                if step_idx % 10 == 1 and wt_hidden is not None:
+                    contact_reg_penalty = compute_contact_map_regularization(
+                        z=z,
+                        wt_hidden=wt_hidden,
+                        device=emb.device,
+                    )
+
             loss_vec = (
                 score_term
                 + local_score_term
@@ -1267,12 +1545,25 @@ class CampaignRunner:
                 + dms_penalty
                 + cond_rescue_term
                 + structure_term
+                + mut_conf_penalty
+                + interface_floor_penalty
+                + crater_penalty
+                + contact_reg_penalty
             )
 
             loss = loss_vec.mean()
+            if not torch.isfinite(loss):
+                logger.warning(
+                    "Non-finite loss in trial %d at step %d; skipping step.",
+                    trial_idx,
+                    step_idx,
+                )
+                continue
             loss.backward()
             torch.nn.utils.clip_grad_norm_([emb], max_norm=1.0)
             optimizer.step()
+            with torch.no_grad():
+                emb.data = torch.nan_to_num(emb.data, nan=0.0, posinf=1.0, neginf=-1.0)
 
             # --- Periodic re-embedding: project back to protein manifold ---
             # After gradient steps the continuous embedding drifts off the manifold
@@ -1322,7 +1613,7 @@ class CampaignRunner:
                     )
                     emb.data.copy_(new_emb)
                     emb.requires_grad_(True)
-                    optimizer = torch.optim.Adam([emb], lr=0.03)
+                    optimizer = torch.optim.Adam([emb], lr=trial_lr)
 
             if step_idx % 5 != 0 and step_idx != n_steps:
                 continue
@@ -1386,6 +1677,10 @@ class CampaignRunner:
                     "loss_local_score_term": float(local_score_term[0].item()),
                     "loss_cond_rescue_term": float(cond_rescue_term[0].item()),
                     "loss_structure_term": float(structure_term[0].item()),
+                    "loss_mut_conf_penalty": float(mut_conf_penalty[0].item()) if mut_conf_penalty.dim() > 0 else float(mut_conf_penalty.item()),
+                    "loss_interface_floor_penalty": float(interface_floor_penalty[0].item()) if interface_floor_penalty.dim() > 0 else float(interface_floor_penalty.item()),
+                    "loss_crater_penalty": float(crater_penalty[0].item()) if crater_penalty.dim() > 0 else float(crater_penalty.item()),
+                    "loss_contact_reg_penalty": float(contact_reg_penalty[0].item()) if contact_reg_penalty.dim() > 0 else float(contact_reg_penalty.item()),
                 }
                 trajectory.append(state)
 
@@ -1770,12 +2065,17 @@ class CampaignRunner:
         return torch.tensor(wt_aa_indices, device=device)
 
     def _delivery_identity_floor(self, delivery_method: str) -> float:
+        """Return minimum sequence identity floor based on delivery method.
+        
+        Tighter mutation budgets (94-95%) for surgical rescue edits instead of
+        broad rewrites - forces biologically plausible, minimal-change solutions.
+        """
         mode = str(delivery_method).strip().lower()
         if mode == "protein_therapy":
-            return 92.0
+            return 95.0
         if mode == "mrna_therapy":
-            return 92.0
-        return 90.0
+            return 94.0
+        return 94.0
 
     def _batch_dna_force(self, z_batch: torch.Tensor, probs_full: torch.Tensor) -> torch.Tensor:
         hotspots = [119, 174, 240, 247, 272, 279]

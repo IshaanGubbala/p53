@@ -33,15 +33,77 @@ def select_device(preference: Optional[str] = None) -> "torch.device":
     return torch.device("cpu")
 
 
-def bootstrap_runtime(seed: Optional[int] = None) -> None:
+def bootstrap_runtime(
+    seed: Optional[int] = None,
+    enable_tf32: bool = False,  # Disabled by default - can cause instability on some GPUs
+    enable_cudnn_benchmark: bool = True,
+    enable_sdpa: bool = True,
+    enable_flash_attention: bool = True,
+) -> Dict[str, Any]:
     """
     Apply process-level runtime guards before heavy ML/scientific imports.
+    
+    Parameters
+    ----------
+    seed : int, optional
+        Random seed for reproducibility.
+    enable_tf32 : bool
+        Enable TF32 tensor cores on Ampere+ GPUs for faster matrix multiplications.
+        Safe: gracefully disables on older GPUs.
+    enable_cudnn_benchmark : bool
+        Enable cuDNN auto-tuner for optimal convolution algorithms.
+        Safe: only affects convolution layers.
+    enable_sdpa : bool
+        Enable scaled dot-product attention (SDPA) for faster transformer inference.
+        Falls back to eager mode if unstable.
+    enable_flash_attention : bool
+        Enable Flash Attention when available. Requires compatible GPU.
+    
+    Returns
+    -------
+    Dict[str, Any]
+        Summary of enabled optimizations.
     """
     os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     if seed is not None:
         os.environ.setdefault("PYTHONHASHSEED", str(int(seed)))
+    
+    enabled = {
+        "tf32": False,
+        "cudnn_benchmark": False,
+        "sdpa": False,
+        "flash_attention": False,
+    }
+
+    if enable_tf32 or enable_cudnn_benchmark or enable_sdpa or enable_flash_attention:
+        try:
+            import torch
+            if torch.cuda.is_available():
+                if enable_cudnn_benchmark:
+                    torch.backends.cudnn.benchmark = True
+                    enabled["cudnn_benchmark"] = True
+                if enable_tf32:
+                    torch.backends.cuda.matmul.allow_tf32 = True
+                    torch.backends.cudnn.allow_tf32 = True
+                    enabled["tf32"] = True
+                if enable_sdpa:
+                    try:
+                        torch.backends.cuda.enable_flash_sdp(enable_flash_attention)
+                        torch.backends.cuda.enable_math_sdp(not enable_flash_attention)
+                        torch.backends.cuda.enable_mem_efficient_sdp(enable_flash_attention)
+                        enabled["sdpa"] = True
+                        enabled["flash_attention"] = enable_flash_attention and torch.cuda.is_available()
+                    except Exception as e:
+                        import logging as _logging
+                        _logging.getLogger("p53cad.runtime").warning(
+                            "SDPA enable failed: %s. Falling back to eager attention.", e
+                        )
+        except Exception:
+            pass
+
+    return enabled
 
 
 def get_runtime_capabilities() -> Dict[str, Any]:

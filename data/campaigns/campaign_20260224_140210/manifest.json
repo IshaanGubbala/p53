@@ -1,0 +1,59 @@
+{
+  "run_id": "campaign_20260224_140210",
+  "schema_version": "1.0.0",
+  "created_at_utc": "2026-02-24T14:02:10.011222+00:00",
+  "updated_at_utc": "2026-02-25T14:02:52.898428+00:00",
+  "status": "completed",
+  "config": {
+    "seed": 42,
+    "budget": "medium",
+    "include_pairs": true,
+    "hotspots": [
+      "R175H",
+      "R248Q",
+      "R248W",
+      "R273H",
+      "R273C",
+      "G245S",
+      "R249S",
+      "R282W"
+    ],
+    "delivery_methods": [
+      "gene_therapy",
+      "mrna_therapy",
+      "protein_therapy"
+    ],
+    "max_scenarios": null,
+    "shortlist_n": 30,
+    "with_clinical": true,
+    "pass_a": {
+      "steps": 60,
+      "restarts": 1,
+      "repeats": 1,
+      "mc_samples": 3
+    },
+    "pass_b": {
+      "steps": 200,
+      "restarts": 2,
+      "repeats": 2,
+      "mc_samples": 8
+    }
+  },
+  "runtime_capabilities": {
+    "device": "cuda",
+    "oracle_path": "data\\models\\functional_oracle.pt"
+  },
+  "artifacts": {
+    "scenarios": "scenarios.parquet",
+    "candidates": "candidates.parquet",
+    "trajectories": "trajectories.parquet",
+    "clinical": "clinical.parquet",
+    "top30": "top30.parquet",
+    "top30_csv": "top30.csv",
+    "summary": "summary.md"
+  },
+  "n_scenarios": 108,
+  "n_candidates": 1220,
+  "n_trajectories": 8895,
+  "n_shortlist": 30
+}

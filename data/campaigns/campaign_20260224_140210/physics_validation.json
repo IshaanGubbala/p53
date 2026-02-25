@@ -1,0 +1,309 @@
+{
+  "run_id": "campaign_20260224_140210",
+  "n_candidates": 30,
+  "n_tier2": 0,
+  "wt_energy_kcal": -12400.67,
+  "elapsed_total_sec": 93.2,
+  "candidates": [
+    {
+      "candidate_rank": 1,
+      "target_label": "R248W",
+      "sequence_hash": "5355819b78eae6cf",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 2,
+      "target_label": "R248W",
+      "sequence_hash": "5355819b78eae6cf",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 3,
+      "target_label": "R248W",
+      "sequence_hash": "11bceeb66c2d048f",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 4,
+      "target_label": "R248W+R249S",
+      "sequence_hash": "8efbaedae4685f8d",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 5,
+      "target_label": "R273C+R282W",
+      "sequence_hash": "81f07700d6f13fd0",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 6,
+      "target_label": "G245S+R248W",
+      "sequence_hash": "869b0289274823c6",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 7,
+      "target_label": "R273H",
+      "sequence_hash": "2534537042f33c59",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 8,
+      "target_label": "R248W+R249S",
+      "sequence_hash": "a1ab526855e4c2ef",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 9,
+      "target_label": "R273H",
+      "sequence_hash": "cf1f438373611587",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 10,
+      "target_label": "R273C",
+      "sequence_hash": "2d09eeaa5a03c66d",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 11,
+      "target_label": "R248Q+R249S",
+      "sequence_hash": "49b390a787ab45ae",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 12,
+      "target_label": "R248W+R249S",
+      "sequence_hash": "8efbaedae4685f8d",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 13,
+      "target_label": "R273H",
+      "sequence_hash": "1ae94861acd37a0b",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 14,
+      "target_label": "R273C+R282W",
+      "sequence_hash": "758c901bd42e631b",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 15,
+      "target_label": "G245S+R249S",
+      "sequence_hash": "d403b7e76d6d57f6",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 16,
+      "target_label": "R248Q+R249S",
+      "sequence_hash": "49b390a787ab45ae",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 17,
+      "target_label": "R282W",
+      "sequence_hash": "56fbf8aa696f2fe0",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 18,
+      "target_label": "R249S",
+      "sequence_hash": "45138eac5cd8a481",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 19,
+      "target_label": "R273C",
+      "sequence_hash": "73843903246a6a1c",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 20,
+      "target_label": "R248Q",
+      "sequence_hash": "ea454323acec1766",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 21,
+      "target_label": "R249S+R273C",
+      "sequence_hash": "12018acf60e70970",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 22,
+      "target_label": "R273H+R282W",
+      "sequence_hash": "93b7f37946d27608",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 23,
+      "target_label": "R273C+R282W",
+      "sequence_hash": "758c901bd42e631b",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 24,
+      "target_label": "G245S+R273C",
+      "sequence_hash": "4e7162c1a2f975ef",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 25,
+      "target_label": "R282W",
+      "sequence_hash": "e9398db2c81822ca",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 26,
+      "target_label": "R282W",
+      "sequence_hash": "56fbf8aa696f2fe0",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 27,
+      "target_label": "R248Q+R249S",
+      "sequence_hash": "c92595257b7ec7a3",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 28,
+      "target_label": "R273C+R282W",
+      "sequence_hash": "01923a6274462e82",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 29,
+      "target_label": "R248Q+R273C",
+      "sequence_hash": "aa8f72aa92f28c64",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    },
+    {
+      "candidate_rank": 30,
+      "target_label": "R248W+R249S",
+      "sequence_hash": "1a3844153d23ba4b",
+      "overall_physics_score": 50.0,
+      "verdict": "UNCERTAIN",
+      "errors": [
+        "esmfold: ESMFold disabled for this process: one_hot index tensor failure on cuda"
+      ]
+    }
+  ]
+}

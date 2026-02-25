@@ -860,10 +860,8 @@ def compute_conditional_rescue_scores(
 ) -> Dict[int, Dict[str, float]]:
     """Compute ESM-2 P(aa | cancer_context) at each position.
 
-    Masks each position in the cancer sequence, runs ESM-2 forward, and
-    returns the full amino acid log-probability distribution.  This tells
-    us which substitutions ESM-2 considers favorable *in the cancer context*,
-    enabling conditional DMS scoring.
+    Batches all masked positions into a single GPU forward pass for efficiency.
+    Uses the embedder's model directly to avoid dtype conflicts.
 
     Parameters
     ----------
@@ -882,11 +880,24 @@ def compute_conditional_rescue_scores(
     if not positions:
         return {}
 
+    # Build batch of masked sequences (all masks at once)
     inputs = embedder.tokenizer(
         cancer_seq, return_tensors="pt", add_special_tokens=False
     ).to(embedder.device)
-    input_ids = inputs.input_ids
+    input_ids = inputs.input_ids  # (1, L)
     mask_token_id = embedder.tokenizer.mask_token_id
+
+    # Create batch: one sequence per position with that position masked
+    batch_size = len(positions)
+    if batch_size == 0:
+        return {}
+    
+    # Build batched input - clone original and mask each position
+    batch_input_ids = input_ids.repeat(batch_size, 1)  # (batch, L)
+    for batch_idx, pos in enumerate(positions):
+        idx = pos - 1
+        if 0 <= idx < batch_input_ids.shape[1]:
+            batch_input_ids[batch_idx, idx] = mask_token_id
 
     # Build AA token id → letter mapping
     aa_letters = "ACDEFGHIKLMNPQRSTVWY"
@@ -897,22 +908,29 @@ def compute_conditional_rescue_scores(
 
     result: Dict[int, Dict[str, float]] = {}
 
+    # Single forward pass with all masked sequences
     with torch.no_grad():
-        for pos in positions:
-            idx = pos - 1
-            if idx < 0 or idx >= input_ids.shape[1]:
-                continue
-
-            masked_ids = input_ids.clone()
-            masked_ids[0, idx] = mask_token_id
-
-            outputs = embedder.model(input_ids=masked_ids, return_dict=True)
-            logits = outputs.logits
-            log_probs = F.log_softmax(logits[0, idx], dim=-1)
-
-            pos_scores: Dict[str, float] = {}
-            for aa_char, tid in zip(aa_letters, aa_token_ids):
-                pos_scores[aa_char] = float(log_probs[tid].item())
-            result[pos] = pos_scores
+        try:
+            # Use embedder's model directly - this is the same way encode() works
+            outputs = embedder.model.esm(batch_input_ids, output_hidden_states=True, return_dict=True)
+            logits = embedder.model.lm_head(outputs.last_hidden_state)  # (batch, L, vocab)
+            log_probs = torch.log_softmax(logits, dim=-1)
+            
+            # Extract scores for each masked position
+            for batch_idx, pos in enumerate(positions):
+                idx = pos - 1
+                if 0 <= idx < log_probs.shape[1]:
+                    pos_log_probs = log_probs[batch_idx, idx, :]  # (vocab,)
+                    pos_scores: Dict[str, float] = {}
+                    for aa_char, tid in zip(aa_letters, aa_token_ids):
+                        if tid < pos_log_probs.shape[0]:
+                            pos_scores[aa_char] = float(pos_log_probs[tid].item())
+                    result[pos] = pos_scores
+                    
+        except Exception as e:
+            # If GPU fails, return empty dict (campaign continues without this feature)
+            import logging
+            logging.getLogger(__name__).warning(f"Conditional rescue GPU compute failed: {e}")
+            return {}
 
     return result

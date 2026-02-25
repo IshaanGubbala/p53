@@ -137,10 +137,15 @@ class ManifoldEmbedder:
                     )
                     return EsmForMaskedLM.from_pretrained(model_name, local_files_only=True)
 
-            # Use BF16 on CUDA for faster inference and halved VRAM usage
+            # Default to FP32 on Windows CUDA for stability; BF16 can be enabled explicitly.
             import torch as _torch
             _cuda = _torch.cuda.is_available()
-            _dtype = _torch.bfloat16 if _cuda else None
+            _force_fp32 = os.environ.get("P53CAD_FORCE_FP32", "1" if os.name == "nt" else "0") == "1"
+            _use_bf16 = _cuda and not _force_fp32
+            _dtype = _torch.bfloat16 if _use_bf16 else _torch.float32
+            self._autocast_enabled = _use_bf16 and (
+                os.environ.get("P53CAD_ENABLE_BF16_AUTOCAST", "1") == "1"
+            )
 
             if offline:
                 raw = _load_model_offline()
@@ -151,12 +156,11 @@ class ManifoldEmbedder:
                     logger=self.logger,
                 )
 
-            if _dtype is not None:
-                raw = raw.to(dtype=_dtype)
+            raw = raw.to(dtype=_dtype)
             self.model = raw.to(self.device)
 
-            # Ensure hidden states are always returned to avoid NoneType errors during navigation
-            self.model.config.output_hidden_states = True
+            # Keep global hidden-state outputs off to reduce memory.
+            self.model.config.output_hidden_states = False
 
             # torch.compile requires Triton which is Linux-only; skip on Windows/MPS
             import platform as _platform
@@ -184,7 +188,11 @@ class ManifoldEmbedder:
                     self.logger.warning("Failed to load LoRA adapter from %s: %s", lora_path, exc)
 
             self.model.eval()
-            self.logger.info("Model loaded successfully with output_hidden_states=True.")
+            self.logger.info(
+                "Model loaded successfully with output_hidden_states=False, dtype=%s, autocast_bf16=%s.",
+                str(_dtype).replace("torch.", ""),
+                self._autocast_enabled,
+            )
         except OSError as e:
             if offline:
                 self.logger.error(
@@ -261,8 +269,7 @@ class ManifoldEmbedder:
             attention_mask, (batch_size, seq_len)
         )
 
-        # Use autocast for BF16 on CUDA (faster matmuls, half the memory)
-        _use_autocast = embeddings.device.type == "cuda"
+        _use_autocast = embeddings.device.type == "cuda" and bool(getattr(self, "_autocast_enabled", False))
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=_use_autocast):
             encoder_outputs = self.model.esm.encoder(
                 embeddings,

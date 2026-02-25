@@ -222,6 +222,7 @@ class LocalESMFoldPredictor:
         self._cache_dir = Path(cache_dir) if cache_dir else None
         self._model = None
         self._tokenizer = None
+        self._disabled_reason: Optional[str] = None
         self._initialized = True
 
     def _ensure_loaded(self) -> None:
@@ -250,7 +251,9 @@ class LocalESMFoldPredictor:
             return _orig_load(*args, **kwargs)
 
         try:
-            with patch("transformers.modeling_utils.check_torch_load_is_safe", lambda: None), \
+            # transformers<=4.44 does not expose check_torch_load_is_safe.
+            # create=True keeps this compatible across transformer versions.
+            with patch("transformers.modeling_utils.check_torch_load_is_safe", lambda: None, create=True), \
                  patch("torch.load", _permissive_load):
                 self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
         except Exception as e:
@@ -269,6 +272,9 @@ class LocalESMFoldPredictor:
         filename: Optional[str] = None,
     ) -> ESMFoldResult:
         """Predict structure for a single sequence. Caches by SHA-256 hash."""
+        if self._disabled_reason is not None:
+            raise RuntimeError(f"ESMFold disabled for this process: {self._disabled_reason}")
+
         seq_h = _seq_hash(sequence)
 
         # Check disk cache
@@ -291,23 +297,48 @@ class LocalESMFoldPredictor:
         self._ensure_loaded()
         import torch
 
+        # ESMFold expects canonical amino-acid letters; sanitize unknown tokens.
+        aa_set = set("ACDEFGHIKLMNPQRSTVWY")
+        seq_input = sequence.upper()
+        if any(ch not in aa_set for ch in seq_input):
+            n_bad = sum(1 for ch in seq_input if ch not in aa_set)
+            logger.warning(
+                "ESMFold input has %d non-canonical residues; replacing with 'A' for inference.",
+                n_bad,
+            )
+            seq_input = "".join(ch if ch in aa_set else "A" for ch in seq_input)
+
         t0 = time.time()
-        tokenized = self._tokenizer([sequence], return_tensors="pt", add_special_tokens=False)
+        tokenized = self._tokenizer([seq_input], return_tensors="pt", add_special_tokens=False)
         tokenized = {k: v.to(self._device) for k, v in tokenized.items()}
+        if "input_ids" in tokenized:
+            tokenized["input_ids"] = tokenized["input_ids"].long()
+        if "attention_mask" in tokenized:
+            tokenized["attention_mask"] = tokenized["attention_mask"].long()
 
         with torch.no_grad():
-            output = self._model(**tokenized)
+            try:
+                output = self._model(**tokenized)
+            except RuntimeError as exc:
+                if "one_hot is only applicable to index tensor" not in str(exc):
+                    raise
+                self._disabled_reason = f"one_hot index tensor failure on {self._device}"
+                logger.warning(
+                    "ESMFold forward failed (%s). Disabling ESMFold for this process to avoid repeated stalls.",
+                    self._disabled_reason,
+                )
+                raise RuntimeError(self._disabled_reason) from exc
 
         # Convert to PDB string
         from transformers.models.esm.openfold_utils.protein import to_pdb, Protein
 
         # Build Protein object from output
-        pdb_string = self._output_to_pdb(output, sequence)
+        pdb_string = self._output_to_pdb(output, seq_input)
 
         # Extract per-residue pLDDT.
         # Shape is (batch, L, 37) — per-atom pLDDT in atom37 format.
         # Take CA atom (index 1) as representative per-residue pLDDT.
-        plddt_tensor = output["plddt"][0, :len(sequence)]  # (L, 37)
+        plddt_tensor = output["plddt"][0, :len(seq_input)]  # (L, 37)
         if plddt_tensor.ndim == 2:
             # Use CA atom (atom37 index 1) for per-residue score
             plddt_scores = plddt_tensor[:, 1].cpu().numpy().tolist()
@@ -315,7 +346,7 @@ class LocalESMFoldPredictor:
             plddt_scores = plddt_tensor.cpu().numpy().tolist()
         mean_plddt = float(np.mean(plddt_scores))
         # DBD = residues 94-292 (0-indexed: 93-291)
-        dbd_start, dbd_end = 93, min(292, len(sequence))
+        dbd_start, dbd_end = 93, min(292, len(seq_input))
         dbd_plddt = float(np.mean(plddt_scores[dbd_start:dbd_end])) if dbd_end > dbd_start else mean_plddt
 
         # pTM score — output["ptm"] is a scalar tensor
@@ -328,7 +359,7 @@ class LocalESMFoldPredictor:
 
         elapsed = time.time() - t0
         logger.info("ESMFold prediction: %d residues, pLDDT=%.1f, DBD=%.1f, %.1fs",
-                     len(sequence), mean_plddt, dbd_plddt, elapsed)
+                     len(seq_input), mean_plddt, dbd_plddt, elapsed)
 
         result = ESMFoldResult(
             pdb_string=pdb_string,
@@ -343,7 +374,7 @@ class LocalESMFoldPredictor:
         if self._cache_dir:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
             meta = result.to_dict()
-            meta["sequence_length"] = len(sequence)
+            meta["sequence_length"] = len(seq_input)
             (self._cache_dir / f"{seq_h}.json").write_text(json.dumps(meta, indent=2))
             (self._cache_dir / f"{seq_h}.pdb").write_text(pdb_string)
 
