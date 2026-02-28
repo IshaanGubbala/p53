@@ -470,15 +470,16 @@ class OpenMMEnergyCalculator:
 
     @staticmethod
     def _select_platform(openmm: Any) -> Any:
-        """Prefer CUDA when available, otherwise fall back to CPU."""
-        try:
-            platform = openmm.Platform.getPlatformByName("CUDA")
-            logger.info("OpenMM platform selected: CUDA")
-            return platform
-        except Exception:
-            platform = openmm.Platform.getPlatformByName("CPU")
-            logger.info("OpenMM platform selected: CPU (CUDA unavailable)")
-            return platform
+        """Prefer CUDA, then OpenCL (Intel Xe / AMD), then CPU."""
+        for pname in ("CUDA", "OpenCL", "CPU"):
+            try:
+                platform = openmm.Platform.getPlatformByName(pname)
+                logger.info("OpenMM platform selected: %s", pname)
+                return platform
+            except Exception:
+                continue
+        # Should never reach here — CPU platform is always present
+        return openmm.Platform.getPlatformByName("CPU")
 
     def _get_forcefield(self):
         """Cached ForceField to avoid re-parsing AMBER14 XML on every candidate."""

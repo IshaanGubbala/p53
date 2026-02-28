@@ -16,10 +16,20 @@ def _has_module(module_name: str) -> bool:
         return False
 
 
+def _has_xpu() -> bool:
+    """Return True if Intel Extension for PyTorch (IPEX) XPU is available."""
+    try:
+        import intel_extension_for_pytorch as ipex  # noqa: F401
+        import torch
+        return hasattr(torch, "xpu") and torch.xpu.is_available()
+    except Exception:
+        return False
+
+
 def select_device(preference: Optional[str] = None) -> "torch.device":
     """Return the best available torch device.
 
-    Priority: explicit *preference* > CUDA > MPS > CPU.
+    Priority: explicit *preference* > CUDA > MPS > XPU (Intel Xe via IPEX) > CPU.
     Passing ``"auto"`` or ``None`` triggers auto-detection.
     """
     import torch  # pylint: disable=import-outside-toplevel
@@ -30,6 +40,8 @@ def select_device(preference: Optional[str] = None) -> "torch.device":
         return torch.device("cuda")
     if torch.backends.mps.is_available():
         return torch.device("mps")
+    if _has_xpu():
+        return torch.device("xpu")
     return torch.device("cpu")
 
 
@@ -75,6 +87,7 @@ def bootstrap_runtime(
         "cudnn_benchmark": False,
         "sdpa": False,
         "flash_attention": False,
+        "xpu": False,
     }
 
     if enable_tf32 or enable_cudnn_benchmark or enable_sdpa or enable_flash_attention:
@@ -100,6 +113,12 @@ def bootstrap_runtime(
                         _logging.getLogger("p53cad.runtime").warning(
                             "SDPA enable failed: %s. Falling back to eager attention.", e
                         )
+            elif _has_xpu():
+                try:
+                    import intel_extension_for_pytorch as ipex  # noqa: F401
+                    enabled["xpu"] = True
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -137,6 +156,8 @@ def get_runtime_capabilities() -> Dict[str, Any]:
         ),
     }
 
+    caps["ipex_installed"] = _has_module("intel_extension_for_pytorch")
+
     if caps["torch_installed"]:
         try:
             import torch  # pylint: disable=import-outside-toplevel
@@ -144,13 +165,16 @@ def get_runtime_capabilities() -> Dict[str, Any]:
             caps["torch_version"] = torch.__version__
             caps["mps_available"] = bool(torch.backends.mps.is_available())
             caps["cuda_available"] = bool(torch.cuda.is_available())
+            caps["xpu_available"] = _has_xpu()
         except Exception as exc:  # pragma: no cover - defensive path
             caps["torch_probe_error"] = str(exc)
             caps["mps_available"] = False
             caps["cuda_available"] = False
+            caps["xpu_available"] = False
     else:
         caps["mps_available"] = False
         caps["cuda_available"] = False
+        caps["xpu_available"] = False
 
     if _has_module("transformers"):
         try:
@@ -170,12 +194,13 @@ def log_runtime_capabilities(logger_name: str = "p53cad.runtime") -> Dict[str, A
     logger = get_logger(logger_name)
     caps = get_runtime_capabilities()
     logger.info(
-        "Runtime capabilities | python=%s torch=%s mps=%s cuda=%s transformers=%s rdkit=%s "
+        "Runtime capabilities | python=%s torch=%s mps=%s cuda=%s xpu=%s transformers=%s rdkit=%s "
         "vina_cli=%s openmm=%s openff=%s openmmforcefields=%s",
         caps.get("python"),
         caps.get("torch_version", "n/a"),
         caps.get("mps_available"),
         caps.get("cuda_available"),
+        caps.get("xpu_available"),
         caps.get("transformers_version", "n/a"),
         caps.get("rdkit_installed"),
         caps.get("vina_cli_available"),

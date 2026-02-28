@@ -76,8 +76,8 @@ def doctor():
     "--device",
     default="auto",
     show_default=True,
-    type=click.Choice(["auto", "cpu", "cuda", "mps"]),
-    help="Compute device for models (auto = CUDA > MPS > CPU).",
+    type=click.Choice(["auto", "cpu", "cuda", "mps", "xpu"]),
+    help="Compute device for models (auto = CUDA > MPS > XPU > CPU).",
 )
 def campaign_run(
     run_id,
