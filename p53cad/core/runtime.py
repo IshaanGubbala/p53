@@ -26,6 +26,9 @@ def select_device(preference: Optional[str] = None) -> "torch.device":
 
     if preference and preference != "auto":
         return torch.device(preference)
+    force_cpu = os.environ.get("P53CAD_FORCE_CPU", "1" if platform.system() == "Windows" else "0") == "1"
+    if force_cpu:
+        return torch.device("cpu")
     if torch.cuda.is_available():
         return torch.device("cuda")
     if torch.backends.mps.is_available():

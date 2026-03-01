@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ipconfig:*)",
+      "Bash(openssl version:*)",
+      "Bash(ls:*)",
+      "Bash(codex:*)"
+    ]
+  }
+}

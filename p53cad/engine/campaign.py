@@ -1039,8 +1039,7 @@ class CampaignRunner:
         with torch.no_grad():
             z_target_ref, _, _ = self.embedder.latent_forward_ascent(emb_target_ref)
             pooled_target_ref = z_target_ref.mean(dim=1)
-            if pooled_target_ref.shape[-1] != self.oracle.input_dim:
-                pooled_target_ref = pooled_target_ref[:, :self.oracle.input_dim]
+            pooled_target_ref = self._align_oracle_dim(pooled_target_ref)
 
         wt_aa_tensor = self._wt_aa_tensor(device=emb_target_ref.device)
 
@@ -1325,16 +1324,13 @@ class CampaignRunner:
             optimizer.zero_grad()
             z, logits, _ = self.embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != self.oracle.input_dim:
-                pooled = pooled[:, :self.oracle.input_dim]
+            pooled = self._align_oracle_dim(pooled)
 
             # Attention oracle receives full per-position embeddings;
             # legacy MLP oracle receives mean-pooled embeddings.
             _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
             if _uses_attention:
-                z_oracle = z
-                if z_oracle.shape[-1] != self.oracle.input_dim:
-                    z_oracle = z_oracle[:, :, :self.oracle.input_dim]
+                z_oracle = self._align_oracle_dim(z)
                 raw_score_t = self.oracle.model(z_oracle).squeeze(-1)
             else:
                 raw_score_t = self.oracle.model(pooled).squeeze(-1)
@@ -1342,8 +1338,7 @@ class CampaignRunner:
             # Mutation-neighborhood oracle: position-weighted pooling that amplifies
             # the signal near cancer sites instead of averaging uniformly over 393 positions.
             pooled_local = (z.squeeze(0) * pool_weights.unsqueeze(1)).sum(dim=0, keepdim=True)  # (1, D)
-            if pooled_local.shape[-1] != self.oracle.input_dim:
-                pooled_local = pooled_local[:, :self.oracle.input_dim]
+            pooled_local = self._align_oracle_dim(pooled_local)
             if _uses_attention:
                 # Attention oracle already does position weighting natively
                 local_score_t = raw_score_t
@@ -1878,14 +1873,11 @@ class CampaignRunner:
                     with torch.no_grad():
                         test_z, _, _ = self.embedder.latent_forward_ascent(test_emb)
                         if isinstance(self.oracle.model, AttentionPoolingNet):
-                            test_oracle_input = test_z
-                            if test_oracle_input.shape[-1] != self.oracle.input_dim:
-                                test_oracle_input = test_oracle_input[:, :, :self.oracle.input_dim]
+                            test_oracle_input = self._align_oracle_dim(test_z)
                             test_score = float(self.oracle.model(test_oracle_input).squeeze(-1).item())
                         else:
                             test_pooled = test_z.mean(dim=1)
-                            if test_pooled.shape[-1] != self.oracle.input_dim:
-                                test_pooled = test_pooled[:, :self.oracle.input_dim]
+                            test_pooled = self._align_oracle_dim(test_pooled)
                             test_score = float(self.oracle.model(test_pooled).squeeze(-1).item())
 
                     if test_score > best_score:
@@ -1929,15 +1921,13 @@ class CampaignRunner:
                 final_probs_full = torch.softmax(final_logits, dim=-1)
                 final_binding = float(self._batch_dna_force(final_z, final_probs_full)[0].item())
                 final_pooled = final_z.mean(dim=1)
-                if final_pooled.shape[-1] != self.oracle.input_dim:
-                    final_pooled = final_pooled[:, :self.oracle.input_dim]
+                final_pooled = self._align_oracle_dim(final_pooled)
                 final_uncertainty = self._estimate_uncertainty(final_pooled, mc_samples=5, z_full=final_z)
                 # OOD distance requires a reference; compute from WT embeddings
                 wt_emb = self.embedder.get_embeddings(P53_WT).detach()
                 wt_z, _, _ = self.embedder.latent_forward_ascent(wt_emb)
                 wt_pooled = wt_z.mean(dim=1)
-                if wt_pooled.shape[-1] != self.oracle.input_dim:
-                    wt_pooled = wt_pooled[:, :self.oracle.input_dim]
+                wt_pooled = self._align_oracle_dim(wt_pooled)
                 final_ood_distance = float(torch.norm(final_pooled - wt_pooled, p=2, dim=-1).item())
         except Exception as err:
             logger.warning("Autoregressive: failed to compute stability/binding for %s: %s", scenario.scenario_id, err)
@@ -2064,6 +2054,17 @@ class CampaignRunner:
                 wt_aa_indices.append(0)
         return torch.tensor(wt_aa_indices, device=device)
 
+    def _align_oracle_dim(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Match embedding width to oracle input_dim by trimming or zero-padding."""
+        assert self.oracle is not None
+        target_dim = int(self.oracle.input_dim)
+        current_dim = int(tensor.shape[-1])
+        if current_dim == target_dim:
+            return tensor
+        if current_dim > target_dim:
+            return tensor[..., :target_dim]
+        return F.pad(tensor, (0, target_dim - current_dim), mode="constant", value=0.0)
+
     def _delivery_identity_floor(self, delivery_method: str) -> float:
         """Return minimum sequence identity floor based on delivery method.
         
@@ -2120,13 +2121,10 @@ class CampaignRunner:
         with torch.no_grad():
             z, logits, _ = self.embedder.latent_forward_ascent(emb)
             pooled = z.mean(dim=1)
-            if pooled.shape[-1] != self.oracle.input_dim:
-                pooled = pooled[:, :self.oracle.input_dim]
+            pooled = self._align_oracle_dim(pooled)
             _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
             if _uses_attention:
-                z_oracle = z
-                if z_oracle.shape[-1] != self.oracle.input_dim:
-                    z_oracle = z_oracle[:, :, :self.oracle.input_dim]
+                z_oracle = self._align_oracle_dim(z)
                 raw_score = float(self.oracle.model(z_oracle).item())
             else:
                 raw_score = float(self.oracle.model(pooled).item())
@@ -2191,6 +2189,8 @@ class CampaignRunner:
         was_training = self.oracle.model.training
         _uses_attention = isinstance(self.oracle.model, AttentionPoolingNet)
         oracle_input = z_full if (_uses_attention and z_full is not None) else pooled
+        if oracle_input is not None:
+            oracle_input = self._align_oracle_dim(oracle_input)
         preds = []
         try:
             self.oracle.model.train()

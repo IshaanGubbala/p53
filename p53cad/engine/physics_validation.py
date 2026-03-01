@@ -208,6 +208,7 @@ class LocalESMFoldPredictor:
     """Predict structures with facebook/esmfold_v1 loaded locally via HuggingFace."""
 
     _instance: Optional["LocalESMFoldPredictor"] = None
+    _openfold_onehot_patch_applied: bool = False
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "LocalESMFoldPredictor":
         if cls._instance is None:
@@ -224,11 +225,35 @@ class LocalESMFoldPredictor:
         self._tokenizer = None
         self._disabled_reason: Optional[str] = None
         self._initialized = True
+        # Ensure OpenFold one_hot compatibility patch is in place before model load.
+        self._apply_openfold_onehot_compat_patch()
+
+    @staticmethod
+    def _tensor_debug_meta(name: str, value: Any) -> Dict[str, Any]:
+        meta: Dict[str, Any] = {"name": name, "type": type(value).__name__}
+        try:
+            import torch
+            if isinstance(value, torch.Tensor):
+                meta.update(
+                    {
+                        "dtype": str(value.dtype),
+                        "shape": tuple(value.shape),
+                        "device": str(value.device),
+                    }
+                )
+        except Exception:
+            pass
+        return meta
 
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
         import torch
+        self._apply_openfold_onehot_compat_patch()
+        logger.debug(
+            "OpenFold one_hot patch status before ESMFold load: applied=%s",
+            self._openfold_onehot_patch_applied,
+        )
         from transformers import AutoTokenizer, EsmForProteinFolding
 
         logger.info("Loading ESMFold model (this may take a minute)...")
@@ -237,6 +262,7 @@ class LocalESMFoldPredictor:
         try:
             self._tokenizer = AutoTokenizer.from_pretrained("facebook/esmfold_v1")
         except Exception as e:
+            self._disabled_reason = f"tokenizer_load_failure on {self._device}: {e}"
             raise RuntimeError(f"Failed to load ESMFold tokenizer: {e}") from e
 
         # ESMFold ships .bin (pickle) weights, not safetensors.
@@ -257,6 +283,7 @@ class LocalESMFoldPredictor:
                  patch("torch.load", _permissive_load):
                 self._model = EsmForProteinFolding.from_pretrained("facebook/esmfold_v1")
         except Exception as e:
+            self._disabled_reason = f"model_load_failure on {self._device}: {e}"
             raise RuntimeError(f"Failed to load ESMFold model: {e}") from e
 
         self._model = self._model.to(self._device)
@@ -264,6 +291,83 @@ class LocalESMFoldPredictor:
         # chunk_size=64 trades memory for speed on long sequences
         self._model.trunk.set_chunk_size(64)
         logger.info("ESMFold loaded in %.1fs on %s", time.time() - t0, self._device)
+
+    @classmethod
+    def _apply_openfold_onehot_compat_patch(cls) -> None:
+        """Patch OpenFold helper for torch/transformers combos that pass float indices to one_hot.
+
+        On transformers 4.44 + torch 2.3 (Windows and CPU/CUDA), ESMFold can fail with:
+        RuntimeError: one_hot is only applicable to index tensor.
+        """
+        if cls._openfold_onehot_patch_applied:
+            return
+        try:
+            import torch
+            from transformers.models.esm import modeling_esmfold
+            from transformers.models.esm.openfold_utils import feats
+
+            integer_dtypes = {
+                torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64
+            }
+
+            def _to_long_if_integer_tensor(name: str, tensor: Any) -> Any:
+                if isinstance(tensor, torch.Tensor) and tensor.dtype in integer_dtypes and tensor.dtype != torch.int64:
+                    logger.debug(
+                        "OpenFold one_hot patch casting %s from %s to torch.int64",
+                        name, tensor.dtype,
+                    )
+                    return tensor.long()
+                return tensor
+
+            def _patched_frames_and_literature_positions_to_atom14_pos(
+                r: Any,
+                aatype: torch.Tensor,
+                default_frames: torch.Tensor,
+                group_idx: torch.Tensor,
+                atom_mask: torch.Tensor,
+                lit_positions: torch.Tensor,
+            ) -> torch.Tensor:
+                # Cast any integer tensors to int64 before one_hot/indexing ops.
+                aatype = _to_long_if_integer_tensor("aatype", aatype)
+                default_frames = _to_long_if_integer_tensor("default_frames", default_frames)
+                group_idx = _to_long_if_integer_tensor("group_idx", group_idx)
+                atom_mask = _to_long_if_integer_tensor("atom_mask", atom_mask)
+                lit_positions = _to_long_if_integer_tensor("lit_positions", lit_positions)
+
+                group_mask = group_idx[aatype, ...]
+                group_mask = _to_long_if_integer_tensor("group_mask", group_mask)
+                try:
+                    group_mask_one_hot = torch.nn.functional.one_hot(
+                        group_mask,
+                        num_classes=default_frames.shape[-3],
+                    )
+                except RuntimeError as exc:
+                    if "one_hot is only applicable to index tensor" in str(exc):
+                        logger.error(
+                            "OpenFold one_hot failure debug tensors: %s",
+                            {
+                                "aatype": LocalESMFoldPredictor._tensor_debug_meta("aatype", aatype),
+                                "group_idx": LocalESMFoldPredictor._tensor_debug_meta("group_idx", group_idx),
+                                "group_mask": LocalESMFoldPredictor._tensor_debug_meta("group_mask", group_mask),
+                                "default_frames": LocalESMFoldPredictor._tensor_debug_meta("default_frames", default_frames),
+                                "atom_mask": LocalESMFoldPredictor._tensor_debug_meta("atom_mask", atom_mask),
+                                "lit_positions": LocalESMFoldPredictor._tensor_debug_meta("lit_positions", lit_positions),
+                            },
+                        )
+                    raise
+                t_atoms_to_global = r[..., None, :] * group_mask_one_hot
+                t_atoms_to_global = t_atoms_to_global.map_tensor_fn(lambda x: torch.sum(x, dim=-1))
+                atom_mask_local = atom_mask[aatype, ...].unsqueeze(-1)
+                lit_positions_local = lit_positions[aatype, ...]
+                pred_positions = t_atoms_to_global.apply(lit_positions_local)
+                return pred_positions * atom_mask_local
+
+            feats.frames_and_literature_positions_to_atom14_pos = _patched_frames_and_literature_positions_to_atom14_pos
+            modeling_esmfold.frames_and_literature_positions_to_atom14_pos = _patched_frames_and_literature_positions_to_atom14_pos
+            cls._openfold_onehot_patch_applied = True
+            logger.info("Applied OpenFold one_hot index compatibility patch for ESMFold.")
+        except Exception as exc:
+            logger.warning("Failed to apply OpenFold one_hot compatibility patch: %s", exc)
 
     def predict(
         self,
@@ -285,6 +389,17 @@ class LocalESMFoldPredictor:
                 logger.info("ESMFold cache hit: %s", seq_h)
                 meta = json.loads(cached.read_text())
                 pdb_str = cached_pdb.read_text()
+                cached_plddt = [float(v) for v in meta["plddt_scores"]]
+                if cached_plddt and float(np.max(cached_plddt)) <= 1.5:
+                    cached_plddt = [v * 100.0 for v in cached_plddt]
+                    meta["plddt_scores"] = cached_plddt
+                    meta["mean_plddt"] = float(np.mean(cached_plddt))
+                    dbd_start, dbd_end = 93, min(292, len(cached_plddt))
+                    if dbd_end > dbd_start:
+                        meta["dbd_plddt"] = float(np.mean(cached_plddt[dbd_start:dbd_end]))
+                    else:
+                        meta["dbd_plddt"] = float(meta["mean_plddt"])
+                    logger.info("Rescaled cached ESMFold pLDDT from [0,1] to [0,100].")
                 return ESMFoldResult(
                     pdb_string=pdb_str,
                     plddt_scores=meta["plddt_scores"],
@@ -315,6 +430,10 @@ class LocalESMFoldPredictor:
             tokenized["input_ids"] = tokenized["input_ids"].long()
         if "attention_mask" in tokenized:
             tokenized["attention_mask"] = tokenized["attention_mask"].long()
+        logger.debug(
+            "ESMFold tokenized tensor dtypes: %s",
+            {k: self._tensor_debug_meta(k, v) for k, v in tokenized.items()},
+        )
 
         with torch.no_grad():
             try:
@@ -323,6 +442,11 @@ class LocalESMFoldPredictor:
                 if "one_hot is only applicable to index tensor" not in str(exc):
                     raise
                 self._disabled_reason = f"one_hot index tensor failure on {self._device}"
+                logger.error(
+                    "ESMFold one_hot runtime failure debug: device=%s, tokenized=%s",
+                    self._device,
+                    {k: self._tensor_debug_meta(k, v) for k, v in tokenized.items()},
+                )
                 logger.warning(
                     "ESMFold forward failed (%s). Disabling ESMFold for this process to avoid repeated stalls.",
                     self._disabled_reason,
@@ -344,6 +468,13 @@ class LocalESMFoldPredictor:
             plddt_scores = plddt_tensor[:, 1].cpu().numpy().tolist()
         else:
             plddt_scores = plddt_tensor.cpu().numpy().tolist()
+        # Some transformer/openfold builds emit pLDDT in [0,1] instead of [0,100].
+        # Normalize to [0,100] so downstream gate thresholds remain meaningful.
+        if plddt_scores:
+            plddt_max = float(np.max(plddt_scores))
+            if plddt_max <= 1.5:
+                plddt_scores = [float(v) * 100.0 for v in plddt_scores]
+                logger.info("ESMFold pLDDT appears normalized to [0,1]; rescaled to [0,100].")
         mean_plddt = float(np.mean(plddt_scores))
         # DBD = residues 94-292 (0-indexed: 93-291)
         dbd_start, dbd_end = 93, min(292, len(seq_input))
@@ -470,14 +601,21 @@ class OpenMMEnergyCalculator:
 
     @staticmethod
     def _select_platform(openmm: Any) -> Any:
-        """Prefer CUDA when available, otherwise fall back to CPU."""
+        """Prefer CUDA, then OpenCL, then CPU with explicit failure logging."""
         try:
             platform = openmm.Platform.getPlatformByName("CUDA")
             logger.info("OpenMM platform selected: CUDA")
             return platform
-        except Exception:
+        except Exception as exc_cuda:
+            logger.warning("OpenMM CUDA platform unavailable: %s", exc_cuda)
+        try:
+            platform = openmm.Platform.getPlatformByName("OpenCL")
+            logger.info("OpenMM platform selected: OpenCL (CUDA unavailable)")
+            return platform
+        except Exception as exc_opencl:
+            logger.warning("OpenMM OpenCL platform unavailable: %s", exc_opencl)
             platform = openmm.Platform.getPlatformByName("CPU")
-            logger.info("OpenMM platform selected: CPU (CUDA unavailable)")
+            logger.info("OpenMM platform selected: CPU (CUDA/OpenCL unavailable)")
             return platform
 
     def _get_forcefield(self):
@@ -613,6 +751,48 @@ class OpenMMEnergyCalculator:
 class MDStabilityChecker:
     """Short implicit-solvent MD for rapid stability screening."""
 
+    @staticmethod
+    def _summarize_atoms(pdb_string: str) -> Tuple[int, int, bool]:
+        """Return (n_atoms, n_residues, has_backbone) from ATOM records."""
+        n_atoms = 0
+        residue_atoms: Dict[Tuple[str, str, str], set[str]] = {}
+        for line in pdb_string.splitlines():
+            if not line.startswith("ATOM"):
+                continue
+            n_atoms += 1
+            atom_name = line[12:16].strip()
+            chain_id = line[21:22].strip()
+            res_seq = line[22:26].strip()
+            ins_code = line[26:27].strip()
+            key = (chain_id, res_seq, ins_code)
+            if key not in residue_atoms:
+                residue_atoms[key] = set()
+            residue_atoms[key].add(atom_name)
+        has_backbone = any({"N", "CA", "C"}.issubset(atoms) for atoms in residue_atoms.values())
+        return n_atoms, len(residue_atoms), has_backbone
+
+    @staticmethod
+    def _fallback_result(
+        simulation_ns: float,
+        t0: float,
+        n_residues: int = 0,
+    ) -> MDStabilityResult:
+        """Return deterministic degraded result when MD cannot be run safely."""
+        n_rmsf = max(1, n_residues)
+        return MDStabilityResult(
+            rmsd_mean=9.9,
+            rmsd_std=0.0,
+            rmsd_final=9.9,
+            rmsf_per_residue=[0.0] * n_rmsf,
+            rmsf_dbd_mean=0.0,
+            ss_content={"helix": 0.0, "sheet": 0.0, "coil": 1.0},
+            rg_mean=0.0,
+            stability_score=0.0,
+            stability_verdict="unstable",
+            simulation_ns=simulation_ns,
+            elapsed_sec=round(time.time() - t0, 1),
+        )
+
     def run_stability_check(
         self,
         pdb_string: str,
@@ -639,6 +819,19 @@ class MDStabilityChecker:
 
         t0 = time.time()
 
+        n_atoms, n_residues, has_backbone = self._summarize_atoms(pdb_string)
+        # CA-only or extremely tiny structures can trigger native OpenMM/PDBFixer aborts.
+        if n_atoms < 12 or n_residues < 4 or not has_backbone:
+            logger.warning(
+                "Skipping MD for underspecified structure (%d atoms, %d residues, backbone=%s): %s",
+                n_atoms, n_residues, has_backbone, name,
+            )
+            return self._fallback_result(
+                simulation_ns=simulation_ns,
+                t0=t0,
+                n_residues=n_residues,
+            )
+
         # Prepare (reuse fixer if provided)
         calc = OpenMMEnergyCalculator()
         if fixer is None:
@@ -664,8 +857,9 @@ class MDStabilityChecker:
         simulation.step(1000)
 
         # Production with DCD reporter
-        production_steps = int(simulation_ns * 1e6 / 2)  # 2 fs timestep
-        report_interval = max(500, production_steps // 100)  # ~100 frames
+        production_steps = max(1, int(simulation_ns * 1e6 / 2))  # 2 fs timestep
+        # For very short runs, keep interval small enough to guarantee frames.
+        report_interval = max(1, production_steps // 100)  # target ~100 frames
 
         tmp_dir = Path(tempfile.mkdtemp())
         dcd_path = tmp_dir / f"{name}.dcd"
@@ -675,21 +869,59 @@ class MDStabilityChecker:
         with open(pdb_path, "w") as f:
             app.PDBFile.writeFile(fixer.topology, fixer.positions, f)
 
-        simulation.reporters.append(
-            app.DCDReporter(str(dcd_path), report_interval)
+        dcd_reporter = app.DCDReporter(str(dcd_path), report_interval)
+        state_reporter = app.StateDataReporter(
+            str(tmp_dir / "energy.log"), report_interval,
+            step=True, potentialEnergy=True, temperature=True,
         )
-        simulation.reporters.append(
-            app.StateDataReporter(
-                str(tmp_dir / "energy.log"), report_interval,
-                step=True, potentialEnergy=True, temperature=True,
-            )
-        )
+        simulation.reporters.append(dcd_reporter)
+        simulation.reporters.append(state_reporter)
 
         logger.info("MD production: %d steps (%.1f ns) for %s", production_steps, simulation_ns, name)
         simulation.step(production_steps)
 
-        # Analysis with mdtraj
-        traj = mdtraj.load(str(dcd_path), top=str(pdb_path))
+        # Explicitly flush/close reporter handles so DCD is complete before reading.
+        for reporter in (dcd_reporter, state_reporter):
+            out = getattr(reporter, "_out", None)
+            if out is not None:
+                try:
+                    out.flush()
+                except Exception:
+                    pass
+                try:
+                    out.close()
+                except Exception:
+                    pass
+        simulation.reporters.clear()
+
+        # Analysis with mdtraj. If DCD parsing fails (truncated/empty), build a
+        # two-frame trajectory from initial/final PDBs to avoid misleading RMSD=0.
+        final_pdb_path = tmp_dir / f"{name}_final.pdb"
+        try:
+            traj = mdtraj.load(str(dcd_path), top=str(pdb_path))
+        except OSError as e:
+            logger.warning("Failed to load DCD %s: %s; using init/final PDB fallback", dcd_path, e)
+            state = simulation.context.getState(getPositions=True)
+            with open(final_pdb_path, "w") as f:
+                app.PDBFile.writeFile(fixer.topology, state.getPositions(), f)
+            try:
+                traj_init = mdtraj.load(str(pdb_path))
+                traj_final = mdtraj.load(str(final_pdb_path))
+                traj = mdtraj.Trajectory(
+                    xyz=np.concatenate([traj_init.xyz, traj_final.xyz], axis=0),
+                    topology=traj_init.topology,
+                )
+            except Exception as e2:
+                logger.warning(
+                    "Failed to build init/final fallback trajectory for %s: %s; "
+                    "returning conservative MD fallback.",
+                    name, e2,
+                )
+                return self._fallback_result(
+                    simulation_ns=simulation_ns,
+                    t0=t0,
+                    n_residues=n_residues,
+                )
         ref = traj[0]
 
         # CA atom indices
@@ -745,6 +977,7 @@ class MDStabilityChecker:
         try:
             dcd_path.unlink(missing_ok=True)
             pdb_path.unlink(missing_ok=True)
+            final_pdb_path.unlink(missing_ok=True)
             (tmp_dir / "energy.log").unlink(missing_ok=True)
             tmp_dir.rmdir()
         except Exception:
@@ -1543,6 +1776,25 @@ class PhysicsValidationPipeline:
         self._cache_dir = cache_dir
         self._wt_pdb_path = wt_pdb_path or Path("data/raw/p53_wt.pdb")
         self._energy_cache: Dict[str, float] = {}  # seq_hash -> energy
+        self._esmfold_predictor: Optional[LocalESMFoldPredictor] = None
+        self._esmfold_disabled_reason: Optional[str] = None
+
+    def _get_esmfold_predictor(self, esmfold_cache: Path) -> Optional[LocalESMFoldPredictor]:
+        """Return a shared ESMFold predictor, fail-open if initialization already failed."""
+        if self._esmfold_disabled_reason is not None:
+            return None
+        if self._esmfold_predictor is not None:
+            return self._esmfold_predictor
+        try:
+            self._esmfold_predictor = LocalESMFoldPredictor(device=self._device, cache_dir=esmfold_cache)
+            return self._esmfold_predictor
+        except Exception as exc:
+            self._esmfold_disabled_reason = str(exc)
+            logger.warning(
+                "ESMFold unavailable for this validation run (%s). Continuing without ESMFold outputs.",
+                self._esmfold_disabled_reason,
+            )
+            return None
 
     def validate_campaign(
         self,
@@ -1583,13 +1835,16 @@ class PhysicsValidationPipeline:
 
         # Set up ESMFold cache in output directory
         esmfold_cache = self._cache_dir or (output_dir / "esmfold_cache")
+        esmfold_predictor = None if skip_esmfold else self._get_esmfold_predictor(esmfold_cache)
+        if not skip_esmfold and esmfold_predictor is None:
+            logger.warning("Proceeding with physics validation in ESMFold fail-open mode.")
 
         # Step 0: WT reference energy (cached)
         wt_energy: Optional[float] = None
         wt_pdb_string: Optional[str] = None
         if not skip_energy:
             wt_energy, wt_pdb_string = self._get_reference_energy(
-                wt_sequence, "wt", esmfold_cache, physics_pdb_dir, skip_esmfold,
+                wt_sequence, "wt", esmfold_cache, physics_pdb_dir, skip_esmfold, predictor=esmfold_predictor,
             )
 
         # Cancer-mutant energies (cached per target)
@@ -1597,7 +1852,7 @@ class PhysicsValidationPipeline:
         if not skip_energy and cancer_sequences:
             for target_label, cancer_seq in cancer_sequences.items():
                 e, _ = self._get_reference_energy(
-                    cancer_seq, f"cancer_{target_label}", esmfold_cache, physics_pdb_dir, skip_esmfold,
+                    cancer_seq, f"cancer_{target_label}", esmfold_cache, physics_pdb_dir, skip_esmfold, predictor=esmfold_predictor,
                 )
                 if e is not None:
                     cancer_energies[target_label] = e
@@ -1634,10 +1889,9 @@ class PhysicsValidationPipeline:
 
             # ESMFold
             pdb_string: Optional[str] = None
-            if not skip_esmfold:
+            if not skip_esmfold and esmfold_predictor is not None:
                 try:
-                    predictor = LocalESMFoldPredictor(device=self._device, cache_dir=esmfold_cache)
-                    ef_result = predictor.predict(
+                    ef_result = esmfold_predictor.predict(
                         seq, save_dir=physics_pdb_dir,
                         filename=f"rank{rank:02d}_{target_label.replace('+', '_')}.pdb",
                     )
@@ -1646,6 +1900,11 @@ class PhysicsValidationPipeline:
                 except Exception as e:
                     logger.warning("ESMFold failed for rank %d: %s", rank, e)
                     result.errors.append(f"esmfold: {e}")
+                    # Fail open for the rest of the run if ESMFold runtime is unstable.
+                    self._esmfold_disabled_reason = str(e)
+                    esmfold_predictor = None
+            elif not skip_esmfold and self._esmfold_disabled_reason:
+                result.errors.append(f"esmfold: disabled ({self._esmfold_disabled_reason})")
 
             # Prepare PDBFixer once per candidate (reused for energy + MD)
             fixer = None
@@ -1763,6 +2022,7 @@ class PhysicsValidationPipeline:
         esmfold_cache: Path,
         pdb_dir: Path,
         skip_esmfold: bool,
+        predictor: Optional[LocalESMFoldPredictor] = None,
     ) -> Tuple[Optional[float], Optional[str]]:
         """Get energy for a reference sequence (WT or cancer), with caching."""
         seq_h = _seq_hash(sequence)
@@ -1775,13 +2035,15 @@ class PhysicsValidationPipeline:
         if label == "wt" and self._wt_pdb_path.exists():
             pdb_string = self._wt_pdb_path.read_text()
             logger.info("Using on-disk WT PDB for energy: %s", self._wt_pdb_path)
-        elif not skip_esmfold:
+        elif not skip_esmfold and predictor is not None:
             try:
-                predictor = LocalESMFoldPredictor(device=self._device, cache_dir=esmfold_cache)
                 ef_result = predictor.predict(sequence, save_dir=pdb_dir, filename=f"{label}.pdb")
                 pdb_string = ef_result.pdb_string
             except Exception as e:
                 logger.warning("ESMFold failed for %s: %s", label, e)
+                self._esmfold_disabled_reason = str(e)
+        elif not skip_esmfold and predictor is None:
+            logger.warning("Skipping ESMFold for %s because predictor is unavailable.", label)
 
         if pdb_string is None:
             logger.warning("No PDB available for %s energy calculation", label)
